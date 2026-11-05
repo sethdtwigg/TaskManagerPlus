@@ -1,0 +1,66 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "winres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (United States) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE
+BEGIN
+    "#include ""winres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_OPTIONS DIALOGEX 0, 0, 260, 100
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU
+CAPTION "Process History"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Snapshot interval (seconds):",IDC_STATIC,7,9,120,8
+    EDITTEXT        IDC_INTERVAL,130,7,60,13,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Retention (hours):",IDC_STATIC,7,27,120,8
+    EDITTEXT        IDC_RETENTION,130,25,60,13,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Persist history to disk",IDC_PERSIST,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,45,160,10
+    LTEXT           "Snapshots are taken from the process list on the main refresh cycle. History older than the retention period is discarded.",IDC_STATIC,7,62,246,24
+END
+
+#endif    // English (United States) resources
+/////////////////////////////////////////////////////////////////////////////

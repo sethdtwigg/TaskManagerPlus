@@ -1,0 +1,47 @@
+#define IDD_RULE                        101
+#define IDD_OPTIONS                     102
+
+#define IDC_PROGRAM                     1001
+#define IDC_BROWSE                      1002
+#define IDC_MATCHPATH                   1003
+#define IDC_ENABLED                     1004
+#define IDC_PRIORITY                    1005
+#define IDC_AFFINITY                    1006
+#define IDC_ECO                         1007
+#define IDC_ENDONSTART                  1008
+#define IDC_COMMAND                     1009
+#define IDC_HYBRIDNOTE                  1010
+
+#define IDC_WD_ENABLE0                  1020
+#define IDC_WD_ENABLE1                  1021
+#define IDC_WD_ENABLE2                  1022
+#define IDC_WD_ENABLE3                  1023
+#define IDC_WD_METRIC0                  1030
+#define IDC_WD_METRIC1                  1031
+#define IDC_WD_METRIC2                  1032
+#define IDC_WD_METRIC3                  1033
+#define IDC_WD_THRESHOLD0               1040
+#define IDC_WD_THRESHOLD1               1041
+#define IDC_WD_THRESHOLD2               1042
+#define IDC_WD_THRESHOLD3               1043
+#define IDC_WD_UNIT0                    1050
+#define IDC_WD_UNIT1                    1051
+#define IDC_WD_UNIT2                    1052
+#define IDC_WD_UNIT3                    1053
+#define IDC_WD_DURATION0                1060
+#define IDC_WD_DURATION1                1061
+#define IDC_WD_DURATION2                1062
+#define IDC_WD_DURATION3                1063
+#define IDC_WD_ACTION0                  1070
+#define IDC_WD_ACTION1                  1071
+#define IDC_WD_ACTION2                  1072
+#define IDC_WD_ACTION3                  1073
+
+#define IDC_ENGINE                      1101
+#define IDC_NOTIFY                      1102
+#define IDC_LOG                         1103
+#define IDC_GUARD_GLOBAL                1104
+#define IDC_GUARD_RULE                  1105
+#define IDC_DUMPS                       1106
+#define IDC_DUMPDIR                     1107
+#define IDC_RULESFILE                   1108

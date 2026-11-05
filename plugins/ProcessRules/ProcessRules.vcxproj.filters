@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files"><UniqueIdentifier>{BA4E1E17-00CE-49E3-9C8D-2ECCE8D42E0E}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files"><UniqueIdentifier>{D3090FC9-93F6-40B3-B3D1-BEF3D0B3FFFA}</UniqueIdentifier></Filter>
+    <Filter Include="Resource Files"><UniqueIdentifier>{B4DBF6A6-28E7-43AF-AED6-4FF7A22C2479}</UniqueIdentifier></Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="main.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="options.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="ruledlg.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="rules.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="tab.c"><Filter>Source Files</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="processrules.h"><Filter>Header Files</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ProcessRules.rc"><Filter>Resource Files</Filter></ResourceCompile>
+    <ResourceCompile Include="version.rc"><Filter>Resource Files</Filter></ResourceCompile>
+  </ItemGroup>
+</Project>

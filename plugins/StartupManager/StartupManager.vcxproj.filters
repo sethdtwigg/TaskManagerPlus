@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files"><UniqueIdentifier>{3871ED38-78EB-4869-98BC-6928DFC70969}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files"><UniqueIdentifier>{2F570D48-4993-4EF2-B397-D872857BF4A8}</UniqueIdentifier></Filter>
+    <Filter Include="Resource Files"><UniqueIdentifier>{92B80659-0772-4B84-9AD5-BC5C78854D6B}</UniqueIdentifier></Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="startupenum.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="startuptab.c"><Filter>Source Files</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="startupmanager.h"><Filter>Header Files</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="StartupManager.rc"><Filter>Resource Files</Filter></ResourceCompile>
+    <ResourceCompile Include="version.rc"><Filter>Resource Files</Filter></ResourceCompile>
+  </ItemGroup>
+</Project>

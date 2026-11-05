@@ -21,4 +21,7 @@
     <Project Path="Updater/Updater.vcxproj" Id="a0c1595c-fa3e-4b7a-936c-306bc6294c5e" />
     <Project Path="UserNotes/UserNotes.vcxproj" Id="7c38d0aa-572c-4d75-8e4e-d68af3c051af" />
     <Project Path="WindowExplorer/WindowExplorer.vcxproj" Id="37488dc1-e45f-4626-a87c-3a854a153d1a" />
+    <Project Path="ProcessRules/ProcessRules.vcxproj" Id="9648576c-edae-4f91-84f9-b47625cb5ce9" />
+    <Project Path="StartupManager/StartupManager.vcxproj" Id="7ce522d6-2edc-4db1-aaf8-1eef12713415" />
+    <Project Path="ProcessHistory/ProcessHistory.vcxproj" Id="fca4a226-6589-48c2-96f8-605dc2fc58fe" />
 </Solution>
