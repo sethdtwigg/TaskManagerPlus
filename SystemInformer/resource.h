@@ -558,6 +558,8 @@
 #define IDC_ZLISTSTANDBY4_V             1364
 #define IDC_ZLISTSTANDBY5_V             1365
 #define IDC_SELECTALL                   1365
+#define IDC_PCORES                      1570 // TaskManagerPlus: affinity dialog P-core preset
+#define IDC_ECORES                      1571 // TaskManagerPlus: affinity dialog E-core preset
 #define IDC_ZLISTSTANDBY6_V             1366
 #define IDC_DESELECTALL                 1366
 #define IDC_ZLISTSTANDBY7_V             1367
@@ -1038,7 +1040,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        299
 #define _APS_NEXT_COMMAND_VALUE         10355
-#define _APS_NEXT_CONTROL_VALUE         1570
+#define _APS_NEXT_CONTROL_VALUE         1572
 #define _APS_NEXT_SYMED_VALUE           170
 #endif
 #endif

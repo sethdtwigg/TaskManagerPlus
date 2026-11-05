@@ -19,6 +19,8 @@
 #include <phapp.h>
 #include <procprv.h>
 #include <thrdprv.h>
+#include <sysinfo.h> // TaskManagerPlus: PhGetHybridProcessorType for P/E-core presets
+#include <sysinfop.h>
 
 typedef struct _PH_AFFINITY_DIALOG_CONTEXT
 {
@@ -46,6 +48,29 @@ INT_PTR CALLBACK PhpProcessAffinityDlgProc(
     _In_ WPARAM wParam,
     _In_ LPARAM lParam
     );
+
+// TaskManagerPlus: TRUE when the CPU reports both performance and efficient cores.
+static BOOLEAN PhpAffinityHasHybridCores(
+    VOID
+    )
+{
+    BOOLEAN hasPCore = FALSE;
+    BOOLEAN hasECore = FALSE;
+
+    for (ULONG i = 0; i < PhSystemProcessorInformation.NumberOfProcessors && i < MAXIMUM_PROC_PER_GROUP; i++)
+    {
+        PCPH_STRINGREF coreType = PhGetHybridProcessorType(i);
+
+        if (!coreType)
+            continue;
+        if (PhEqualStringRef2(coreType, L"P-Core", TRUE))
+            hasPCore = TRUE;
+        else if (PhEqualStringRef2(coreType, L"E-Core", TRUE))
+            hasECore = TRUE;
+    }
+
+    return hasPCore && hasECore;
+}
 
 VOID PhShowProcessAffinityDialog(
     _In_ HWND ParentWindowHandle,
@@ -292,6 +317,13 @@ INT_PTR CALLBACK PhpProcessAffinityDlgProc(
                 {
                     PhAddItemList(context->CpuControlList, GetDlgItem(hwndDlg, IDC_CPU0 + i));
                 }
+            }
+
+            // TaskManagerPlus: offer P-core / E-core presets on hybrid CPUs.
+            if (PhpAffinityHasHybridCores())
+            {
+                ShowWindow(GetDlgItem(hwndDlg, IDC_PCORES), SW_SHOW);
+                ShowWindow(GetDlgItem(hwndDlg, IDC_ECORES), SW_SHOW);
             }
 
             if (!PhSystemProcessorInformation.SingleProcessorGroup)
@@ -688,6 +720,29 @@ INT_PTR CALLBACK PhpProcessAffinityDlgProc(
                     if (NT_SUCCESS(status))
                     {
                         EndDialog(hwndDlg, IDOK);
+                    }
+                }
+                break;
+            case IDC_PCORES:
+            case IDC_ECORES:
+                {
+                    // TaskManagerPlus: check only the processors of the chosen core type.
+                    BOOLEAN wantEfficient = GET_WM_COMMAND_ID(wParam, lParam) == IDC_ECORES;
+
+                    for (ULONG i = 0; i < MAXIMUM_PROC_PER_GROUP; i++)
+                    {
+                        HWND checkBox = context->CpuControlList->Items[i];
+                        PCPH_STRINGREF coreType;
+
+                        if (!IsWindowEnabled(checkBox))
+                            continue;
+
+                        coreType = PhGetHybridProcessorType(i);
+
+                        if (coreType && PhEqualStringRef2(coreType, wantEfficient ? L"E-Core" : L"P-Core", TRUE))
+                            Button_SetCheck(checkBox, BST_CHECKED);
+                        else
+                            Button_SetCheck(checkBox, BST_UNCHECKED);
                     }
                 }
                 break;
