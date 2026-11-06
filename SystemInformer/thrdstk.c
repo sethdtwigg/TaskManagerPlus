@@ -138,7 +138,6 @@ typedef struct _PH_THREAD_STACK_CONTEXT
     ULONG_PTR SearchMatchHandle;
     BOOLEAN StatusUpdatePending;  // Coalesces WM_PH_SYMBOL_STATUS posts.
     PH_CALLBACK_REGISTRATION DeferredSymbolEventRegistration;
-    PPH_HASHTABLE SourceLinkCache; // module base -> PPH_BYTES Source Link document (NULL if none). UI thread only.
 } PH_THREAD_STACK_CONTEXT, *PPH_THREAD_STACK_CONTEXT;
 
 typedef struct _THREAD_STACK_ITEM
@@ -245,64 +244,8 @@ typedef enum _PH_THREAD_STACK_MENUITEM
     PH_THREAD_STACK_MENUITEM_INSPECT = 1,
     PH_THREAD_STACK_MENUITEM_OPENFILELOCATION,
     PH_THREAD_STACK_MENUITEM_REGISTERS,
-    PH_THREAD_STACK_MENUITEM_OPENSOURCELINK,
-    PH_THREAD_STACK_MENUITEM_COPYSOURCELINK,
     PH_THREAD_STACK_MENUITEM_SHADOWSTACK,
 } PH_THREAD_STACK_MENUITEM;
-
-/**
- * Gets a browsable Source Link URL for a stack frame address, caching the module's Source Link document.
- *
- * \param Context The thread stack context.
- * \param Address The frame address.
- * \param Url A pointer to a variable that receives the URL.
- * \return TRUE on success, FALSE otherwise.
- */
-_Success_(return)
-static BOOLEAN PhpGetThreadStackSourceLinkUrl(
-    _In_ PPH_THREAD_STACK_CONTEXT Context,
-    _In_ PVOID Address,
-    _Out_ PPH_STRING* Url
-    )
-{
-    BOOLEAN result;
-    PVOID baseAddress;
-    PVOID* entry;
-    PPH_BYTES sourceLink;
-    PPH_STRING fileName;
-    PH_SYMBOL_LINE_INFORMATION lineInfo;
-
-    if (!(baseAddress = PhGetModuleFromAddress(Context->SymbolProvider, Address, NULL)))
-        return FALSE;
-
-    // Line information implies the PDB is loaded, so a missing Source Link document is final and safe to cache.
-    if (!PhGetLineFromAddress(Context->SymbolProvider, Address, &fileName, NULL, &lineInfo))
-        return FALSE;
-
-    if (!Context->SourceLinkCache)
-        Context->SourceLinkCache = PhCreateSimpleHashtable(8);
-
-    if (entry = PhFindItemSimpleHashtable(Context->SourceLinkCache, baseAddress))
-    {
-        sourceLink = *entry;
-    }
-    else
-    {
-        if (!PhGetSymbolProviderSourceLink(Context->SymbolProvider, baseAddress, &sourceLink))
-            sourceLink = NULL;
-
-        PhAddItemSimpleHashtable(Context->SourceLinkCache, baseAddress, sourceLink);
-    }
-
-    if (sourceLink)
-        result = PhResolveSourceLinkUrl(sourceLink, &fileName->sr, lineInfo.LineNumber, Url);
-    else
-        result = FALSE;
-
-    PhDereferenceObject(fileName);
-
-    return result;
-}
 
 INT_PTR CALLBACK PhpThreadStackDlgProc(
     _In_ HWND hwndDlg,
@@ -912,17 +855,6 @@ BOOLEAN NTAPI ThreadStackTreeNewCallback(
 
                     PhDereferenceObject(fileName);
 
-                    {
-                        PPH_STRING sourceLinkUrl;
-
-                        if (PhpGetThreadStackSourceLinkUrl(context, node->StackFrame.PcAddress, &sourceLinkUrl))
-                        {
-                            PhAppendStringBuilder2(&stringBuilder, L"Source: ");
-                            PhAppendStringBuilder(&stringBuilder, &sourceLinkUrl->sr);
-                            PhAppendCharStringBuilder(&stringBuilder, L'\n');
-                            PhDereferenceObject(sourceLinkUrl);
-                        }
-                    }
                 }
 
                 if (stringBuilder.String->Length != 0)
@@ -1543,23 +1475,6 @@ INT_PTR CALLBACK PhpThreadStackDlgProc(
 
             DeleteThreadStackTree(context);
 
-            if (context->SourceLinkCache)
-            {
-                PH_HASHTABLE_ENUM_CONTEXT enumContext;
-                PPH_KEY_VALUE_PAIR entry;
-
-                PhBeginEnumHashtable(context->SourceLinkCache, &enumContext);
-
-                while (entry = PhNextEnumHashtable(&enumContext))
-                {
-                    if (entry->Value)
-                        PhDereferenceObject(entry->Value);
-                }
-
-                PhDereferenceObject(context->SourceLinkCache);
-                context->SourceLinkCache = NULL;
-            }
-
             if (context->TreeNewFont)
                 DeleteFont(context->TreeNewFont);
 
@@ -1608,18 +1523,12 @@ INT_PTR CALLBACK PhpThreadStackDlgProc(
 
                     if (selectedNode = GetSelectedThreadStackNode(context))
                     {
-                        PPH_STRING sourceLinkUrl = NULL;
-
-                        PhpGetThreadStackSourceLinkUrl(context, selectedNode->StackFrame.PcAddress, &sourceLinkUrl);
-
                         menu = PhCreateEMenu();
                         PhInsertEMenuItem(menu, PhCreateEMenuItem(PH_EMENU_DEFAULT | (selectedNode->FrameContext ? 0 : PH_EMENU_DISABLED), PH_THREAD_STACK_MENUITEM_REGISTERS, L"&Registers...", NULL, NULL), ULONG_MAX);
                         PhInsertEMenuItem(menu, PhCreateEMenuItem(NT_SUCCESS(context->ShadowStackStatus) ? 0 : PH_EMENU_DISABLED, PH_THREAD_STACK_MENUITEM_SHADOWSTACK, L"S&hadow stack...", NULL, NULL), ULONG_MAX);
                         PhInsertEMenuItem(menu, PhCreateEMenuSeparator(), ULONG_MAX);
                         PhInsertEMenuItem(menu, PhCreateEMenuItem(0, PH_THREAD_STACK_MENUITEM_INSPECT, L"&Inspect", NULL, NULL), ULONG_MAX);
                         PhInsertEMenuItem(menu, PhCreateEMenuItem(0, PH_THREAD_STACK_MENUITEM_OPENFILELOCATION, L"Open &file location", NULL, NULL), ULONG_MAX);
-                        PhInsertEMenuItem(menu, PhCreateEMenuItem(sourceLinkUrl ? 0 : PH_EMENU_DISABLED, PH_THREAD_STACK_MENUITEM_OPENSOURCELINK, L"Open &source link", NULL, NULL), ULONG_MAX);
-                        PhInsertEMenuItem(menu, PhCreateEMenuItem(sourceLinkUrl ? 0 : PH_EMENU_DISABLED, PH_THREAD_STACK_MENUITEM_COPYSOURCELINK, L"Copy source &link", NULL, NULL), ULONG_MAX);
                         PhInsertEMenuItem(menu, PhCreateEMenuSeparator(), ULONG_MAX);
                         PhInsertEMenuItem(menu, PhCreateEMenuItem(0, IDC_COPY, L"Copy", NULL, NULL), ULONG_MAX);
                         PhInsertCopyCellEMenuItem(menu, IDC_COPY, context->TreeNewHandle, contextMenuEvent->Column);
@@ -1677,22 +1586,6 @@ INT_PTR CALLBACK PhpThreadStackDlgProc(
                                     SendMessage(hwndDlg, WM_COMMAND, PH_THREAD_STACK_MENUITEM_SHADOWSTACK, 0);
                                 }
                                 break;
-                            case PH_THREAD_STACK_MENUITEM_OPENSOURCELINK:
-                                {
-                                    if (sourceLinkUrl)
-                                    {
-                                        PhShellExecute(hwndDlg, PhGetString(sourceLinkUrl), NULL);
-                                    }
-                                }
-                                break;
-                            case PH_THREAD_STACK_MENUITEM_COPYSOURCELINK:
-                                {
-                                    if (sourceLinkUrl)
-                                    {
-                                        PhSetClipboardString(context->TreeNewHandle, &sourceLinkUrl->sr);
-                                    }
-                                }
-                                break;
                             case IDC_COPY:
                                 {
                                     PPH_STRING text;
@@ -1706,9 +1599,6 @@ INT_PTR CALLBACK PhpThreadStackDlgProc(
                         }
 
                         PhDestroyEMenu(menu);
-
-                        if (sourceLinkUrl)
-                            PhDereferenceObject(sourceLinkUrl);
                     }
                 }
                 break;
