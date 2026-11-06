@@ -65,6 +65,18 @@ VOID EtpAddTreeNewColumn(
     column.Alignment = Alignment;
     column.TextFlags = TextFlags;
 
+    // TaskManagerPlus: Network and GPU are part of the default column set (a saved column set overrides this).
+    if (SubId == ETPRTNC_NETWORKTOTALRATE)
+    {
+        column.Visible = TRUE;
+        column.DisplayIndex = 4;
+    }
+    else if (SubId == ETPRTNC_GPUADAPTER_FIRST)
+    {
+        column.Visible = TRUE;
+        column.DisplayIndex = 5;
+    }
+
     if (SortFunction == EtpProcessTreeNewSortFunction)
         column.HeaderTextCache = PhAllocateZero(sizeof(PH_TREENEW_HEADER_TEXT_CACHE));
 
@@ -114,7 +126,7 @@ VOID EtProcessTreeNewInitializing(
         { ETPRTNC_DISKTOTALRATE, L"Disk total rate", 70, PH_ALIGN_RIGHT, DT_RIGHT, TRUE },
         { ETPRTNC_NETWORKRECEIVERATE, L"Network receive rate", 70, PH_ALIGN_RIGHT, DT_RIGHT, TRUE },
         { ETPRTNC_NETWORKSENDRATE, L"Network send rate", 70, PH_ALIGN_RIGHT, DT_RIGHT, TRUE },
-        { ETPRTNC_NETWORKTOTALRATE, L"Network total rate", 70, PH_ALIGN_RIGHT, DT_RIGHT, TRUE },
+        { ETPRTNC_NETWORKTOTALRATE, L"Network", 80, PH_ALIGN_RIGHT, DT_RIGHT, TRUE },
         { ETPRTNC_FPS, L"FPS", 50, PH_ALIGN_RIGHT, DT_RIGHT, TRUE },
         { ETPRTNC_NPU, L"NPU", 45, PH_ALIGN_RIGHT, DT_RIGHT, TRUE },
         { ETPRTNC_NPUDEDICATEDBYTES, L"NPU dedicated bytes (resident)", 70, PH_ALIGN_RIGHT, DT_RIGHT, TRUE },
@@ -150,13 +162,16 @@ VOID EtProcessTreeNewInitializing(
         {
             PPH_STRING columnText;
 
-            columnText = PhFormatString(L"GPU %lu", i);
+            if (i == 0 && adapterCount == 1) // TaskManagerPlus: one adapter: a plain "GPU" column
+                columnText = PhCreateString(L"GPU");
+            else
+                columnText = PhFormatString(L"GPU %lu", i);
             PhAddItemList(EtGpuNodeColumnTextList, columnText);
             EtpAddTreeNewColumn(
                 treeNewInfo,
                 ETPRTNC_GPUADAPTER_FIRST + i,
                 columnText->Buffer,
-                55,
+                64,
                 PH_ALIGN_RIGHT,
                 DT_RIGHT,
                 TRUE,
@@ -380,6 +395,7 @@ static VOID EtpProcessTreeGetTotalsText(
     switch (Message->SubId)
     {
     case ETPRTNC_GPU:
+    case ETPRTNC_GPUADAPTER_FIRST: // TaskManagerPlus: the default GPU column (adapter 0)
         {
             FLOAT usage = EtGpuNodeUsage * 100;
 
@@ -401,7 +417,7 @@ static VOID EtpProcessTreeGetTotalsText(
             if (Message->SubId != ETPRTNC_NETWORKRECEIVERATE)
                 number += EtNetworkSendDelta.Delta;
 
-            PhInitFormatSize(&format[0], EtCalculateRate(number));
+            PhInitFormatSizeWithPrecision(&format[0], EtCalculateRate(number), 1); // TaskManagerPlus: short, e.g. 321.3 kB/s
             PhInitFormatS(&format[1], L"/s");
         }
         break;
