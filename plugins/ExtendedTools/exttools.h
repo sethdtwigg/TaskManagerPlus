@@ -1619,27 +1619,6 @@ PPH_STRING EtFwGetSidFullNameCachedSlow(
     _In_ PSID Sid
     );
 
-VOID EtFwDrawCountryIcon(
-    _In_ HDC hdc,
-    _In_ RECT rect,
-    _In_ LONG Index
-    );
-
-VOID EtFwShowPingWindow(
-    _In_ HWND ParentWindowHandle,
-    _In_ PH_IP_ENDPOINT Endpoint
-    );
-
-VOID EtFwShowTracerWindow(
-    _In_ HWND ParentWindowHandle,
-    _In_ PH_IP_ENDPOINT Endpoint
-    );
-
-VOID EtFwShowWhoisWindow(
-    _In_ HWND ParentWindowHandle,
-    _In_ PH_IP_ENDPOINT Endpoint
-    );
-
 //VOID EtFwShowEventProperties(
 //    _In_ HWND ParentWindowHandle,
 //    _In_ PFW_EVENT_ITEM Item

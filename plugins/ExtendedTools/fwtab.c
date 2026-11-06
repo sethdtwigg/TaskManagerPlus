@@ -1142,10 +1142,7 @@ int __cdecl EtFwNodeNoOrderSortFunction(
 
 typedef enum _FW_ITEM_COMMAND_ID
 {
-    FW_ITEM_COMMAND_ID_PING = 1,
-    FW_ITEM_COMMAND_ID_TRACERT,
-    FW_ITEM_COMMAND_ID_WHOIS,
-    FW_ITEM_COMMAND_ID_GOTOPROCESS,
+    FW_ITEM_COMMAND_ID_GOTOPROCESS = 1,
     FW_ITEM_COMMAND_ID_OPENFILELOCATION,
     FW_ITEM_COMMAND_ID_INSPECT,
     FW_ITEM_COMMAND_ID_PROPERTIES,
@@ -1740,13 +1737,6 @@ BOOLEAN NTAPI FwTreeNewCallback(
             {
                 if (node->RemoteCountryName)
                 {
-                    if (node->CountryIconIndex != INT_ERROR)
-                    {
-                        rect.left += FwTreeLeftMarginPadding;
-                        EtFwDrawCountryIcon(hdc, rect, node->CountryIconIndex);
-                        rect.left += FwTreeRightMarginPadding;
-                    }
-
                     DrawText(
                         hdc,
                         node->RemoteCountryName->Buffer,
@@ -1957,36 +1947,6 @@ VOID EtFwHandleFwCommand(
 {
     switch (Id)
     {
-    case FW_ITEM_COMMAND_ID_PING:
-        {
-            PFW_EVENT_ITEM entry;
-
-            if (entry = EtFwGetSelectedFwItem())
-            {
-                EtFwShowPingWindow(SystemInformer_GetWindowHandle(), entry->RemoteEndpoint);
-            }
-        }
-        break;
-    case FW_ITEM_COMMAND_ID_TRACERT:
-        {
-            PFW_EVENT_ITEM entry;
-
-            if (entry = EtFwGetSelectedFwItem())
-            {
-                EtFwShowTracerWindow(SystemInformer_GetWindowHandle(), entry->RemoteEndpoint);
-            }
-        }
-        break;
-    case FW_ITEM_COMMAND_ID_WHOIS:
-        {
-            PFW_EVENT_ITEM entry;
-
-            if (entry = EtFwGetSelectedFwItem())
-            {
-                EtFwShowWhoisWindow(SystemInformer_GetWindowHandle(), entry->RemoteEndpoint);
-            }
-        }
-        break;
     case FW_ITEM_COMMAND_ID_GOTOPROCESS:
         {
             PFW_EVENT_ITEM entry;
@@ -2110,15 +2070,8 @@ VOID ShowFwContextMenu(
     {
         PPH_EMENU menu;
         PPH_EMENU_ITEM item;
-        PPH_EMENU_ITEM pingMenu;
-        PPH_EMENU_ITEM traceMenu;
-        PPH_EMENU_ITEM whoisMenu;
 
         menu = PhCreateEMenu();
-        PhInsertEMenuItem(menu, pingMenu = PhCreateEMenuItem(0, FW_ITEM_COMMAND_ID_PING, L"&Ping", NULL, NULL), ULONG_MAX);
-        PhInsertEMenuItem(menu, traceMenu = PhCreateEMenuItem(0, FW_ITEM_COMMAND_ID_TRACERT, L"&Traceroute", NULL, NULL), ULONG_MAX);
-        PhInsertEMenuItem(menu, whoisMenu = PhCreateEMenuItem(0, FW_ITEM_COMMAND_ID_WHOIS, L"&Whois", NULL, NULL), ULONG_MAX);
-        PhInsertEMenuItem(menu, PhCreateEMenuSeparator(), ULONG_MAX);
         PhInsertEMenuItem(menu, PhCreateEMenuItem(0, FW_ITEM_COMMAND_ID_GOTOPROCESS, L"&Go to process", NULL, NULL), ULONG_MAX);
         PhInsertEMenuItem(menu, PhCreateEMenuSeparator(), ULONG_MAX);
         PhInsertEMenuItem(menu, PhCreateEMenuItem(0, FW_ITEM_COMMAND_ID_OPENFILELOCATION, L"Open &file location\bEnter", NULL, NULL), ULONG_MAX);
@@ -2130,42 +2083,6 @@ VOID ShowFwContextMenu(
         InitializeFwMenu(menu, fwItems, numberOfFwItems);
         PhInsertCopyCellEMenuItem(menu, FW_ITEM_COMMAND_ID_COPY, TreeWindowHandle, ContextMenuEvent->Column);
         PhSetFlagsEMenuItem(menu, FW_ITEM_COMMAND_ID_GOTOPROCESS, PH_EMENU_DEFAULT, PH_EMENU_DEFAULT);
-
-        if (PhIsNullIpAddress(&fwItems[0]->RemoteEndpoint.Address))
-        {
-            PhSetDisabledEMenuItem(pingMenu);
-            PhSetDisabledEMenuItem(traceMenu);
-            PhSetDisabledEMenuItem(whoisMenu);
-        }
-        else if (fwItems[0]->RemoteEndpoint.Address.Type == PH_NETWORK_TYPE_IPV4)
-        {
-            if (
-                IN4_IS_ADDR_UNSPECIFIED(&fwItems[0]->RemoteEndpoint.Address.InAddr) ||
-                IN4_IS_ADDR_LOOPBACK(&fwItems[0]->RemoteEndpoint.Address.InAddr)
-                )
-            {
-                PhSetDisabledEMenuItem(pingMenu);
-                PhSetDisabledEMenuItem(traceMenu);
-                PhSetDisabledEMenuItem(whoisMenu);
-            }
-
-            if (IN4_IS_ADDR_RFC1918(&fwItems[0]->RemoteEndpoint.Address.InAddr))
-            {
-                PhSetDisabledEMenuItem(whoisMenu);
-            }
-        }
-        else if (fwItems[0]->RemoteEndpoint.Address.Type == PH_NETWORK_TYPE_IPV6)
-        {
-            if (
-                IN6_IS_ADDR_UNSPECIFIED(&fwItems[0]->RemoteEndpoint.Address.In6Addr) ||
-                IN6_IS_ADDR_LOOPBACK(&fwItems[0]->RemoteEndpoint.Address.In6Addr)
-                )
-            {
-                PhSetDisabledEMenuItem(pingMenu);
-                PhSetDisabledEMenuItem(traceMenu);
-                PhSetDisabledEMenuItem(whoisMenu);
-            }
-        }
 
         item = PhShowEMenu(
             menu,

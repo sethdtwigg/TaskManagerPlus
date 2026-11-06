@@ -10,7 +10,6 @@
  */
 
 #include "exttools.h"
-#include <networktoolsintf.h>
 #include <workqueue.h>
 #include <fwpmu.h>
 #include <fwpsu.h>
@@ -28,8 +27,6 @@ ULONG EtFwMaxEventAge = 60;
 SLIST_HEADER EtFwPacketListHead;
 PH_FREE_LIST EtFwPacketFreeList;
 RTL_STATIC_LIST_HEAD(EtFwAgeListHead);
-BOOLEAN EtFwEnableResolveCache = TRUE;
-BOOLEAN EtFwEnableResolveDoH = FALSE;
 BOOLEAN EtFwIgnoreOnError = TRUE;
 BOOLEAN EtFwIgnorePortScan = FALSE;
 BOOLEAN EtFwIgnoreLoopback = TRUE;
@@ -713,175 +710,6 @@ BOOLEAN FwProcessEventType(
 }
 
 /**
- * Resolves a hostname for an IP address.
- *
- * \param Address The IP address to resolve.
- * \return A string containing the resolved hostname, an empty string for local
- * addresses that should be cached as unresolved, or NULL if resolution fails.
- * \remarks Local, multicast and private addresses are queried without DoH and
- * may be cached as an empty string to prevent recursive firewall events.
- */
-PPH_STRING EtFwGetNameFromAddress(
-    _In_ PPH_IP_ADDRESS Address
-    )
-{
-    BOOLEAN dnsLocalQuery = FALSE;
-    PPH_STRING addressEndpointString = NULL;
-    PPH_STRING addressReverseString = NULL;
-    PDNS_RECORD dnsRecordList;
-
-    switch (Address->Type)
-    {
-    case PH_NETWORK_TYPE_IPV4:
-        {
-            if (IN4_IS_ADDR_UNSPECIFIED(&Address->InAddr))
-                return NULL;
-
-            if (IN4_IS_ADDR_LOOPBACK(&Address->InAddr) ||
-                IN4_IS_ADDR_BROADCAST(&Address->InAddr) ||
-                IN4_IS_ADDR_MULTICAST(&Address->InAddr) ||
-                IN4_IS_ADDR_LINKLOCAL(&Address->InAddr) ||
-                IN4_IS_ADDR_MC_LINKLOCAL(&Address->InAddr) ||
-                IN4_IS_ADDR_RFC1918(&Address->InAddr))
-            {
-                dnsLocalQuery = TRUE;
-            }
-
-            addressReverseString = PhDnsReverseLookupNameFromAddress(PH_NETWORK_TYPE_IPV4, &Address->InAddr);
-        }
-        break;
-    case PH_NETWORK_TYPE_IPV6:
-        {
-            if (IN6_IS_ADDR_UNSPECIFIED(&Address->In6Addr))
-                return NULL;
-
-            if (IN6_IS_ADDR_LOOPBACK(&Address->In6Addr) ||
-                IN6_IS_ADDR_MULTICAST(&Address->In6Addr) ||
-                IN6_IS_ADDR_LINKLOCAL(&Address->In6Addr) ||
-                IN6_IS_ADDR_MC_LINKLOCAL(&Address->In6Addr))
-            {
-                dnsLocalQuery = TRUE;
-            }
-
-            addressReverseString = PhDnsReverseLookupNameFromAddress(PH_NETWORK_TYPE_IPV6, &Address->In6Addr);
-        }
-        break;
-    }
-
-    if (PhIsNullOrEmptyString(addressReverseString))
-    {
-        if (dnsLocalQuery) // See note below (dmex)
-            return PhReferenceEmptyString();
-        return NULL;
-    }
-
-    if (EtFwEnableResolveDoH && !dnsLocalQuery)
-    {
-        dnsRecordList = PhDnsQuery(
-            NULL,
-            addressReverseString->Buffer,
-            DNS_TYPE_PTR
-            );
-    }
-    else
-    {
-        dnsRecordList = PhDnsQuery2(
-            NULL,
-            addressReverseString->Buffer,
-            DNS_TYPE_PTR,
-            DNS_QUERY_NO_HOSTS_FILE // DNS_QUERY_BYPASS_CACHE
-            );
-    }
-
-    PhDereferenceObject(addressReverseString);
-
-    if (dnsRecordList)
-    {
-        for (PDNS_RECORD dnsRecord = dnsRecordList; dnsRecord; dnsRecord = dnsRecord->pNext)
-        {
-            if (dnsRecord->wType == DNS_TYPE_PTR)
-            {
-                addressEndpointString = PhCreateString(dnsRecord->Data.PTR.pNameHost); // Return the first result (dmex)
-                break;
-            }
-        }
-
-        PhDnsFree(dnsRecordList);
-    }
-
-    if (dnsLocalQuery && PhIsNullOrEmptyString(addressEndpointString))
-    {
-        // If the local hostname query failed then we'll cache an empty string.
-        // The hostname lookup generates a firewall event, caching the null string for
-        // these requests prevents hostname lookups generating infinite firewall events. (dmex)
-        PhMoveReference(&addressEndpointString, PhReferenceEmptyString());
-    }
-
-    return addressEndpointString;
-}
-
-/**
- * Resolves a queued firewall item hostname.
- *
- * \param Parameter A FW_ITEM_QUERY_DATA structure.
- * \remarks The worker performs a final cache lookup, resolves the address when
- * required, updates the resolve cache and queues the completed query for the UI
- * update path.
- */
-_Function_class_(USER_THREAD_START_ROUTINE)
-NTSTATUS EtFwNetworkItemQueryWorker(
-    _In_ PVOID Parameter
-    )
-{
-    PFW_ITEM_QUERY_DATA data = (PFW_ITEM_QUERY_DATA)Parameter;
-    PPH_STRING hostString;
-    PFW_RESOLVE_CACHE_ITEM cacheItem;
-
-    // Last minute check of the cache.
-
-    PhAcquireQueuedLockShared(&EtFwCacheHashtableLock);
-    cacheItem = EtFwLookupResolveCacheItem(&data->Address);
-    hostString = cacheItem ? PhReferenceObject(cacheItem->HostString) : NULL;
-    PhReleaseQueuedLockShared(&EtFwCacheHashtableLock);
-
-    if (!hostString)
-    {
-        hostString = EtFwGetNameFromAddress(&data->Address);
-
-        if (hostString)
-        {
-            data->HostString = hostString;
-
-            // Update the cache.
-
-            PhAcquireQueuedLockExclusive(&EtFwCacheHashtableLock);
-
-            cacheItem = EtFwLookupResolveCacheItem(&data->Address);
-
-            if (!cacheItem)
-            {
-                FW_RESOLVE_CACHE_ITEM newEntry;
-
-                memset(&newEntry, 0, sizeof(FW_RESOLVE_CACHE_ITEM));
-                memcpy(&newEntry.Address, &data->Address, sizeof(data->Address));
-                newEntry.HostString = PhReferenceObject(hostString);
-                PhAddEntryHashtable(EtFwResolveCacheHashtable, &newEntry);
-            }
-
-            PhReleaseQueuedLockExclusive(&EtFwCacheHashtableLock);
-        }
-    }
-    else
-    {
-        data->HostString = hostString;
-    }
-
-    RtlInterlockedPushEntrySList(&EtFwQueryListHead, &data->ListEntry);
-
-    return STATUS_SUCCESS;
-}
-
-/**
  * Queues hostname resolution for a firewall event item endpoint.
  *
  * \param EventItem The firewall event item.
@@ -892,33 +720,11 @@ VOID EtFwQueueNetworkItemQuery(
     _In_ BOOLEAN Remote
     )
 {
-    PFW_ITEM_QUERY_DATA data;
-
-    if (!EtFwEnableResolveCache)
-    {
-        if (Remote)
-            EventItem->RemoteHostnameResolved = TRUE;
-        else
-            EventItem->LocalHostnameResolved = TRUE;
-        return;
-    }
-
-    data = PhAllocateZero(sizeof(FW_ITEM_QUERY_DATA));
-    data->EventItem = PhReferenceObject(EventItem);
-    data->Remote = Remote;
-
+    // TaskManagerPlus: offline-only fork, hostnames are never resolved (no DNS traffic).
     if (Remote)
-        data->Address = EventItem->RemoteEndpoint.Address;
+        EventItem->RemoteHostnameResolved = TRUE;
     else
-        data->Address = EventItem->LocalEndpoint.Address;
-
-    if (PhBeginInitOnce(&EtFwWorkQueueInitOnce))
-    {
-        PhInitializeWorkQueue(&EtFwWorkQueue, 0, 3, 500);
-        PhEndInitOnce(&EtFwWorkQueueInitOnce);
-    }
-
-    PhQueueItemWorkQueue(&EtFwWorkQueue, EtFwNetworkItemQueryWorker, data);
+        EventItem->LocalHostnameResolved = TRUE;
 }
 
 /**
@@ -1074,92 +880,6 @@ PPH_PROCESS_ITEM EtFwFileNameToProcess(
 }
 
 /**
- * Gets the NetworkTools plugin interface.
- *
- * \return The NetworkTools interface, or NULL if the plugin is not loaded or
- * the interface version is unsupported.
- */
-PNETWORKTOOLS_INTERFACE EtFwGetPluginInterface(
-    VOID
-    )
-{
-    static PNETWORKTOOLS_INTERFACE pluginInterface = NULL;
-    PPH_PLUGIN toolStatusPlugin;
-
-    if (!pluginInterface && (toolStatusPlugin = PhFindPlugin(NETWORKTOOLS_PLUGIN_NAME)))
-    {
-        pluginInterface = PhGetPluginInformation(toolStatusPlugin)->Interface;
-
-        if (pluginInterface && pluginInterface->Version < NETWORKTOOLS_INTERFACE_VERSION)
-            pluginInterface = NULL;
-    }
-
-    return pluginInterface;
-}
-
-/**
- * Draws a country icon using the NetworkTools plugin.
- *
- * \param hdc The destination device context.
- * \param rect The destination rectangle.
- * \param Index The country icon index.
- */
-VOID EtFwDrawCountryIcon(
-    _In_ HDC hdc,
-    _In_ RECT rect,
-    _In_ LONG Index
-    )
-{
-    if (EtFwGetPluginInterface())
-        EtFwGetPluginInterface()->DrawCountryIcon(hdc, rect, Index);
-}
-
-/**
- * Shows the NetworkTools ping window for an endpoint.
- *
- * \param ParentWindowHandle The parent window handle.
- * \param Endpoint The endpoint to ping.
- */
-VOID EtFwShowPingWindow(
-    _In_ HWND ParentWindowHandle,
-    _In_ PH_IP_ENDPOINT Endpoint
-    )
-{
-    if (EtFwGetPluginInterface())
-        EtFwGetPluginInterface()->ShowPingWindow(ParentWindowHandle, Endpoint);
-}
-
-/**
- * Shows the NetworkTools traceroute window for an endpoint.
- *
- * \param ParentWindowHandle The parent window handle.
- * \param Endpoint The endpoint to trace.
- */
-VOID EtFwShowTracerWindow(
-    _In_ HWND ParentWindowHandle,
-    _In_ PH_IP_ENDPOINT Endpoint
-    )
-{
-    if (EtFwGetPluginInterface())
-        EtFwGetPluginInterface()->ShowTracertWindow(ParentWindowHandle, Endpoint);
-}
-
-/**
- * Shows the NetworkTools WHOIS window for an endpoint.
- *
- * \param ParentWindowHandle The parent window handle.
- * \param Endpoint The endpoint to query.
- */
-VOID EtFwShowWhoisWindow(
-    _In_ HWND ParentWindowHandle,
-    _In_ PH_IP_ENDPOINT Endpoint
-    )
-{
-    if (EtFwGetPluginInterface())
-        EtFwGetPluginInterface()->ShowWhoisWindow(ParentWindowHandle, Endpoint);
-}
-
-/**
  * Looks up the service name for a TCP or UDP port.
  *
  * \param Port The port number.
@@ -1174,11 +894,7 @@ BOOLEAN EtFwLookupPortServiceName(
     _Out_ PPH_STRINGREF* ServiceName
     )
 {
-    if (EtFwGetPluginInterface())
-    {
-        return EtFwGetPluginInterface()->LookupPortServiceName(Port, ProtocolType, ServiceName);
-    }
-
+    // TaskManagerPlus: the NetworkTools plugin (port name table) was removed.
     return FALSE;
 }
 
@@ -2446,22 +2162,6 @@ VOID CALLBACK EtFwEventCallback(
     //    }
     //}
 
-    if (EtFwGetPluginInterface())
-    {
-        ULONG remoteCountryCode;
-        PPH_STRING remoteCountryName;
-
-        if (EtFwGetPluginInterface()->LookupCountryCode(
-            entry.RemoteEndpoint.Address,
-            &remoteCountryCode,
-            &remoteCountryName
-            ))
-        {
-            PhMoveReference(&entry.RemoteCountryName, remoteCountryName);
-            entry.CountryIconIndex = EtFwGetPluginInterface()->LookupCountryIcon(remoteCountryCode);
-        }
-    }
-
     if (FwpmNetEventCreateEnumHandleEx_I)
     {
         const FWPM_NET_EVENT_INTERNAL* FwEventInternal = (const FWPM_NET_EVENT_INTERNAL*)FwEvent;
@@ -2773,8 +2473,6 @@ ULONG EtFwMonitorInitialize(
     FWPM_NET_EVENT_ENUM_TEMPLATE enumTemplate;
     FWPM_NET_EVENT_SUBSCRIPTION subscription;
 
-    EtFwEnableResolveCache = !!PhGetIntegerSetting(SETTING_ENABLE_NETWORK_RESOLVE);
-    EtFwEnableResolveDoH = !!PhGetIntegerSetting(SETTING_ENABLE_NETWORK_RESOLVE_DOH);
     EtFwIgnorePortScan = !!PhGetIntegerSetting(SETTING_NAME_FW_IGNORE_PORTSCAN);
     EtFwIgnoreLoopback = !!PhGetIntegerSetting(SETTING_NAME_FW_IGNORE_LOOPBACK);
     EtFwIgnoreAllow = !!PhGetIntegerSetting(SETTING_NAME_FW_IGNORE_ALLOW);
