@@ -73,7 +73,7 @@ VOID PhAddDefaultSettings(
     PhpAddIntegerSetting(SETTING_ENABLE_SHUTDOWN_CRITICAL_MENU, L"0");
     PhpAddIntegerSetting(SETTING_ENABLE_SHUTDOWN_BOOT_MENU, L"1");
     PhpAddIntegerSetting(SETTING_ENABLE_SILENT_CRASH_NOTIFY, L"0");
-    PhpAddIntegerSetting(SETTING_ENABLE_THEME_SUPPORT, L"0");
+    PhpAddIntegerSetting(SETTING_ENABLE_THEME_SUPPORT, L"1"); // TaskManagerPlus: themed by default (follows Windows light/dark)
     PhpAddIntegerSetting(SETTING_THEME_MODE, L"0"); // PhThemeModeAutomatic
     PhpAddIntegerSetting(SETTING_ENABLE_THEME_ACRYLIC_SUPPORT, L"0");
     PhpAddIntegerSetting(SETTING_ENABLE_THEME_ACRYLIC_WINDOW_SUPPORT, L"0");
@@ -491,12 +491,12 @@ VOID PhAddDefaultSettings(
 
     PhpAddIntegerSetting(SETTING_GRAPH_SHOW_TEXT, L"1");
     PhpAddIntegerSetting(SETTING_GRAPH_COLOR_MODE, L"0");
-    PhpAddIntegerSetting(SETTING_COLOR_CPU_KERNEL, L"00ff00");
-    PhpAddIntegerSetting(SETTING_COLOR_CPU_USER, L"0000ff");
-    PhpAddIntegerSetting(SETTING_COLOR_IO_READ_OTHER, L"00ffff");
-    PhpAddIntegerSetting(SETTING_COLOR_IO_WRITE, L"ff0077");
-    PhpAddIntegerSetting(SETTING_COLOR_PRIVATE, L"0077ff");
-    PhpAddIntegerSetting(SETTING_COLOR_PHYSICAL, L"ff8000"); // Blue
+    PhpAddIntegerSetting(SETTING_COLOR_CPU_KERNEL, L"3f7ae0"); // TaskManagerPlus: RGB(224, 122, 63)
+    PhpAddIntegerSetting(SETTING_COLOR_CPU_USER, L"8f8a0e"); // TaskManagerPlus: RGB(14, 138, 143)
+    PhpAddIntegerSetting(SETTING_COLOR_IO_READ_OTHER, L"f48542"); // TaskManagerPlus: RGB(66, 133, 244)
+    PhpAddIntegerSetting(SETTING_COLOR_IO_WRITE, L"bc47ab"); // TaskManagerPlus: RGB(171, 71, 188)
+    PhpAddIntegerSetting(SETTING_COLOR_PRIVATE, L"9aa626"); // TaskManagerPlus: RGB(38, 166, 154)
+    PhpAddIntegerSetting(SETTING_COLOR_PHYSICAL, L"e4725e"); // TaskManagerPlus: RGB(94, 114, 228)
 
     PhpAddIntegerSetting(SETTING_COLOR_POWER_USAGE, L"00ff00");
     PhpAddIntegerSetting(SETTING_COLOR_TEMPERATURE, L"0000ff");
