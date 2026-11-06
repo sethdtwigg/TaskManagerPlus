@@ -181,6 +181,10 @@ typedef struct _PH_PROCESS_NODE
 
     PH_STRINGREF TextCache[PHPRTLC_MAXIMUM];
 
+    // TaskManagerPlus: process grouping (see procgroup.c)
+    ULONG GroupId;
+    PPH_LIST GroupChildren;
+
     // If the user has selected certain columns we need extra information that isn't retrieved by
     // the process provider.
     ULONG ValidMask;
@@ -445,6 +449,11 @@ VOID
 NTAPI
 PhExpandAllProcessNodes(
     _In_ BOOLEAN Expand
+    );
+
+// TaskManagerPlus
+VOID PhToggleProcessGrouping(
+    VOID
     );
 
 PHAPPAPI

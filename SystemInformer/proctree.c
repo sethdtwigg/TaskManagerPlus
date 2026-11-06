@@ -20,6 +20,7 @@
 
 #include <phapp.h>
 #include <proctree.h>
+#include <procgroup.h> // TaskManagerPlus
 
 #include <appresolver.h>
 #include <cpysave.h>
@@ -114,6 +115,8 @@ VOID PhInitializeProcessTreeList(
     TreeNew_SetRedraw(hwnd, FALSE);
     TreeNew_SetExtendedFlags(hwnd, TN_FLAG_ITEM_DRAG_SELECT, TN_FLAG_ITEM_DRAG_SELECT);
     TreeNew_SetCallback(hwnd, PhpProcessTreeNewCallback, NULL);
+    PhGroupInitialization(hwnd); // TaskManagerPlus
+    TreeNew_SetTotalsRow(hwnd, TRUE); // TaskManagerPlus: totals row under the headers
     TreeNew_SetImageList(hwnd, PhProcessSmallImageList);
     TreeNew_SetMaxId(hwnd, PHPRTLC_MAXIMUM - 1);
 
@@ -529,6 +532,8 @@ PPH_PROCESS_NODE PhAddProcessNode(
 
     PhEmCallObjectOperation(EmProcessNodeType, processNode, EmObjectCreate);
 
+    PhGroupRebuild(ProcessNodeList); // TaskManagerPlus
+
     TreeNew_NodesStructured(ProcessTreeListHandle);
 
     return processNode;
@@ -624,6 +629,10 @@ VOID PhpRemoveProcessNode(
         PhRemoveItemList(ProcessNodeList, index);
 
     PhDereferenceObject(ProcessNode->Children);
+
+    // TaskManagerPlus: drop the node from the group lists before it is freed.
+    PhClearReference(&ProcessNode->GroupChildren);
+    PhGroupRebuild(ProcessNodeList);
 
     PhClearReference(&ProcessNode->WindowText);
     PhClearReference(&ProcessNode->AppIdText);
@@ -762,6 +771,8 @@ VOID PhTickProcessNodes(
     }
 
     fullyInvalidated = FALSE;
+
+    PhGroupTick(ProcessNodeList); // TaskManagerPlus: refresh groups and repaint the totals row
 
     if (PhCsSortRootProcesses || PhCsSortChildProcesses || ProcessTreeListSortOrder != NoSortOrder)
     {
@@ -3111,6 +3122,14 @@ BOOLEAN NTAPI PhpProcessTreeNewCallback(
 {
     PPH_PROCESS_NODE node;
 
+    // TaskManagerPlus: group header rows and the totals row never reach the generic code.
+    {
+        BOOLEAN groupResult;
+
+        if (PhGroupTreeNewCallback(Message, Parameter1, &groupResult))
+            return groupResult;
+    }
+
     if (PhCmForwardMessage(hwnd, Message, Parameter1, Parameter2, &ProcessTreeListCm))
         return TRUE;
 
@@ -3128,7 +3147,21 @@ BOOLEAN NTAPI PhpProcessTreeNewCallback(
             sortColumn = ProcessTreeListSortColumn;
             sortOrder = ProcessTreeListSortOrder;
 
-            if (PhCsSortChildProcesses)
+            if (PhGroupGetChildren(
+                node,
+                getChildren,
+                !!PhCsSortChildProcesses,
+                !!PhCsSortRootProcesses,
+                sortOrder,
+                &sortList,
+                &sortColumn,
+                &sortOrder,
+                PHPRTLC_PID
+                ))
+            {
+                // TaskManagerPlus: grouped view, children supplied above.
+            }
+            else if (PhCsSortChildProcesses)
             {
                 if (!node)
                 {
@@ -3323,7 +3356,7 @@ BOOLEAN NTAPI PhpProcessTreeNewCallback(
             node = (PPH_PROCESS_NODE)isLeaf->Node;
 
             if (PhCsSortChildProcesses || ProcessTreeListSortOrder == NoSortOrder)
-                isLeaf->IsLeaf = node->Children->Count == 0;
+                isLeaf->IsLeaf = (PhGroupGetNodeChildren(node) ? PhGroupGetNodeChildren(node) : node->Children)->Count == 0; // TaskManagerPlus
             else
                 isLeaf->IsLeaf = TRUE;
         }
@@ -6187,8 +6220,19 @@ VOID PhExpandAllProcessNodes(
         }
     }
 
+    if (PhGroupExpandAll(Expand)) // TaskManagerPlus: the group header rows
+        needsRestructure = TRUE;
+
     if (needsRestructure)
         TreeNew_NodesStructured(ProcessTreeListHandle);
+}
+
+// TaskManagerPlus: View > Group processes.
+VOID PhToggleProcessGrouping(
+    VOID
+    )
+{
+    PhGroupSetEnabled(!PhGroupEnabled(), ProcessNodeList);
 }
 
 VOID PhInvalidateAllProcessNodes(

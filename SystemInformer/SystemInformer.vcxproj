@@ -307,6 +307,7 @@
         <ClCompile Include="procprv.c" />
         <ClCompile Include="procrec.c" />
         <ClCompile Include="proctree.c" />
+        <ClCompile Include="procgroup.c" />
         <ClCompile Include="prpgenv.c" />
         <ClCompile Include="prpggen.c" />
         <ClCompile Include="prpghndl.c" />
@@ -389,6 +390,7 @@
         <ClInclude Include="include\procprpp.h" />
         <ClInclude Include="include\procprv.h" />
         <ClInclude Include="include\proctree.h" />
+        <ClInclude Include="include\procgroup.h" />
         <ClInclude Include="include\srvlist.h" />
         <ClInclude Include="include\srvprv.h" />
         <ClInclude Include="include\sysinfo.h" />

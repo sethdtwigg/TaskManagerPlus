@@ -1438,6 +1438,11 @@ VOID PhMwpOnCommand(
             PhMwpToggleCurrentUserProcessTreeFilter();
         }
         break;
+    case ID_VIEW_GROUPPROCESSES: // TaskManagerPlus
+        {
+            PhToggleProcessGrouping();
+        }
+        break;
     case ID_VIEW_HIDESIGNEDPROCESSES:
         {
             PhMwpToggleSignedProcessTreeFilter(WindowHandle);

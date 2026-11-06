@@ -161,6 +161,7 @@ VOID PhAddDefaultSettings(
     PhpAddIntegerSetting(SETTING_HIDE_ON_MINIMIZE, L"0");
     PhpAddIntegerSetting(SETTING_HIDE_OTHER_USER_PROCESSES, L"0");
     PhpAddIntegerSetting(SETTING_HIDE_SIGNED_PROCESSES, L"0");
+    PhpAddIntegerSetting(SETTING_GROUP_PROCESSES, L"1"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_HIDE_MICROSOFT_PROCESSES, L"0");
     PhpAddIntegerSetting(SETTING_HIDE_WAITING_CONNECTIONS, L"0");
     PhpAddIntegerSetting(SETTING_HIGHLIGHTING_DURATION, L"3e8"); // 1000ms

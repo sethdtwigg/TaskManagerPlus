@@ -360,6 +360,7 @@ EXT ULONG PhCsProcessMonitorCacheLimit;
 #define SETTING_HIDE_ON_MINIMIZE                                    L"HideOnMinimize"
 #define SETTING_HIDE_OTHER_USER_PROCESSES                           L"HideOtherUserProcesses"
 #define SETTING_HIDE_SIGNED_PROCESSES                               L"HideSignedProcesses"
+#define SETTING_GROUP_PROCESSES                                     L"GroupProcesses" // TaskManagerPlus
 #define SETTING_HIDE_MICROSOFT_PROCESSES                            L"HideMicrosoftProcesses"
 #define SETTING_HIDE_WAITING_CONNECTIONS                            L"HideWaitingConnections"
 #define SETTING_HIGHLIGHTING_DURATION                               L"HighlightingDuration"
