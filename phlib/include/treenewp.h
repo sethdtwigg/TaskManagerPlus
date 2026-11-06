@@ -116,6 +116,7 @@ typedef struct _PH_TREENEW_CONTEXT
     LONG HeaderHeight;
     LONG TotalsTop; // TaskManagerPlus: top of the totals row, valid when TotalsRowEnabled
     BOOLEAN TotalsRowEnabled; // TaskManagerPlus: a totals row sits under the column headers
+    BOOLEAN CellHeatEnabled; // TaskManagerPlus: ask the callback for heat-map cell tints and paint an overlay
     LONG RowHeight;
     LONG VScrollWidth;
     LONG HScrollHeight;

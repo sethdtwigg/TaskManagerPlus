@@ -279,6 +279,8 @@ typedef enum _PH_TREENEW_MESSAGE
 
     TreeNewGetHeaderText,
     TreeNewGetTotalsText, // PPH_TREENEW_GET_TOTALS_TEXT Parameter1 (TaskManagerPlus)
+    TreeNewGetCellHeat, // PPH_TREENEW_GET_CELL_HEAT Parameter1 (TaskManagerPlus)
+    TreeNewPaintOverlay, // PPH_TREENEW_PAINT_OVERLAY Parameter1 (TaskManagerPlus)
 
     TreeNewDpiChanged, // PH_TREENEW_DPICHANGED_EVENT Parameter1
 
@@ -306,6 +308,36 @@ typedef struct _PH_TREENEW_GET_TOTALS_TEXT
     ULONG ColumnId; // in
     PH_STRINGREF Text; // out; must stay valid until the next callback
 } PH_TREENEW_GET_TOTALS_TEXT, *PPH_TREENEW_GET_TOTALS_TEXT;
+
+// TaskManagerPlus: heat map. The control asks, per painted cell, for a background tint.
+// Plugin columns answer by filling Kind and Value only; the core turns that into colours.
+#define PH_HEAT_KIND_NONE 0
+#define PH_HEAT_KIND_CPU 1 // Value: percent, 0..100
+#define PH_HEAT_KIND_MEMORY 2 // Value: bytes
+#define PH_HEAT_KIND_DISK 3 // Value: bytes per second
+#define PH_HEAT_KIND_NETWORK 4 // Value: bytes per second
+#define PH_HEAT_KIND_GPU 5 // Value: percent, 0..100
+
+typedef struct _PH_TREENEW_GET_CELL_HEAT
+{
+    ULONG Flags; // unused; keeps Node where the other per-node messages have it
+    PPH_TREENEW_NODE Node; // in
+    PPH_TREENEW_COLUMN Column; // in
+    COLORREF RowBackColor; // in: what the row would be filled with
+    COLORREF RowTextColor; // in: what the cell text would be drawn with
+    ULONG Kind; // out (plugin columns): one of PH_HEAT_KIND_*
+    DOUBLE Value; // out (plugin columns)
+    COLORREF BackColor; // out (core): tinted fill; set only when the callback returns TRUE
+    COLORREF TextColor; // out (core): text colour that keeps >= 4.5:1 contrast on BackColor
+} PH_TREENEW_GET_CELL_HEAT, *PPH_TREENEW_GET_CELL_HEAT;
+
+// TaskManagerPlus: painted last, over the rows. The callback may draw into Dc.
+typedef struct _PH_TREENEW_PAINT_OVERLAY
+{
+    HDC Dc; // in
+    RECT ClientRect; // in
+    RECT PaintRect; // in
+} PH_TREENEW_PAINT_OVERLAY, *PPH_TREENEW_PAINT_OVERLAY;
 
 typedef struct _PH_TREENEW_GET_CHILDREN
 {
@@ -539,7 +571,8 @@ typedef struct _PH_TREENEW_GET_CELL_PARTS
 #define TNM_GETSELECTEDNODES (WM_USER + 58)
 // TaskManagerPlus: totals row under the column headers.
 #define TNM_SETTOTALSROW (WM_USER + 59)
-#define TNM_LAST (WM_USER + 59)
+#define TNM_SETCELLHEAT (WM_USER + 60) // TaskManagerPlus
+#define TNM_LAST (WM_USER + 60)
 
 typedef struct _PH_TREENEW_SELECTED_NODES
 {
@@ -727,6 +760,10 @@ EXTERN_C LRESULT PhTnSendMessage(
 #define TreeNew_SetTotalsRow(hWnd, Enable) \
     PhTnSendMessage((hWnd), TNM_SETTOTALSROW, (WPARAM)(Enable), 0)
 
+#define TreeNew_SetCellHeat(hWnd, Enable) \
+    PhTnSendMessage((hWnd), TNM_SETCELLHEAT, (WPARAM)(Enable), 0)
+
+
 #define TreeNew_GetCellParts(hWnd, Parts) \
     ((BOOLEAN)PhTnSendMessage((hWnd), TNM_GETCELLPARTS, 0, (LPARAM)(Parts)))
 
@@ -893,6 +930,10 @@ EXTERN_C LRESULT PhTnSendMessage(
 
 #define TreeNew_SetTotalsRow(hWnd, Enable) \
     SendMessage((hWnd), TNM_SETTOTALSROW, (WPARAM)(Enable), 0)
+
+#define TreeNew_SetCellHeat(hWnd, Enable) \
+    SendMessage((hWnd), TNM_SETCELLHEAT, (WPARAM)(Enable), 0)
+
 
 #define TreeNew_GetCellParts(hWnd, Parts) \
     SendMessage((hWnd), TNM_GETCELLPARTS, 0, (LPARAM)(Parts))

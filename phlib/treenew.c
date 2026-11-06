@@ -2683,6 +2683,17 @@ LRESULT PhTnpOnUserMessage(
             }
         }
         return TRUE;
+    case TNM_SETCELLHEAT: // TaskManagerPlus
+        {
+            BOOLEAN enable = !!WParam;
+
+            if (Context->CellHeatEnabled != enable)
+            {
+                Context->CellHeatEnabled = enable;
+                PhpTnpInvalidateContent(Context);
+            }
+        }
+        return TRUE;
     case TNM_SETCALLBACK:
         {
             Context->Callback = (PPH_TREENEW_CALLBACK)LParam;
@@ -7594,6 +7605,17 @@ VOID PhTnpProcessScroll(
         PhTnpLayoutHeader(Context);
     }
 
+    if (Context->CellHeatEnabled) // TaskManagerPlus: scrolling blitted the overlay pill too; repaint where it ended up
+    {
+        RECT overlayRect;
+
+        overlayRect.left = 0;
+        overlayRect.right = Context->ClientRect.right;
+        overlayRect.bottom = Context->ClientRect.bottom;
+        overlayRect.top = max(Context->HeaderHeight, overlayRect.bottom - 64 - labs(DeltaRows * Context->RowHeight));
+        InvalidateRect(Context->Handle, &overlayRect, FALSE);
+    }
+
     Context->ScrollTickCount = NtGetTickCount64();
 }
 
@@ -7806,6 +7828,45 @@ static VOID PhpTnpPaintTotalsRow(
         ));
     FillRect(hdc, &lineRect, PhGetStockBrush(DC_BRUSH));
 }
+
+/**
+ * TaskManagerPlus: fills one cell with its heat-map tint, if the callback supplies one.
+ *
+ * \return The previous text colour to restore after the cell is drawn, or CLR_INVALID when the cell was not tinted.
+ */
+static COLORREF PhpTnpApplyCellHeat(
+    _In_ PPH_TREENEW_CONTEXT Context,
+    _In_ HDC hdc,
+    _In_ PRECT CellRect,
+    _In_ PPH_TREENEW_NODE Node,
+    _In_ PPH_TREENEW_COLUMN Column
+    )
+{
+    PH_TREENEW_GET_CELL_HEAT heat;
+
+    // Selected rows and rows with a highlight colour (new / terminated process, services, ...) keep their look.
+    if (Node->Selected || Node->s.DrawBackColor != Context->DefaultBackColor)
+        return CLR_INVALID;
+
+    heat.Flags = 0;
+    heat.Node = Node;
+    heat.Column = Column;
+    heat.RowBackColor = Context->ThemeSupport ? PhThemeWindowBackgroundColor : Node->s.DrawBackColor;
+    heat.RowTextColor = Context->ThemeSupport ? PhThemeWindowTextColor : Node->s.DrawForeColor;
+    heat.Kind = PH_HEAT_KIND_NONE;
+    heat.Value = 0;
+    heat.BackColor = heat.RowBackColor;
+    heat.TextColor = heat.RowTextColor;
+
+    if (!Context->Callback(Context->Handle, TreeNewGetCellHeat, &heat, NULL, Context->CallbackContext))
+        return CLR_INVALID;
+
+    SetDCBrushColor(hdc, heat.BackColor);
+    FillRect(hdc, CellRect, PhGetStockBrush(DC_BRUSH));
+
+    return SetTextColor(hdc, heat.TextColor);
+}
+
 
 /**
  * Paints the tree view control.
@@ -8115,7 +8176,14 @@ VOID PhTnpPaint(
 
                 cellRect.left = cellRect.right;
                 cellRect.right = cellRect.left + column->Width;
-                PhTnpDrawCell(Context, hdc, &cellRect, node, column, i, j);
+                {
+                    COLORREF heatOldText = Context->CellHeatEnabled ? PhpTnpApplyCellHeat(Context, hdc, &cellRect, node, column) : CLR_INVALID; // TaskManagerPlus
+
+                    PhTnpDrawCell(Context, hdc, &cellRect, node, column, i, j);
+
+                    if (heatOldText != CLR_INVALID)
+                        SetTextColor(hdc, heatOldText);
+                }
             }
 
             // The cached region stays alive for the next row; only the clip selection is restored.
@@ -8202,6 +8270,16 @@ VOID PhTnpPaint(
 
     if (Context->TotalsRowEnabled) // TaskManagerPlus
         PhpTnpPaintTotalsRow(Context, hdc, PaintRect);
+
+    if (Context->CellHeatEnabled) // TaskManagerPlus: overlay (the "N Processes" pill)
+    {
+        PH_TREENEW_PAINT_OVERLAY overlay;
+
+        overlay.Dc = hdc;
+        overlay.ClientRect = Context->ClientRect;
+        overlay.PaintRect = *PaintRect;
+        Context->Callback(Context->Handle, TreeNewPaintOverlay, &overlay, NULL, Context->CallbackContext);
+    }
 
     if (Context->FixedDividerVisible && Context->FixedWidth >= PaintRect->left && Context->FixedWidth < PaintRect->right)
     {
