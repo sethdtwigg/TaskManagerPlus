@@ -278,6 +278,7 @@ typedef enum _PH_TREENEW_MESSAGE
     TreeNewGetDialogCode, // ULONG Parameter1, PULONG Parameter2
 
     TreeNewGetHeaderText,
+    TreeNewGetTotalsText, // PPH_TREENEW_GET_TOTALS_TEXT Parameter1 (TaskManagerPlus)
 
     TreeNewDpiChanged, // PH_TREENEW_DPICHANGED_EVENT Parameter1
 
@@ -298,6 +299,13 @@ NTAPI PH_TREENEW_CALLBACK(
     _In_opt_ PVOID Context
     );
 typedef PH_TREENEW_CALLBACK* PPH_TREENEW_CALLBACK;
+
+// TaskManagerPlus: query for the text of one cell in the totals row.
+typedef struct _PH_TREENEW_GET_TOTALS_TEXT
+{
+    ULONG ColumnId; // in
+    PH_STRINGREF Text; // out; must stay valid until the next callback
+} PH_TREENEW_GET_TOTALS_TEXT, *PPH_TREENEW_GET_TOTALS_TEXT;
 
 typedef struct _PH_TREENEW_GET_CHILDREN
 {
@@ -529,7 +537,9 @@ typedef struct _PH_TREENEW_GET_CELL_PARTS
 #define TNM_GETCELLPARTS (WM_USER + 56)
 #define TNM_SETSTYLEFLAGS (WM_USER + 57)
 #define TNM_GETSELECTEDNODES (WM_USER + 58)
-#define TNM_LAST (WM_USER + 58)
+// TaskManagerPlus: totals row under the column headers.
+#define TNM_SETTOTALSROW (WM_USER + 59)
+#define TNM_LAST (WM_USER + 59)
 
 typedef struct _PH_TREENEW_SELECTED_NODES
 {
@@ -714,6 +724,9 @@ EXTERN_C LRESULT PhTnSendMessage(
 #define TreeNew_SelectFirstVisibleNode(hWnd) \
     PhTnSendMessage((hWnd), TNM_FOCUSVISIBLENODE, 0, 0)
 
+#define TreeNew_SetTotalsRow(hWnd, Enable) \
+    PhTnSendMessage((hWnd), TNM_SETTOTALSROW, (WPARAM)(Enable), 0)
+
 #define TreeNew_GetCellParts(hWnd, Parts) \
     ((BOOLEAN)PhTnSendMessage((hWnd), TNM_GETCELLPARTS, 0, (LPARAM)(Parts)))
 
@@ -877,6 +890,9 @@ EXTERN_C LRESULT PhTnSendMessage(
 
 #define TreeNew_SelectFirstVisibleNode(hWnd) \
     SendMessage((hWnd), TNM_FOCUSVISIBLENODE, 0, 0)
+
+#define TreeNew_SetTotalsRow(hWnd, Enable) \
+    SendMessage((hWnd), TNM_SETTOTALSROW, (WPARAM)(Enable), 0)
 
 #define TreeNew_GetCellParts(hWnd, Parts) \
     SendMessage((hWnd), TNM_GETCELLPARTS, 0, (LPARAM)(Parts))

@@ -114,6 +114,8 @@ typedef struct _PH_TREENEW_CONTEXT
 
     RECT ClientRect;
     LONG HeaderHeight;
+    LONG TotalsTop; // TaskManagerPlus: top of the totals row, valid when TotalsRowEnabled
+    BOOLEAN TotalsRowEnabled; // TaskManagerPlus: a totals row sits under the column headers
     LONG RowHeight;
     LONG VScrollWidth;
     LONG HScrollHeight;

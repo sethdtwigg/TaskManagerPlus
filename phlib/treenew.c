@@ -2670,6 +2670,19 @@ LRESULT PhTnpOnUserMessage(
             PhpTnpInvalidateContent(Context);
         }
         return TRUE;
+    case TNM_SETTOTALSROW: // TaskManagerPlus
+        {
+            BOOLEAN enable = !!WParam;
+
+            if (Context->TotalsRowEnabled != enable)
+            {
+                Context->TotalsRowEnabled = enable;
+                PhTnpInvalidateLayoutCache(Context);
+                PhTnpLayout(Context);
+                PhpTnpInvalidateContent(Context);
+            }
+        }
+        return TRUE;
     case TNM_SETCALLBACK:
         {
             Context->Callback = (PPH_TREENEW_CALLBACK)LParam;
@@ -3770,6 +3783,11 @@ VOID PhTnpLayoutHeader(
             InvalidateRect(Context->FixedHeaderHandle, NULL, FALSE);
         }
         Context->HeaderHeight = outRect.bottom;
+
+        // TaskManagerPlus: reserve a totals row between the header and the first row.
+        Context->TotalsTop = Context->HeaderHeight;
+        if (Context->TotalsRowEnabled)
+            Context->HeaderHeight += Context->RowHeight;
 
         // Normal portion header control
         rect.left = Context->NormalLeft - Context->HScrollPosition;
@@ -7692,6 +7710,103 @@ VOID PhTnpDestroyBufferedContext(
 }
 
 
+// TaskManagerPlus: paints one cell of the totals row.
+static VOID PhpTnpPaintTotalsCell(
+    _In_ PPH_TREENEW_CONTEXT Context,
+    _In_ HDC hdc,
+    _In_ PPH_TREENEW_COLUMN Column,
+    _In_ LONG Left,
+    _In_ LONG Top,
+    _In_ LONG Bottom
+    )
+{
+    PH_TREENEW_GET_TOTALS_TEXT totals;
+    RECT textRect;
+    ULONG flags;
+
+    memset(&totals, 0, sizeof(totals));
+    totals.ColumnId = Column->Id;
+
+    if (!Context->Callback(Context->Handle, TreeNewGetTotalsText, &totals, NULL, Context->CallbackContext))
+        return;
+    if (totals.Text.Length == 0)
+        return;
+
+    textRect.left = Left + Context->CellMarginLeft;
+    textRect.right = Left + Column->Width - Context->CellMarginRight;
+    textRect.top = Top;
+    textRect.bottom = Bottom;
+
+    flags = DT_NOPREFIX | DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS;
+    flags |= (Column->Alignment & PH_ALIGN_RIGHT) ? DT_RIGHT : DT_LEFT;
+
+    DrawText(hdc, totals.Text.Buffer, (ULONG)totals.Text.Length / sizeof(WCHAR), &textRect, flags);
+}
+
+// TaskManagerPlus: paints the totals row between the column headers and the first row.
+static VOID PhpTnpPaintTotalsRow(
+    _In_ PPH_TREENEW_CONTEXT Context,
+    _In_ HDC hdc,
+    _In_ PRECT PaintRect
+    )
+{
+    RECT rowRect;
+    RECT lineRect;
+    LONG x;
+    INT savedDc = 0;
+    ULONG i;
+
+    rowRect.left = 0;
+    rowRect.top = Context->TotalsTop;
+    rowRect.right = Context->ClientRect.right;
+    rowRect.bottom = Context->HeaderHeight;
+
+    if (rowRect.bottom <= rowRect.top || rowRect.top >= PaintRect->bottom || rowRect.bottom <= PaintRect->top)
+        return;
+
+    if (Context->ThemeSupport)
+        FillRect(hdc, &rowRect, PhThemeWindowBackgroundBrush);
+    else
+        FillRect(hdc, &rowRect, (HBRUSH)(COLOR_WINDOW + 1));
+
+    SelectFont(hdc, Context->Font);
+    SetBkMode(hdc, TRANSPARENT);
+    SetTextColor(hdc, Context->ThemeSupport ? PhThemeWindowTextColor : GetSysColor(COLOR_WINDOWTEXT));
+
+    // The normal columns scroll horizontally; keep them out of the fixed column.
+
+    if (Context->FixedColumnVisible)
+        savedDc = SaveDC(hdc);
+        IntersectClipRect(hdc, Context->NormalLeft, rowRect.top, rowRect.right, rowRect.bottom);
+
+    x = Context->NormalLeft - Context->HScrollPosition;
+
+    for (i = 0; i < Context->NumberOfColumnsByDisplay; i++)
+    {
+        PPH_TREENEW_COLUMN column = Context->ColumnsByDisplay[i];
+
+        PhpTnpPaintTotalsCell(Context, hdc, column, x, rowRect.top, rowRect.bottom);
+        x += column->Width;
+    }
+
+    if (Context->FixedColumnVisible)
+    {
+        RestoreDC(hdc, savedDc);
+        PhpTnpPaintTotalsCell(Context, hdc, Context->FixedColumn, 0, rowRect.top, rowRect.bottom);
+    }
+
+    // Hairline under the row, a faint blend of the text color over the background.
+
+    lineRect = rowRect;
+    lineRect.top = lineRect.bottom - 1;
+    SetDCBrushColor(hdc, PhpTnpBlendColor(
+        Context->ThemeSupport ? PhThemeWindowBackgroundColor : GetSysColor(COLOR_WINDOW),
+        Context->ThemeSupport ? PhThemeWindowTextColor : GetSysColor(COLOR_WINDOWTEXT),
+        40
+        ));
+    FillRect(hdc, &lineRect, PhGetStockBrush(DC_BRUSH));
+}
+
 /**
  * Paints the tree view control.
  *
@@ -8084,6 +8199,9 @@ VOID PhTnpPaint(
             DT_NOPREFIX | DT_CENTER | DT_END_ELLIPSIS
             );
     }
+
+    if (Context->TotalsRowEnabled) // TaskManagerPlus
+        PhpTnpPaintTotalsRow(Context, hdc, PaintRect);
 
     if (Context->FixedDividerVisible && Context->FixedWidth >= PaintRect->left && Context->FixedWidth < PaintRect->right)
     {
