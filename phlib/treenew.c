@@ -3776,6 +3776,8 @@ VOID PhTnpLayoutHeader(
         // TaskManagerPlus: ~+25% header height on an 8px grid.
         if (!Context->HeaderCustomDraw)
             outRect.bottom = PhTnpComfortableHeight(outRect.bottom, Context->WindowDpi);
+        else if (Context->TotalsRowEnabled && Context->RowHeight) // TaskManagerPlus: single-line header, same height as a row (8px grid)
+            outRect.bottom = Context->RowHeight;
 
         if (!PhEqualRect(&outRect, &Context->FixedHeaderLastOutRect))
         {
@@ -3813,6 +3815,8 @@ VOID PhTnpLayoutHeader(
         // TaskManagerPlus: ~+25% header height on an 8px grid.
         if (!Context->HeaderCustomDraw)
             outRect.bottom = PhTnpComfortableHeight(outRect.bottom, Context->WindowDpi);
+        else if (Context->TotalsRowEnabled && Context->RowHeight) // TaskManagerPlus: single-line header, same height as a row (8px grid)
+            outRect.bottom = Context->RowHeight;
 
         if (!PhEqualRect(&outRect, &Context->NormalHeaderLastOutRect))
         {
@@ -7754,12 +7758,12 @@ static VOID PhpTnpPaintTotalsCell(
     if (totals.Text.Length == 0)
         return;
 
-    textRect.left = Left + Context->CellMarginLeft;
-    textRect.right = Left + Column->Width - Context->CellMarginRight;
+    textRect.left = Left + Context->HeaderTextPadding; // lines up with the header title
+    textRect.right = Left + Column->Width - Context->HeaderTextPadding;
     textRect.top = Top;
     textRect.bottom = Bottom;
 
-    flags = DT_NOPREFIX | DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS;
+    flags = DT_NOPREFIX | DT_SINGLELINE | DT_VCENTER; // never truncated: the text formats are short
     flags |= (Column->Alignment & PH_ALIGN_RIGHT) ? DT_RIGHT : DT_LEFT;
 
     DrawText(hdc, totals.Text.Buffer, (ULONG)totals.Text.Length / sizeof(WCHAR), &textRect, flags);
@@ -7821,9 +7825,9 @@ static VOID PhpTnpPaintTotalsRow(
 
     lineRect = rowRect;
     lineRect.top = lineRect.bottom - 1;
-    SetDCBrushColor(hdc, PhpTnpBlendColor(
-        Context->ThemeSupport ? PhThemeWindowBackgroundColor : GetSysColor(COLOR_WINDOW),
-        Context->ThemeSupport ? PhThemeWindowTextColor : GetSysColor(COLOR_WINDOWTEXT),
+    SetDCBrushColor(hdc, Context->ThemeSupport ? PhThemeWindowBorderColor : PhpTnpBlendColor(
+        GetSysColor(COLOR_WINDOW),
+        GetSysColor(COLOR_WINDOWTEXT),
         40
         ));
     FillRect(hdc, &lineRect, PhGetStockBrush(DC_BRUSH));
@@ -9632,8 +9636,11 @@ BOOLEAN TnHeaderCustomPaint(
         textRect = CustomDraw->rc;
         textRect.left += Context->HeaderTextPadding;
         textRect.right -= Context->HeaderTextPadding;
-        textRect.bottom -= Context->HeaderTextPadding;
-        textRect.top += Context->HeaderTextMargin;
+        if (!Context->TotalsRowEnabled) // TaskManagerPlus: with a totals row the title is one centred line
+        {
+            textRect.bottom -= Context->HeaderTextPadding;
+            textRect.top += Context->HeaderTextMargin;
+        }
 
         SetTextColor(CustomDraw->hdc, Context->ThemeSupport ? PhThemeWindowDisabledTextColor : RGB(97, 116, 139)); // RGB(178, 178, 178)
 
@@ -9642,16 +9649,16 @@ BOOLEAN TnHeaderCustomPaint(
         {
             DrawText(
                 CustomDraw->hdc, textBuffer, textLength, &textRect,
-                DT_SINGLELINE | DT_HIDEPREFIX | DT_WORD_ELLIPSIS | DT_BOTTOM | DT_RIGHT);
+                DT_SINGLELINE | DT_HIDEPREFIX | DT_WORD_ELLIPSIS | (Context->TotalsRowEnabled ? DT_VCENTER : DT_BOTTOM) | DT_RIGHT);
         }
         else
         {
             DrawText(CustomDraw->hdc, textBuffer, textLength, &textRect,
-                DT_SINGLELINE | DT_HIDEPREFIX | DT_WORD_ELLIPSIS | DT_BOTTOM | DT_LEFT);
+                DT_SINGLELINE | DT_HIDEPREFIX | DT_WORD_ELLIPSIS | (Context->TotalsRowEnabled ? DT_VCENTER : DT_BOTTOM) | DT_LEFT);
         }
         SelectFont(CustomDraw->hdc, oldFont);
 
-        if (Context->HeaderCustomDraw && PhTnpGetColumnHeaderText(Context, column, &headerString))
+        if (Context->HeaderCustomDraw && !Context->TotalsRowEnabled && PhTnpGetColumnHeaderText(Context, column, &headerString)) // TaskManagerPlus: the totals row replaces the native header stats
         {
             SetTextColor(CustomDraw->hdc, Context->ThemeSupport ? PhThemeWindowTextColor : RGB(0, 0, 0));
             oldFont = SelectFont(CustomDraw->hdc, Context->HeaderBoldFontHandle);

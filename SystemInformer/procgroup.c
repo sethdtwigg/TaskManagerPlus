@@ -444,7 +444,7 @@ static BOOLEAN PhpGroupGetTotalsText(
             rate = PhIoReadDelta.Delta + PhIoWriteDelta.Delta + PhIoOtherDelta.Delta;
             rate = rate * 1000 / PhProcessProviderElapsedMilliseconds;
 
-            PhInitFormatSize(&format[0], rate);
+            PhInitFormatSizeWithPrecision(&format[0], rate, 1); // short, e.g. 321.3 kB/s
             PhInitFormatS(&format[1], L"/s");
             count = 2;
             buffer = TotalsDiskText;
