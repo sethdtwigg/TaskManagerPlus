@@ -52,18 +52,18 @@ static INT_PTR CALLBACK PhpAboutDlgProc(
 
             PhSetDialogItemText(hwndDlg, IDC_CREDITS,
                 L"Thanks to:\n"
-                L"    <a href=\"https://github.com/wj32\">wj32</a> - Wen Jia Liu\n"
-                L"    <a href=\"https://github.com/dmex\">dmex</a> - Steven G\n"
-                L"    <a href=\"https://github.com/jxy-s\">jxy-s</a> - Johnny Shaw\n"
-                L"    <a href=\"https://github.com/ionescu007\">ionescu007</a> - Alex Ionescu\n"
-                L"    <a href=\"https://github.com/yardenshafir\">yardenshafir</a> - Yarden Shafir\n"
-                L"    <a href=\"https://github.com/winsiderss/systeminformer/graphs/contributors\">Contributors</a> - thank you for your additions!\n"
+                L"    wj32 - Wen Jia Liu\n"
+                L"    dmex - Steven G\n"
+                L"    jxy-s - Johnny Shaw\n"
+                L"    ionescu007 - Alex Ionescu\n"
+                L"    yardenshafir - Yarden Shafir\n"
+                L"    Contributors - thank you for your additions!\n"
                 L"    Donors - thank you for your support!\n\n"
                 L"System Informer uses the following components:\n"
-                L"    <a href=\"https://github.com/GameTechDev/PresentMon\">PresentMon</a> by Intel Corporation\n"
-                L"    <a href=\"https://github.com/michaelrsweet/mxml\">Mini-XML</a> by Michael Sweet\n"
-                L"    <a href=\"https://github.com/PCRE2Project/pcre2\">PCRE2</a> by Philip Hazel\n"
-                L"    <a href=\"https://github.com/json-c/json-c\">json-c</a> by Michael Clark\n"
+                L"    PresentMon by Intel Corporation\n"
+                L"    Mini-XML by Michael Sweet\n"
+                L"    PCRE2 by Philip Hazel\n"
+                L"    json-c by Michael Clark\n"
                 L"    MD5 code by Jouni Malinen\n"
                 L"    SHA1 code by Filip Navara, based on code by Steve Reid\n"
                 );
@@ -92,27 +92,6 @@ static INT_PTR CALLBACK PhpAboutDlgProc(
             case IDC_DIAGNOSTICS:
                 {
                     PhShowInformationDialog(hwndDlg, PH_AUTO_T(PH_STRING, PhGetDiagnosticsString())->Buffer, 0);
-                }
-                break;
-            }
-        }
-        break;
-    case WM_NOTIFY:
-        {
-            LPNMHDR header = (LPNMHDR)lParam;
-
-            switch (header->code)
-            {
-            case NM_CLICK:
-                {
-                    switch (header->idFrom)
-                    {
-                    case IDC_ABOUT_NAME:
-                    case IDC_CREDITS:
-                    case IDC_LINK_SF:
-                        PhShellExecute(hwndDlg, ((PNMLINK)header)->item.szUrl, NULL);
-                        break;
-                    }
                 }
                 break;
             }
@@ -254,26 +233,9 @@ PPH_STRING PhGetApplicationVersionString(
     PPH_STRING commitTimeString = PhGetBuildTime();
 
 #if (PHAPP_VERSION_REVISION != 0)
-    if (LinkToCommit)
-    {
-        PH_FORMAT format[11];
+    // TaskManagerPlus: no hyperlink to the upstream commit page.
+    UNREFERENCED_PARAMETER(LinkToCommit);
 
-        // "System Informer %lu.%lu.%lu (<a href=\"https://github.com/winsiderss/systeminformer/commit/%hs\">%hs</a>) %ls"
-        PhInitFormatS(&format[0], L"System Informer ");
-        PhInitFormatSR(&format[1], commitVersionString->sr);
-        PhInitFormatS(&format[2], L" (<a href=\"https://github.com/winsiderss/systeminformer/commit/");
-        PhInitFormatSR(&format[3], commitHashString->sr);
-        PhInitFormatS(&format[4], L"\">");
-        PhInitFormatSR(&format[5], commitHashString->sr);
-        PhInitFormatS(&format[6], L"</a>) ");
-        PhInitFormatS(&format[7], channelNameString);
-        PhInitFormatS(&format[8], L" (");
-        PhInitFormatSR(&format[9], commitTimeString->sr);
-        PhInitFormatS(&format[10], L") ");
-
-        versionString = PhFormat(format, RTL_NUMBER_OF(format), 0);
-    }
-    else
     {
         PH_FORMAT format[9];
 

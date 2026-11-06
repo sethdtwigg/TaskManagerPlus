@@ -1915,11 +1915,6 @@ VOID PhMwpOnCommand(
             PhShowLogDialog();
         }
         break;
-    case ID_HELP_DONATE:
-        {
-            //PhShellExecute(WindowHandle, L"https://sourceforge.net/project/project_donations.php?group_id=242527", NULL);
-        }
-        break;
     case ID_HELP_DEBUGCONSOLE:
         {
             PhShowDebugConsole();
@@ -3820,7 +3815,6 @@ PPH_EMENU PhpCreateHelpMenu(
     )
 {
     PhInsertEMenuItem(HelpMenu, PhCreateEMenuItem(0, ID_HELP_LOG, L"&Log\bCtrl+L", NULL, NULL), ULONG_MAX);
-    //PhInsertEMenuItem(HelpMenu, PhCreateEMenuItem(0, ID_HELP_DONATE, L"&Donate", NULL, NULL), ULONG_MAX);
     PhInsertEMenuItem(HelpMenu, PhCreateEMenuItem(0, ID_HELP_DEBUGCONSOLE, L"Debu&g console", NULL, NULL), ULONG_MAX);
     PhInsertEMenuItem(HelpMenu, PhCreateEMenuItem(0, ID_HELP_ABOUT, L"&About", NULL, NULL), ULONG_MAX);
 

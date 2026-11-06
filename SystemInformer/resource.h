@@ -462,7 +462,6 @@
 #define IDC_PARENT                      1263
 #define IDC_PROCESSNAME                 1264
 #define IDC_SERVICES_LAYOUT             1266
-#define IDC_LINK_SF                     1267
 #define IDC_CREDITS                     1270
 #define IDC_LOGONTIME                   1272
 #define IDC_ZPEAKHANDLES_V              1273
@@ -825,7 +824,6 @@
 #define ID_TOOLS_ZOMBIEPROCESSES        10102
 #define ID_TOOLS_INSPECTEXECUTABLEFILE  10103
 #define ID_HELP_LOG                     10104
-#define ID_HELP_DONATE                  10105
 #define ID_HELP_ABOUT                   10106
 #define ID_SERVICE_GOTOPROCESS          10107
 #define ID_SERVICE_START                10108
