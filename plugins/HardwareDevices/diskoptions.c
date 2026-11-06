@@ -21,6 +21,11 @@ typedef struct _DISK_ENUM_ENTRY
     PPH_STRING DeviceMountPoints;
 } DISK_ENUM_ENTRY, *PDISK_ENUM_ENTRY;
 
+static VOID DiskSetExcluded( // TaskManagerPlus
+    _In_ PPH_STRING DevicePath,
+    _In_ BOOLEAN Excluded
+    );
+
 static PPH_STRING NormalizeDiskDeviceInterfacePath(
     _In_ PCWSTR DeviceInterface
     )
@@ -83,6 +88,9 @@ VOID DiskDrivesLoadList(
     }
 
     PhClearReference(&settingsString);
+
+    // TaskManagerPlus: monitor every fixed disk by default.
+    DiskDrivesAutoEnable();
 }
 
 VOID DiskDrivesSaveList(
@@ -855,6 +863,8 @@ INT_PTR CALLBACK DiskDriveOptionsDlgProc(
                                 entry->UserReference = TRUE;
                             }
 
+                            DiskSetExcluded(param->DevicePath, FALSE); // TaskManagerPlus
+
                             context->OptionsChanged = TRUE;
                         }
                         break;
@@ -863,6 +873,10 @@ INT_PTR CALLBACK DiskDriveOptionsDlgProc(
                             PDV_DISK_ID param = (PDV_DISK_ID)listView->lParam;
 
                             FindDiskEntry(param, TRUE);
+
+                            // TaskManagerPlus: a deliberate untick must survive auto-enable.
+                            if (param && param->DevicePath && (listView->uOldState & LVIS_STATEIMAGEMASK) == INDEXTOSTATEIMAGEMASK(2))
+                                DiskSetExcluded(param->DevicePath, TRUE);
 
                             context->OptionsChanged = TRUE;
                         }
@@ -915,4 +929,209 @@ INT_PTR CALLBACK DiskDriveOptionsDlgProc(
     }
 
     return FALSE;
+}
+
+// TaskManagerPlus: disks the user unticked are remembered so auto-enable never overrides them.
+static BOOLEAN DiskPathEquals(
+    _In_ PPH_STRINGREF A,
+    _In_ PPH_STRINGREF B
+    )
+{
+    PPH_STRING a = PhCreateString2(A);
+    PPH_STRING b = PhCreateString2(B);
+    BOOLEAN equal;
+
+    if (a->Length >= 2 * sizeof(WCHAR) && a->Buffer[1] == OBJ_NAME_PATH_SEPARATOR)
+        a->Buffer[1] = L'?';
+    if (b->Length >= 2 * sizeof(WCHAR) && b->Buffer[1] == OBJ_NAME_PATH_SEPARATOR)
+        b->Buffer[1] = L'?';
+
+    equal = PhEqualString(a, b, TRUE);
+    PhDereferenceObject(a);
+    PhDereferenceObject(b);
+
+    return equal;
+}
+
+static BOOLEAN DiskIsExcluded(
+    _In_ PPH_STRING DevicePath
+    )
+{
+    PPH_STRING settingsString = PhGetStringSetting(SETTING_NAME_DISK_EXCLUDED_LIST);
+    PH_STRINGREF remaining = PhGetStringRef(settingsString);
+    BOOLEAN excluded = FALSE;
+
+    while (remaining.Length != 0)
+    {
+        PH_STRINGREF part;
+
+        PhSplitStringRefAtChar(&remaining, L',', &part, &remaining);
+
+        if (part.Length != 0 && DiskPathEquals(&part, &DevicePath->sr))
+        {
+            excluded = TRUE;
+            break;
+        }
+    }
+
+    PhDereferenceObject(settingsString);
+    return excluded;
+}
+
+static VOID DiskSetExcluded(
+    _In_ PPH_STRING DevicePath,
+    _In_ BOOLEAN Excluded
+    )
+{
+    PPH_STRING settingsString = PhGetStringSetting(SETTING_NAME_DISK_EXCLUDED_LIST);
+    PH_STRINGREF remaining = PhGetStringRef(settingsString);
+    PH_STRING_BUILDER stringBuilder;
+    PPH_STRING result;
+
+    PhInitializeStringBuilder(&stringBuilder, 260);
+
+    while (remaining.Length != 0)
+    {
+        PH_STRINGREF part;
+
+        PhSplitStringRefAtChar(&remaining, L',', &part, &remaining);
+
+        if (part.Length == 0 || DiskPathEquals(&part, &DevicePath->sr))
+            continue;
+
+        PhAppendStringBuilder(&stringBuilder, &part);
+        PhAppendCharStringBuilder(&stringBuilder, L',');
+    }
+
+    if (Excluded)
+    {
+        PhAppendStringBuilder(&stringBuilder, &DevicePath->sr);
+        PhAppendCharStringBuilder(&stringBuilder, L',');
+    }
+
+    if (stringBuilder.String->Length != 0)
+        PhRemoveEndStringBuilder(&stringBuilder, 1);
+
+    result = PhFinalStringBuilderString(&stringBuilder);
+    PhSetStringSetting2(SETTING_NAME_DISK_EXCLUDED_LIST, &result->sr);
+    PhDereferenceObject(result);
+    PhDereferenceObject(settingsString);
+}
+
+// TaskManagerPlus: enables every fixed physical disk that is not already monitored and was not
+// deliberately unticked by the user. Runs on load (first run included) and on disk arrival.
+VOID DiskDrivesAutoEnable(
+    VOID
+    )
+{
+    ULONG deviceCount = 0;
+    const DEV_OBJECT* deviceObjects = NULL;
+    BOOLEAN added = FALSE;
+    const DEVPROPCOMPKEY requestedProperties[] =
+    {
+        { DEVPKEY_Device_InstanceId, DEVPROP_STORE_SYSTEM, NULL },
+    };
+    const DEVPROP_FILTER_EXPRESSION deviceFilter[] =
+    {
+        { DEVPROP_OPERATOR_EQUALS, {{ DEVPKEY_DeviceInterface_ClassGuid, DEVPROP_STORE_SYSTEM, NULL }, DEVPROP_TYPE_GUID, sizeof(GUID), (PVOID)&GUID_DEVINTERFACE_DISK } }
+    };
+
+    if (HR_FAILED(PhDevGetObjects(
+        DevObjectTypeDeviceInterface,
+        DevQueryFlagNone,
+        RTL_NUMBER_OF(requestedProperties),
+        requestedProperties,
+        RTL_NUMBER_OF(deviceFilter),
+        deviceFilter,
+        &deviceCount,
+        &deviceObjects
+        )))
+    {
+        return;
+    }
+
+    for (ULONG i = 0; i < deviceCount; i++)
+    {
+        PWSTR deviceInterface = (PWSTR)deviceObjects[i].pszObjectId;
+        PPH_STRING deviceDescription;
+        PPH_STRING devicePath;
+        HANDLE deviceHandle;
+        DV_DISK_ID id;
+        BOOLEAN fixedDisk = FALSE;
+
+        if (!QueryDiskDeviceInterfaceDescription(deviceInterface, &deviceDescription))
+            continue;
+
+        // Skip virtual disks (same filter as the options dialog default view).
+        if (
+            PhEndsWithStringRef2(&deviceDescription->sr, L"Xvd", TRUE) ||
+            PhEndsWithStringRef2(&deviceDescription->sr, L"Microsoft Virtual Disk", TRUE)
+            )
+        {
+            PhDereferenceObject(deviceDescription);
+            continue;
+        }
+
+        PhDereferenceObject(deviceDescription);
+
+        devicePath = PhCreateString(deviceInterface);
+
+        if (devicePath->Length >= 2 * sizeof(WCHAR) && devicePath->Buffer[1] == OBJ_NAME_PATH_SEPARATOR)
+            devicePath->Buffer[1] = L'?';
+
+        if (NT_SUCCESS(PhCreateFile(
+            &deviceHandle,
+            &devicePath->sr,
+            FILE_READ_ATTRIBUTES | SYNCHRONIZE,
+            FILE_ATTRIBUTE_NORMAL,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            FILE_OPEN,
+            FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT
+            )))
+        {
+            ULONG diskIndex = ULONG_MAX;
+            DEVICE_TYPE deviceType = 0;
+
+            if (NT_SUCCESS(DiskDriveQueryDeviceTypeAndNumber(deviceHandle, &diskIndex, &deviceType)) &&
+                deviceType == FILE_DEVICE_DISK)
+            {
+                IO_STATUS_BLOCK isb;
+                FILE_FS_DEVICE_INFORMATION info;
+
+                fixedDisk = TRUE;
+
+                if (NT_SUCCESS(NtQueryVolumeInformationFile(deviceHandle, &isb, &info, sizeof(info), FileFsDeviceInformation)) &&
+                    (info.Characteristics & FILE_REMOVABLE_MEDIA))
+                {
+                    fixedDisk = FALSE;
+                }
+            }
+
+            NtClose(deviceHandle);
+        }
+
+        if (fixedDisk && !DiskIsExcluded(devicePath))
+        {
+            InitializeDiskId(&id, devicePath); // takes the reference to devicePath
+            devicePath = NULL;
+
+            if (!FindDiskEntry(&id, FALSE))
+            {
+                PDV_DISK_ENTRY entry = CreateDiskEntry(&id);
+                entry->UserReference = TRUE;
+                entry->DevicePresent = TRUE; // sysinfo sections only list present disks
+                added = TRUE;
+            }
+
+            DeleteDiskId(&id);
+        }
+
+        if (devicePath)
+            PhDereferenceObject(devicePath);
+    }
+
+    PhDevFreeObjects(deviceCount, deviceObjects);
+
+    if (added)
+        DiskDrivesSaveList();
 }

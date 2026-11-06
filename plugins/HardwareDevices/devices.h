@@ -22,6 +22,8 @@
 #define SETTING_NAME_NETWORK_COLUMNS (PLUGIN_NAME L".NetworkListColumns")
 #define SETTING_NAME_NETWORK_SORTCOLUMN (PLUGIN_NAME L".NetworkListSort")
 #define SETTING_NAME_DISK_LIST (PLUGIN_NAME L".DiskList")
+// TaskManagerPlus: disks the user deliberately unticked; they are never auto-enabled again.
+#define SETTING_NAME_DISK_EXCLUDED_LIST (PLUGIN_NAME L".DiskExcludedList")
 #define SETTING_NAME_DISK_POSITION (PLUGIN_NAME L".DiskWindowPosition")
 #define SETTING_NAME_DISK_SIZE (PLUGIN_NAME L".DiskWindowSize")
 #define SETTING_NAME_DISK_COUNTERS_COLUMNS (PLUGIN_NAME L".DiskListColumns")
@@ -679,6 +681,8 @@ typedef struct _DV_DISK_OPTIONS_CONTEXT
 
 VOID DiskDevicesInitialize(VOID);
 VOID DiskDrivesLoadList(VOID);
+VOID DiskDrivesAutoEnable(VOID); // TaskManagerPlus
+
 VOID DiskDevicesUpdate(_In_ ULONG RunCount);
 
 VOID DiskDeviceUpdateDeviceInfo(
