@@ -76,20 +76,16 @@ static PH_CALLBACK GeneralCallbacks[GeneralCallbackMaximum];
 static ULONG NextPluginId = IDPLUGINS + 1;
 static CONST PH_STRINGREF DefaultPluginName[] =
 {
-    PH_STRINGREF_INIT(L"AgentTools.dll"),
     PH_STRINGREF_INIT(L"DotNetTools.dll"),
     PH_STRINGREF_INIT(L"ExtendedNotifications.dll"),
     PH_STRINGREF_INIT(L"ExtendedServices.dll"),
     PH_STRINGREF_INIT(L"ExtendedTools.dll"),
     PH_STRINGREF_INIT(L"HardwareDevices.dll"),
-    PH_STRINGREF_INIT(L"NetworkTools.dll"),
-    PH_STRINGREF_INIT(L"OnlineChecks.dll"),
     // TaskManagerPlus: bundled plugins.
     PH_STRINGREF_INIT(L"ProcessHistory.dll"),
     PH_STRINGREF_INIT(L"ProcessRules.dll"),
     PH_STRINGREF_INIT(L"StartupManager.dll"),
     PH_STRINGREF_INIT(L"ToolStatus.dll"),
-    PH_STRINGREF_INIT(L"Updater.dll"),
     PH_STRINGREF_INIT(L"UserNotes.dll"),
     PH_STRINGREF_INIT(L"WindowExplorer.dll"),
 };
