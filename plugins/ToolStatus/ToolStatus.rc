@@ -202,6 +202,24 @@ IDB_APPLICATION_GET_MODERN_DARK PNG                     "resources\\application_
 IDB_LIGHTBULB_OFF_MODERN_LIGHT PNG                     "resources\\lightbulb_off_modern_light.png"
 
 IDB_LIGHTBULB_OFF_MODERN_DARK PNG                     "resources\\lightbulb_off_modern_dark.png"
+IDB_TMS_REFRESH_ONLIGHT PNG "resources\\tms_refresh_onlight.png"
+IDB_TMS_REFRESH_ONDARK PNG "resources\\tms_refresh_ondark.png"
+IDB_TMS_OPTIONS_ONLIGHT PNG "resources\\tms_options_onlight.png"
+IDB_TMS_OPTIONS_ONDARK PNG "resources\\tms_options_ondark.png"
+IDB_TMS_FIND_ONLIGHT PNG "resources\\tms_find_onlight.png"
+IDB_TMS_FIND_ONDARK PNG "resources\\tms_find_ondark.png"
+IDB_TMS_SYSINFO_ONLIGHT PNG "resources\\tms_sysinfo_onlight.png"
+IDB_TMS_SYSINFO_ONDARK PNG "resources\\tms_sysinfo_ondark.png"
+IDB_TMS_FINDWINDOW_ONLIGHT PNG "resources\\tms_findwindow_onlight.png"
+IDB_TMS_FINDWINDOW_ONDARK PNG "resources\\tms_findwindow_ondark.png"
+IDB_TMS_FINDWINDOWTHREAD_ONLIGHT PNG "resources\\tms_findwindowthread_onlight.png"
+IDB_TMS_FINDWINDOWTHREAD_ONDARK PNG "resources\\tms_findwindowthread_ondark.png"
+IDB_TMS_KILL_ONLIGHT PNG "resources\\tms_kill_onlight.png"
+IDB_TMS_KILL_ONDARK PNG "resources\\tms_kill_ondark.png"
+IDB_TMS_ALWAYSONTOP_ONLIGHT PNG "resources\\tms_alwaysontop_onlight.png"
+IDB_TMS_ALWAYSONTOP_ONDARK PNG "resources\\tms_alwaysontop_ondark.png"
+IDB_TMS_POWER_ONLIGHT PNG "resources\\tms_power_onlight.png"
+IDB_TMS_POWER_ONDARK PNG "resources\\tms_power_ondark.png"
 
 
 /////////////////////////////////////////////////////////////////////////////

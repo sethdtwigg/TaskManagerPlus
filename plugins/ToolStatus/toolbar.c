@@ -1182,10 +1182,8 @@ HBITMAP ToolbarGetImage(
         {
             if (ToolStatusConfig.ModernIcons)
             {
-                if (EnableThemeSupport)
-                    id = IDB_ARROW_REFRESH_MODERN_LIGHT;
-                else
-                    id = IDB_ARROW_REFRESH_MODERN_DARK;
+                // TaskManagerPlus: flat monochrome icon set, ink follows the active light/dark palette.
+                id = ToolbarIsDarkTheme() ? IDB_TMS_REFRESH_ONDARK : IDB_TMS_REFRESH_ONLIGHT;
             }
             else
             {
@@ -1197,10 +1195,8 @@ HBITMAP ToolbarGetImage(
         {
             if (ToolStatusConfig.ModernIcons)
             {
-                if (EnableThemeSupport)
-                    id = IDB_COG_EDIT_MODERN_LIGHT;
-                else
-                    id = IDB_COG_EDIT_MODERN_DARK;
+                // TaskManagerPlus: flat monochrome icon set, ink follows the active light/dark palette.
+                id = ToolbarIsDarkTheme() ? IDB_TMS_OPTIONS_ONDARK : IDB_TMS_OPTIONS_ONLIGHT;
             }
             else
             {
@@ -1213,10 +1209,8 @@ HBITMAP ToolbarGetImage(
         {
             if (ToolStatusConfig.ModernIcons)
             {
-                if (EnableThemeSupport)
-                    id = IDB_FIND_MODERN_LIGHT;
-                else
-                    id = IDB_FIND_MODERN_DARK;
+                // TaskManagerPlus: flat monochrome icon set, ink follows the active light/dark palette.
+                id = ToolbarIsDarkTheme() ? IDB_TMS_FIND_ONDARK : IDB_TMS_FIND_ONLIGHT;
             }
             else
             {
@@ -1228,10 +1222,8 @@ HBITMAP ToolbarGetImage(
         {
             if (ToolStatusConfig.ModernIcons)
             {
-                if (EnableThemeSupport)
-                    id = IDB_CHART_LINE_MODERN_LIGHT;
-                else
-                    id = IDB_CHART_LINE_MODERN_DARK;
+                // TaskManagerPlus: flat monochrome icon set, ink follows the active light/dark palette.
+                id = ToolbarIsDarkTheme() ? IDB_TMS_SYSINFO_ONDARK : IDB_TMS_SYSINFO_ONLIGHT;
             }
             else
             {
@@ -1243,10 +1235,8 @@ HBITMAP ToolbarGetImage(
         {
             if (ToolStatusConfig.ModernIcons)
             {
-                if (EnableThemeSupport)
-                    id = IDB_TBAPPLICATION_MODERN_LIGHT;
-                else
-                    id = IDB_TBAPPLICATION_MODERN_DARK;
+                // TaskManagerPlus: flat monochrome icon set, ink follows the active light/dark palette.
+                id = ToolbarIsDarkTheme() ? IDB_TMS_FINDWINDOW_ONDARK : IDB_TMS_FINDWINDOW_ONLIGHT;
             }
             else
             {
@@ -1258,10 +1248,8 @@ HBITMAP ToolbarGetImage(
         {
             if (ToolStatusConfig.ModernIcons)
             {
-                if (EnableThemeSupport)
-                    id = IDB_APPLICATION_GO_MODERN_LIGHT;
-                else
-                    id = IDB_APPLICATION_GO_MODERN_DARK;
+                // TaskManagerPlus: flat monochrome icon set, ink follows the active light/dark palette.
+                id = ToolbarIsDarkTheme() ? IDB_TMS_FINDWINDOWTHREAD_ONDARK : IDB_TMS_FINDWINDOWTHREAD_ONLIGHT;
             }
             else
             {
@@ -1273,10 +1261,8 @@ HBITMAP ToolbarGetImage(
         {
             if (ToolStatusConfig.ModernIcons)
             {
-                if (EnableThemeSupport)
-                    id = IDB_CROSS_MODERN_LIGHT;
-                else
-                    id = IDB_CROSS_MODERN_DARK;
+                // TaskManagerPlus: flat monochrome icon set, ink follows the active light/dark palette.
+                id = ToolbarIsDarkTheme() ? IDB_TMS_KILL_ONDARK : IDB_TMS_KILL_ONLIGHT;
             }
             else
             {
@@ -1288,10 +1274,8 @@ HBITMAP ToolbarGetImage(
         {
             if (ToolStatusConfig.ModernIcons)
             {
-                if (EnableThemeSupport)
-                    id = IDB_APPLICATION_GET_MODERN_LIGHT;
-                else
-                    id = IDB_APPLICATION_GET_MODERN_DARK;
+                // TaskManagerPlus: flat monochrome icon set, ink follows the active light/dark palette.
+                id = ToolbarIsDarkTheme() ? IDB_TMS_ALWAYSONTOP_ONDARK : IDB_TMS_ALWAYSONTOP_ONLIGHT;
             }
             else
             {
@@ -1303,10 +1287,8 @@ HBITMAP ToolbarGetImage(
         {
             if (ToolStatusConfig.ModernIcons)
             {
-                if (EnableThemeSupport)
-                    id = IDB_LIGHTBULB_OFF_MODERN_LIGHT;
-                else
-                    id = IDB_LIGHTBULB_OFF_MODERN_DARK;
+                // TaskManagerPlus: flat monochrome icon set, ink follows the active light/dark palette.
+                id = ToolbarIsDarkTheme() ? IDB_TMS_POWER_ONDARK : IDB_TMS_POWER_ONLIGHT;
             }
             else
             {

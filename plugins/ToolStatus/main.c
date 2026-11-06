@@ -1983,6 +1983,16 @@ VOID NTAPI SettingsUpdatedCallback(
 
         if (ToolBarHandle)
         {
+            // TaskManagerPlus: reload the icon set when the light/dark palette flips.
+            static BOOLEAN lastDarkTheme = FALSE;
+            BOOLEAN darkTheme = ToolbarIsDarkTheme();
+
+            if (darkTheme != lastDarkTheme)
+            {
+                lastDarkTheme = darkTheme;
+                ToolbarLoadSettings(FALSE);
+            }
+
             ToolbarUpdateWindowStyle();
             InvalidateRect(ToolBarHandle, NULL, TRUE);
         }
