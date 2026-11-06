@@ -32,6 +32,74 @@ static ULONG SmTreeNewSortColumn = SM_COLUMN_NAME;
 static PH_SORT_ORDER SmTreeNewSortOrder = AscendingSortOrder;
 static PPH_LIST SmNodeList = NULL;
 
+// Search-box filtering (ToolStatus)
+
+static PTOOLSTATUS_INTERFACE SmToolStatus = NULL;
+static PH_TN_FILTER_SUPPORT SmFilterSupport;
+static BOOLEAN SmFilterReady = FALSE;
+static PH_CALLBACK_REGISTRATION SmSearchChangedRegistration;
+static CONST PH_STRINGREF SmBannerText = PH_STRINGREF_INIT(L"Search Startup");
+
+_Function_class_(PH_TN_FILTER_FUNCTION)
+static BOOLEAN NTAPI SmSearchFilterCallback(
+    _In_ PPH_TREENEW_NODE Node,
+    _In_opt_ PVOID Context
+    )
+{
+    PSM_STARTUP_ITEM item = (PSM_STARTUP_ITEM)Node;
+
+    if (!SmToolStatus->GetSearchMatchHandle())
+        return TRUE;
+
+    if (item->Name && SmToolStatus->WordMatch(&item->Name->sr))
+        return TRUE;
+    if (item->Command && SmToolStatus->WordMatch(&item->Command->sr))
+        return TRUE;
+    if (item->Location && SmToolStatus->WordMatch(&item->Location->sr))
+        return TRUE;
+    if (item->Publisher && SmToolStatus->WordMatch(&item->Publisher->sr))
+        return TRUE;
+    if (SmToolStatus->WordMatch(SmGetSourceTypeString(item)))
+        return TRUE;
+
+    return FALSE;
+}
+
+_Function_class_(PH_CALLBACK_FUNCTION)
+static VOID NTAPI SmSearchChangedHandler(
+    _In_opt_ PVOID Parameter,
+    _In_opt_ PVOID Context
+    )
+{
+    if (SmFilterReady)
+        PhApplyTreeNewFilters(&SmFilterSupport);
+}
+
+_Function_class_(TOOLSTATUS_TAB_ACTIVATE_CONTENT)
+static VOID NTAPI SmToolStatusActivateContent(
+    _In_ BOOLEAN Select
+    )
+{
+    SetFocus(SmTreeNewHandle);
+
+    if (Select && TreeNew_GetFlatNodeCount(SmTreeNewHandle) > 0)
+    {
+        PPH_TREENEW_NODE node = TreeNew_GetFlatNode(SmTreeNewHandle, 0);
+
+        node->Selected = TRUE;
+        TreeNew_NodesStructured(SmTreeNewHandle);
+        TreeNew_SetFocusNode(SmTreeNewHandle, node);
+    }
+}
+
+_Function_class_(TOOLSTATUS_GET_TREENEW_HANDLE)
+static HWND NTAPI SmToolStatusGetTreeNewHandle(
+    VOID
+    )
+{
+    return SmTreeNewHandle;
+}
+
 static VOID SmRefreshStartupList(
     VOID
     );
@@ -121,7 +189,11 @@ static VOID SmRefreshStartupList(
         item->Node.TextCacheSize = SM_COLUMN_MAXIMUM;
     }
 
-    TreeNew_NodesStructured(SmTreeNewHandle);
+    if (SmFilterReady && SmNodeList->Count != 0)
+        PhApplyTreeNewFilters(&SmFilterSupport); // also restructures the tree
+    else
+        TreeNew_NodesStructured(SmTreeNewHandle);
+
     TreeNew_SetRedraw(SmTreeNewHandle, TRUE);
 }
 
@@ -746,6 +818,15 @@ static VOID SmInitializeTreeList(
 {
     SmNodeList = PhCreateList(64);
 
+    PhInitializeTreeNewFilterSupport(&SmFilterSupport, TreeNewHandle, SmNodeList);
+    SmFilterReady = TRUE;
+
+    if (SmToolStatus)
+    {
+        PhRegisterCallback(SmToolStatus->SearchChangedEvent, SmSearchChangedHandler, NULL, &SmSearchChangedRegistration);
+        PhAddTreeNewFilter(&SmFilterSupport, SmSearchFilterCallback, NULL);
+    }
+
     PhSetControlTheme(TreeNewHandle, L"explorer");
     TreeNew_SetRedraw(TreeNewHandle, FALSE);
     TreeNew_SetCallback(TreeNewHandle, SmTreeNewCallback, NULL);
@@ -913,4 +994,13 @@ VOID SmInitializeStartupTab(
     page.Name = SmTabPageName;
     page.Callback = SmTabPageCallback;
     SmAddedTabPage = PhPluginCreateTabPage(&page);
+
+    if (SmToolStatus = PhGetPluginInterfaceZ(TOOLSTATUS_INTERFACE_NAME, TOOLSTATUS_INTERFACE_VERSION))
+    {
+        PTOOLSTATUS_TAB_INFO tabInfo;
+
+        tabInfo = SmToolStatus->RegisterTabInfo(SmAddedTabPage->Index, &SmBannerText);
+        tabInfo->ActivateContent = SmToolStatusActivateContent;
+        tabInfo->GetTreeNewHandle = SmToolStatusGetTreeNewHandle;
+    }
 }

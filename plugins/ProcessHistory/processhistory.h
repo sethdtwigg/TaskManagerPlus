@@ -12,6 +12,7 @@
 #include <phappresource.h>
 #include <settings.h>
 #include "resource.h"
+#include <toolstatusintf.h>
 
 #define PLUGIN_NAME L"TaskManagerPlus.ProcessHistory"
 #define SETTING_NAME_INTERVAL_SECONDS (PLUGIN_NAME L".IntervalSeconds")

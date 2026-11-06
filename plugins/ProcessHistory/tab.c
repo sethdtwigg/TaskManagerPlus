@@ -296,6 +296,85 @@ static VOID HistUpdateTrackbar(
     SendMessage(HistTrackbarHandle, TBM_SETPOS, TRUE, count ? Index : 0);
     EnableWindow(HistTrackbarHandle, count > 1);
 }
+// Search-box filtering (ToolStatus)
+
+static PTOOLSTATUS_INTERFACE HistToolStatus = NULL;
+static PH_TN_FILTER_SUPPORT HistFilterSupport;
+static BOOLEAN HistFilterReady = FALSE;
+static PH_CALLBACK_REGISTRATION HistSearchChangedRegistration;
+static CONST PH_STRINGREF HistBannerText = PH_STRINGREF_INIT(L"Search History");
+
+_Function_class_(PH_TN_FILTER_FUNCTION)
+static BOOLEAN NTAPI HistSearchFilterCallback(
+    _In_ PPH_TREENEW_NODE Node,
+    _In_opt_ PVOID Context
+    )
+{
+    PHIST_NODE node = (PHIST_NODE)Node;
+
+    if (!HistToolStatus->GetSearchMatchHandle())
+        return TRUE;
+
+    if (node->Name && HistToolStatus->WordMatch(&node->Name->sr))
+        return TRUE;
+    if (node->Path && HistToolStatus->WordMatch(&node->Path->sr))
+        return TRUE;
+    if (node->ProcessIdString && HistToolStatus->WordMatch(&node->ProcessIdString->sr))
+        return TRUE;
+    if (node->ParentProcessIdString && HistToolStatus->WordMatch(&node->ParentProcessIdString->sr))
+        return TRUE;
+
+    return FALSE;
+}
+
+_Function_class_(PH_CALLBACK_FUNCTION)
+static VOID NTAPI HistSearchChangedHandler(
+    _In_opt_ PVOID Parameter,
+    _In_opt_ PVOID Context
+    )
+{
+    if (HistFilterReady)
+        PhApplyTreeNewFilters(&HistFilterSupport);
+}
+
+_Function_class_(TOOLSTATUS_TAB_ACTIVATE_CONTENT)
+static VOID NTAPI HistToolStatusActivateContent(
+    _In_ BOOLEAN Select
+    )
+{
+    SetFocus(HistTreeNewHandle);
+
+    if (Select && TreeNew_GetFlatNodeCount(HistTreeNewHandle) > 0)
+    {
+        PPH_TREENEW_NODE node = TreeNew_GetFlatNode(HistTreeNewHandle, 0);
+
+        node->Selected = TRUE;
+        TreeNew_NodesStructured(HistTreeNewHandle);
+        TreeNew_SetFocusNode(HistTreeNewHandle, node);
+    }
+}
+
+_Function_class_(TOOLSTATUS_GET_TREENEW_HANDLE)
+static HWND NTAPI HistToolStatusGetTreeNewHandle(
+    VOID
+    )
+{
+    return HistTreeNewHandle;
+}
+
+/**
+ * Restructures the tree after the node list changed, applying the search filter.
+ */
+static VOID HistStructureTree(
+    VOID
+    )
+{
+    if (HistFilterReady && HistNodeList->Count != 0)
+        PhApplyTreeNewFilters(&HistFilterSupport);
+    else
+        TreeNew_NodesStructured(HistTreeNewHandle);
+}
+
 
 /**
  * Shows the snapshot at the given index. Rebuilds the node list when the
@@ -338,7 +417,7 @@ static VOID HistSelectSnapshotIndex(
 
         HistDisplayedTime = snapshot->Time.QuadPart;
         HistUpdateStatuses(Index);
-        TreeNew_NodesStructured(HistTreeNewHandle);
+        HistStructureTree();
         TreeNew_SetRedraw(HistTreeNewHandle, TRUE);
     }
     else
@@ -901,6 +980,15 @@ static VOID HistInitializeTreeList(
 {
     HistNodeList = PhCreateList(512);
 
+    PhInitializeTreeNewFilterSupport(&HistFilterSupport, HistTreeNewHandle, HistNodeList);
+    HistFilterReady = TRUE;
+
+    if (HistToolStatus)
+    {
+        PhRegisterCallback(HistToolStatus->SearchChangedEvent, HistSearchChangedHandler, NULL, &HistSearchChangedRegistration);
+        PhAddTreeNewFilter(&HistFilterSupport, HistSearchFilterCallback, NULL);
+    }
+
     PhSetControlTheme(HistTreeNewHandle, L"explorer");
     TreeNew_SetRedraw(HistTreeNewHandle, FALSE);
     TreeNew_SetCallback(HistTreeNewHandle, HistTreeNewCallback, NULL);
@@ -1301,4 +1389,13 @@ VOID HistInitializeTab(
     page.Name = HistTabPageText;
     page.Callback = HistTabPageCallback;
     HistTabPage = PhPluginCreateTabPage(&page);
+
+    if (HistToolStatus = PhGetPluginInterfaceZ(TOOLSTATUS_INTERFACE_NAME, TOOLSTATUS_INTERFACE_VERSION))
+    {
+        PTOOLSTATUS_TAB_INFO tabInfo;
+
+        tabInfo = HistToolStatus->RegisterTabInfo(HistTabPage->Index, &HistBannerText);
+        tabInfo->ActivateContent = HistToolStatusActivateContent;
+        tabInfo->GetTreeNewHandle = HistToolStatusGetTreeNewHandle;
+    }
 }

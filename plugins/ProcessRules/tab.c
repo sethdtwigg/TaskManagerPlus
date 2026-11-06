@@ -218,6 +218,78 @@ static BOOLEAN TmpGetSelectedRules(
     return FALSE;
 }
 
+// Search-box filtering (ToolStatus)
+
+static PTOOLSTATUS_INTERFACE TmpToolStatus = NULL;
+static PH_TN_FILTER_SUPPORT TmpFilterSupport;
+static BOOLEAN TmpFilterReady = FALSE;
+static PH_CALLBACK_REGISTRATION TmpSearchChangedRegistration;
+static CONST PH_STRINGREF TmpBannerText = PH_STRINGREF_INIT(L"Search Rules");
+
+_Function_class_(PH_TN_FILTER_FUNCTION)
+static BOOLEAN NTAPI TmpSearchFilterCallback(
+    _In_ PPH_TREENEW_NODE Node,
+    _In_opt_ PVOID Context
+    )
+{
+    PTMP_RULE rule = (PTMP_RULE)Node;
+    PH_STRINGREF text;
+
+    if (!TmpToolStatus->GetSearchMatchHandle())
+        return TRUE;
+
+    if (rule->ProgramName && TmpToolStatus->WordMatch(&rule->ProgramName->sr))
+        return TRUE;
+    if (rule->MatchPath && TmpToolStatus->WordMatch(&rule->MatchPath->sr))
+        return TRUE;
+
+    PhInitializeStringRef(&text, TmpGetEnabledText(rule));
+
+    if (TmpToolStatus->WordMatch(&text))
+        return TRUE;
+    if (TmpToolStatus->WordMatch(&TmpGetWatchdogsText(rule)->sr))
+        return TRUE;
+    if (TmpToolStatus->WordMatch(&TmpGetOnStartText(rule)->sr))
+        return TRUE;
+
+    return FALSE;
+}
+
+_Function_class_(PH_CALLBACK_FUNCTION)
+static VOID NTAPI TmpSearchChangedHandler(
+    _In_opt_ PVOID Parameter,
+    _In_opt_ PVOID Context
+    )
+{
+    if (TmpFilterReady)
+        PhApplyTreeNewFilters(&TmpFilterSupport);
+}
+
+_Function_class_(TOOLSTATUS_TAB_ACTIVATE_CONTENT)
+static VOID NTAPI TmpToolStatusActivateContent(
+    _In_ BOOLEAN Select
+    )
+{
+    SetFocus(TmpTreeNewHandle);
+
+    if (Select && TreeNew_GetFlatNodeCount(TmpTreeNewHandle) > 0)
+    {
+        PPH_TREENEW_NODE node = TreeNew_GetFlatNode(TmpTreeNewHandle, 0);
+
+        node->Selected = TRUE;
+        TreeNew_NodesStructured(TmpTreeNewHandle);
+        TreeNew_SetFocusNode(TmpTreeNewHandle, node);
+    }
+}
+
+_Function_class_(TOOLSTATUS_GET_TREENEW_HANDLE)
+static HWND NTAPI TmpToolStatusGetTreeNewHandle(
+    VOID
+    )
+{
+    return TmpTreeNewHandle;
+}
+
 VOID TmpRefreshRulesTab(
     VOID
     )
@@ -226,7 +298,12 @@ VOID TmpRefreshRulesTab(
         return;
 
     TreeNew_SetEmptyText(TmpTreeNewHandle, TmpIsEnginePaused() ? &TmpPausedText : &TmpEmptyText, 0);
-    TreeNew_NodesStructured(TmpTreeNewHandle);
+
+    if (TmpFilterReady && TmpRulesList && TmpRulesList->Count != 0)
+        PhApplyTreeNewFilters(&TmpFilterSupport); // also restructures the tree
+    else
+        TreeNew_NodesStructured(TmpTreeNewHandle);
+
     InvalidateRect(TmpTreeNewHandle, NULL, FALSE);
 }
 
@@ -879,6 +956,18 @@ static BOOLEAN TmpTabPageCallback(
                 TreeNew_ThemeSupport(TmpTreeNewHandle, TRUE);
             }
 
+            if (!TmpRulesList)
+                TmpRulesList = PhCreateList(16);
+
+            PhInitializeTreeNewFilterSupport(&TmpFilterSupport, TmpTreeNewHandle, TmpRulesList);
+            TmpFilterReady = TRUE;
+
+            if (TmpToolStatus)
+            {
+                PhRegisterCallback(TmpToolStatus->SearchChangedEvent, TmpSearchChangedHandler, NULL, &TmpSearchChangedRegistration);
+                PhAddTreeNewFilter(&TmpFilterSupport, TmpSearchFilterCallback, NULL);
+            }
+
             TmpInitializeTreeList(TmpTreeNewHandle);
             TmpRefreshRulesTab();
 
@@ -940,4 +1029,13 @@ VOID TmpInitializeRulesTab(
     page.Name = TmpTabPageName;
     page.Callback = TmpTabPageCallback;
     TmpTabPage = PhPluginCreateTabPage(&page);
+
+    if (TmpToolStatus = PhGetPluginInterfaceZ(TOOLSTATUS_INTERFACE_NAME, TOOLSTATUS_INTERFACE_VERSION))
+    {
+        PTOOLSTATUS_TAB_INFO tabInfo;
+
+        tabInfo = TmpToolStatus->RegisterTabInfo(TmpTabPage->Index, &TmpBannerText);
+        tabInfo->ActivateContent = TmpToolStatusActivateContent;
+        tabInfo->GetTreeNewHandle = TmpToolStatusGetTreeNewHandle;
+    }
 }

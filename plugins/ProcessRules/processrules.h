@@ -16,6 +16,7 @@
 #include <symprv.h>
 
 #include "resource.h"
+#include <toolstatusintf.h>
 
 #define PLUGIN_NAME L"TaskManagerPlus.ProcessRules"
 #define SETTING_NAME_RULES_COLUMNS (PLUGIN_NAME L".RulesColumns")
