@@ -277,7 +277,6 @@ NTSTATUS SetupCreateUninstallKey(
         PPH_STRING string;
 
         PhSetValueKeyString2Z(keyHandle, L"DisplayName", L"System Informer");
-        PhSetValueKeyString2Z(keyHandle, L"HelpLink", L"https://system-informer.com/"); // package manager (winget) consistency (jxy-s)
         PhSetValueKeyString2Z(keyHandle, L"Publisher", L"Winsider Seminars & Solutions, Inc.");
 
         string = SetupCreateFullPath(Context->SetupInstallPath, L"\\systeminformer.exe,0");
@@ -1905,42 +1904,6 @@ NTSTATUS ExtractResourceToFile(
     }
 
     return status;
-}
-
-/**
- * Checks if an internet connection is available.
- *
- * \return TRUE if an internet connection is available, otherwise FALSE.
- */
-BOOLEAN ConnectionAvailable(VOID)
-{
-    INetworkListManager* networkListManager = NULL;
-
-    if (SUCCEEDED(PhGetClassObject(
-        L"netprofm.dll",
-        &CLSID_NetworkListManager,
-        &IID_INetworkListManager,
-        (PVOID*)&networkListManager
-        )))
-    {
-        VARIANT_BOOL isConnected = VARIANT_FALSE;
-        VARIANT_BOOL isConnectedInternet = VARIANT_FALSE;
-
-        // Query the relevant properties.
-        INetworkListManager_get_IsConnected(networkListManager, &isConnected);
-        INetworkListManager_get_IsConnectedToInternet(networkListManager, &isConnectedInternet);
-
-        // Cleanup the INetworkListManger COM objects.
-        INetworkListManager_Release(networkListManager);
-
-        // Check if Windows is connected to a network and it's connected to the internet.
-        if (isConnected == VARIANT_TRUE && isConnectedInternet == VARIANT_TRUE)
-            return TRUE;
-
-        // We're not connected to anything
-    }
-
-    return FALSE;
 }
 
 /**

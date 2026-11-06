@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="download.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="extract.c">
       <Filter>Source Files</Filter>
     </ClCompile>

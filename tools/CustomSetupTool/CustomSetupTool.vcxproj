@@ -196,7 +196,6 @@
         </Manifest>
     </ItemDefinitionGroup>
     <ItemGroup>
-        <ClCompile Include="download.c" />
         <ClCompile Include="extract.c" />
         <ClCompile Include="install.c" />
         <ClCompile Include="main.c" />

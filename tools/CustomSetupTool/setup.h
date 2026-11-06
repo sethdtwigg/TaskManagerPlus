@@ -12,8 +12,6 @@
 #ifndef _SETUP_H
 #define _SETUP_H
 
-#pragma comment(lib, "winhttp.lib")
-
 #include <ph.h>
 #include <mapimg.h>
 #include <base64.h>
@@ -23,7 +21,6 @@
 #include <svcsup.h>
 #include <json.h>
 #include <mapldr.h>
-#include <phnet.h>
 #include <thirdparty.h>
 #include <phconsole.h>
 
@@ -35,7 +32,6 @@
 #include <shlwapi.h>
 #include <shlobj.h>
 #include <sddl.h>
-#include <winhttp.h>
 #include <uxtheme.h>
 
 #include "resource.h"
@@ -51,7 +47,6 @@
 #define SETUP_SHOWUPDATE (WM_APP + 8)
 #define SETUP_SHOWUPDATEFINAL (WM_APP + 9)
 #define SETUP_SHOWUPDATEERROR (WM_APP + 10)
-#define SETUP_MAX_DOWNLOAD_SIZE (2ULL * 1024 * 1024 * 1024)
 
 #ifdef DEBUG
 #define FORCE_TEST_UPDATE_LOCAL_INSTALL 1
@@ -111,7 +106,6 @@ typedef struct _PH_SETUP_CONTEXT
     HANDLE SubProcessHandle;
 
     PPH_STRING SessionId;
-    PPH_STRING SetupBuildZipPath;
     PPH_LIST SetupStagedFiles; // files committed by SetupExtractBuild (see SetupDeferFinalize)
 } PH_SETUP_CONTEXT, *PPH_SETUP_CONTEXT;
 
@@ -386,26 +380,6 @@ VOID SetupDeleteUpdateLock(
 
 VOID SetupRecoverIncompleteUpdate(
     _In_ PPH_SETUP_CONTEXT Context
-    );
-
-// download.c
-
-#define MAKE_VERSION_ULONGLONG(major, minor, build, revision) \
-    (((ULONGLONG)(major) << 48) | \
-    ((ULONGLONG)(minor) << 32) | \
-    ((ULONGLONG)(build) << 16) | \
-    ((ULONGLONG)(revision) <<  0))
-
-ULONG64 ParseVersionString(
-    _In_ PPH_STRING VersionString
-    );
-
-NTSTATUS SetupDownloadBuildZip(
-    _Inout_ PPH_SETUP_CONTEXT Context
-    );
-
-VOID SetupDeleteBuildZip(
-    _Inout_ PPH_SETUP_CONTEXT Context
     );
 
 // extract.c
