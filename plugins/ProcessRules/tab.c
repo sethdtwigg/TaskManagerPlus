@@ -497,6 +497,45 @@ static VOID TmpShowContextMenu(
         PhFree(rules);
 }
 
+// TaskManagerPlus: disabled-row text derived from the active theme palette (halfway between
+// the palette text colour and the palette background), so it works in light and dark.
+static COLORREF TmpDisabledTextColor(
+    _In_ HWND WindowHandle
+    )
+{
+    COLORREF color = GetSysColor(COLOR_GRAYTEXT);
+
+    if (PhGetIntegerSetting(L"EnableThemeSupport"))
+    {
+        HDC hdc = CreateCompatibleDC(NULL);
+        LOGBRUSH brush;
+
+        if (hdc)
+        {
+            COLORREF text;
+            HBRUSH backgroundBrush;
+
+            PhWindowThemeControlColor(WindowHandle, hdc, WindowHandle, CTLCOLOR_STATIC);
+            text = GetTextColor(hdc);
+            backgroundBrush = PhWindowThemeControlColor(WindowHandle, hdc, WindowHandle, CTLCOLOR_DLG);
+
+            if (backgroundBrush && GetObject(backgroundBrush, sizeof(LOGBRUSH), &brush))
+            {
+
+                color = RGB(
+                    (GetRValue(text) + GetRValue(brush.lbColor)) / 2,
+                    (GetGValue(text) + GetGValue(brush.lbColor)) / 2,
+                    (GetBValue(text) + GetBValue(brush.lbColor)) / 2
+                    );
+            }
+
+            DeleteDC(hdc);
+        }
+    }
+
+    return color;
+}
+
 static BOOLEAN NTAPI TmpTreeNewCallback(
     _In_ HWND WindowHandle,
     _In_ PH_TREENEW_MESSAGE Message,
@@ -596,7 +635,7 @@ static BOOLEAN NTAPI TmpTreeNewCallback(
             node = (PTMP_RULE)getNodeColor->Node;
 
             if (!node->Enabled || TmpIsEnginePaused())
-                getNodeColor->ForeColor = GetSysColor(COLOR_GRAYTEXT);
+                getNodeColor->ForeColor = TmpDisabledTextColor(WindowHandle);
 
             getNodeColor->Flags = TN_AUTO_FORECOLOR;
         }
