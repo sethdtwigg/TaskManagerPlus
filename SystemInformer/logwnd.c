@@ -283,7 +283,7 @@ INT_PTR CALLBACK PhpLogDlgProc(
                     fileDialog = PhCreateSaveFileDialog();
 
                     PhSetFileDialogFilter(fileDialog, filters, sizeof(filters) / sizeof(PH_FILETYPE_FILTER));
-                    PhSetFileDialogFileName(fileDialog, L"System Informer Log.txt");
+                    PhSetFileDialogFileName(fileDialog, L"TaskManagerPlus Log.txt");
 
                     if (PhShowFileDialog(hwndDlg, fileDialog))
                     {

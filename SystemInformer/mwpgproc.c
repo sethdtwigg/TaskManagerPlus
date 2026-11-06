@@ -319,7 +319,7 @@ VOID PhMwpToggleSignedProcessTreeFilter(
                 WindowHandle,
                 NULL,
                 L"This filter cannot function because digital signature checking is not enabled.\r\n%s",
-                L"Enable it in Options > General and restart System Informer."
+                L"Enable it in Options > General and restart TaskManagerPlus."
                 );
             return;
         }

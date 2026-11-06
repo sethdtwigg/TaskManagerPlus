@@ -518,7 +518,7 @@ NTSTATUS PhpProcessMiniDumpThreadStart(
                 context->WindowHandle,
                 TD_YES_BUTTON | TD_NO_BUTTON,
                 TD_WARNING_ICON,
-                L"The 32-bit version of System Informer could not be located.",
+                L"The 32-bit version of TaskManagerPlus could not be located.",
                 L"A 64-bit dump will be created instead. Do you want to continue?"
                 ) == IDNO)
             {
@@ -544,7 +544,7 @@ NTSTATUS PhpProcessMiniDumpThreadStart(
                 L"Unable to create kernel minidump.",
                 L"%s",
                 L"Kernel minidump of processes require administrative privileges. "
-                L"Make sure System Informer is running with administrative privileges."
+                L"Make sure TaskManagerPlus is running with administrative privileges."
                 );
         }
     }

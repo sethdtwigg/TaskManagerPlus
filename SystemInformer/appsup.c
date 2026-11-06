@@ -1571,7 +1571,7 @@ VOID PhWritePhTextHeader(
     SYSTEMTIME systemTime;
     PPH_STRING timeString;
 
-    PhWriteStringAsUtf8FileStream2(FileStream, L"System Informer ");
+    PhWriteStringAsUtf8FileStream2(FileStream, L"TaskManagerPlus ");
 
     if (version = PhGetBuildVersion())
     {

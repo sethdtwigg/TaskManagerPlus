@@ -59,7 +59,7 @@ static INT_PTR CALLBACK PhpAboutDlgProc(
                 L"    yardenshafir - Yarden Shafir\n"
                 L"    Contributors - thank you for your additions!\n"
                 L"    Donors - thank you for your support!\n\n"
-                L"System Informer uses the following components:\n"
+                L"TaskManagerPlus uses the following components:\n"
                 L"    PresentMon by Intel Corporation\n"
                 L"    Mini-XML by Michael Sweet\n"
                 L"    PCRE2 by Philip Hazel\n"
@@ -240,7 +240,7 @@ PPH_STRING PhGetApplicationVersionString(
         PH_FORMAT format[9];
 
         // "System Informer %lu.%lu.%lu (%hs) %ls"
-        PhInitFormatS(&format[0], L"System Informer ");
+        PhInitFormatS(&format[0], L"TaskManagerPlus ");
         PhInitFormatSR(&format[1], commitVersionString->sr);
         PhInitFormatS(&format[2], L" (");
         PhInitFormatSR(&format[3], commitHashString->sr);
@@ -256,7 +256,7 @@ PPH_STRING PhGetApplicationVersionString(
     PH_FORMAT format[4];
 
     // "System Informer %lu.%lu %ls"
-    PhInitFormatS(&format[0], L"System Informer ");
+    PhInitFormatS(&format[0], L"TaskManagerPlus ");
     PhInitFormatSR(&format[1], commitVersionString->sr);
     PhInitFormatC(&format[2], L' ');
     PhInitFormatS(&format[3], channelNameString);

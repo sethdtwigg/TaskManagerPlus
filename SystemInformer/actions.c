@@ -757,7 +757,7 @@ BOOLEAN PhUiRestartComputer(
                     TD_OK_BUTTON,
                     TD_ERROR_ICON,
                     L"Unable to restart to firmware options.",
-                    L"Make sure System Informer is running with administrative privileges."
+                    L"Make sure TaskManagerPlus is running with administrative privileges."
                     );
                 break;
             }
@@ -769,7 +769,7 @@ BOOLEAN PhUiRestartComputer(
                     TD_OK_BUTTON,
                     TD_ERROR_ICON,
                     L"Unable to restart to firmware options.",
-                    L"Make sure System Informer is running with administrative privileges."
+                    L"Make sure TaskManagerPlus is running with administrative privileges."
                     );
                 break;
             }
@@ -2725,7 +2725,7 @@ BOOLEAN PhUiFreezeTreeProcess(
             WindowHandle,
             L"freeze",
             Process->ProcessName->Buffer,
-            L"Freezing does not persist after exiting System Informer.",
+            L"Freezing does not persist after exiting TaskManagerPlus.",
             FALSE
             );
     }
@@ -6840,7 +6840,7 @@ BOOLEAN PhUiCloseConnections(
                     TD_OK_BUTTON,
                     TD_ERROR_ICON,
                     L"Unable to close the TCP connection.",
-                    L"Make sure System Informer is running with administrative privileges."
+                    L"Make sure TaskManagerPlus is running with administrative privileges."
                     ) != IDOK)
                     break;
             }
@@ -7605,7 +7605,7 @@ BOOLEAN PhUiUnloadModule(
                     3,
                     L"Unable to unload ",
                     Module->Name->Buffer,
-                    L". Make sure System Informer is running with "
+                    L". Make sure TaskManagerPlus is running with "
                     L"administrative privileges."
                     )->Buffer,
                     status,

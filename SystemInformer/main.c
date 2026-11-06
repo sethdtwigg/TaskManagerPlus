@@ -63,7 +63,7 @@ INT WINAPI wWinMain(
     PHP_BASE_THREAD_DBG dbg;
 #endif
 
-    if (!NT_SUCCESS(PhInitializePhLib(L"System Informer")))
+    if (!NT_SUCCESS(PhInitializePhLib(L"TaskManagerPlus") /* TaskManagerPlus: product name */))
         return 1;
     if (!NT_SUCCESS(PhInitializeDirectoryPolicy()))
         return 1;
@@ -153,9 +153,9 @@ INT WINAPI wWinMain(
             NULL,
             L"Warning.",
             L"%s",
-            L"You are attempting to run the 32-bit version of System Informer on 64-bit Windows. "
+            L"You are attempting to run the 32-bit version of TaskManagerPlus on 64-bit Windows. "
             L"Most features will not work correctly.\n\n"
-            L"Please run the 64-bit version of System Informer instead."
+            L"Please run the 64-bit version of TaskManagerPlus instead."
             );
         PhExitApplication(STATUS_IMAGE_SUBSYSTEM_NOT_PRESENT);
     }
@@ -950,7 +950,7 @@ LONG CALLBACK PhpUnhandledExceptionCallback(
         config.dwFlags = TDF_ALLOW_DIALOG_CANCELLATION | TDF_USE_COMMAND_LINKS | TDF_EXPAND_FOOTER_AREA;
         config.pszWindowTitle = PhApplicationName;
         config.pszMainIcon = TD_ERROR_ICON;
-        config.pszMainInstruction = L"System Informer has crashed :(";
+        config.pszMainInstruction = L"TaskManagerPlus has crashed :(";
         config.cButtons = RTL_NUMBER_OF(buttons);
         config.pButtons = buttons;
         config.nDefaultButton = 106;
@@ -998,7 +998,7 @@ LONG CALLBACK PhpUnhandledExceptionCallback(
             if (PhShowMessage(
                 NULL,
                 MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2,
-                L"System Informer has crashed :(\r\n\r\n%s",
+                L"TaskManagerPlus has crashed :(\r\n\r\n%s",
                 L"Do you want to create a minidump in ProgramData\\SystemInformer\\CrashDumps?"
                 ) == IDYES)
             {
@@ -1016,7 +1016,7 @@ LONG CALLBACK PhpUnhandledExceptionCallback(
         else
             errorMessage = PhGetStatusMessage(ExceptionInfo->ExceptionRecord->ExceptionCode, 0);
 
-        title = PhCreateString(L"System Informer has crashed :(");
+        title = PhCreateString(L"TaskManagerPlus has crashed :(");
 #ifdef DEBUG
         message = PhFormatString(
             L"%s\r\n0x%08X (%s)\r\n%s",
@@ -1545,7 +1545,7 @@ VOID PhInitializeAppSettings(
                 NULL,
                 TD_YES_BUTTON | TD_NO_BUTTON,
                 TD_WARNING_ICON,
-                L"System Informer's settings file is corrupt. Do you want to reset it?",
+                L"TaskManagerPlus's settings file is corrupt. Do you want to reset it?",
                 L"If you select No, the settings system will not function properly."
                 ) == IDYES)
             {

@@ -560,7 +560,7 @@ INT_PTR CALLBACK PhOptionsDialogProc(
                         hwndDlg,
                         TD_YES_BUTTON | TD_NO_BUTTON,
                         TD_WARNING_ICON,
-                        L"Do you want to reset all settings and restart System Informer?",
+                        L"Do you want to reset all settings and restart TaskManagerPlus?",
                         L""
                         ) == IDYES)
                     {
@@ -1146,7 +1146,7 @@ VOID PhpSetDefaultTaskManager(
     }
     else
     {
-        message = L"Do you want to make System Informer the default Windows Task Manager?";
+        message = L"Do you want to make TaskManagerPlus the default Windows Task Manager?";
 
         // Warn the user when we're not installed into secure location. (dmex)
         if (!PhShowOptionsDefaultInstallLocation(ParentWindowHandle, L"Changing the default Task Manager"))
@@ -1538,12 +1538,12 @@ VOID PhpRefreshTaskManagerState(
 
     if (PhpIsDefaultTaskManager())
     {
-        PhSetWindowText(GetDlgItem(WindowHandle, IDC_DEFSTATE), L"System Informer is the default Task Manager:");
+        PhSetWindowText(GetDlgItem(WindowHandle, IDC_DEFSTATE), L"TaskManagerPlus is the default Task Manager:");
         PhSetWindowText(GetDlgItem(WindowHandle, IDC_REPLACETASKMANAGER), L"Restore default...");
     }
     else
     {
-        PhSetWindowText(GetDlgItem(WindowHandle, IDC_DEFSTATE), L"System Informer is not the default Task Manager:");
+        PhSetWindowText(GetDlgItem(WindowHandle, IDC_DEFSTATE), L"TaskManagerPlus is not the default Task Manager:");
         PhSetWindowText(GetDlgItem(WindowHandle, IDC_REPLACETASKMANAGER), L"Make default...");
     }
 }
@@ -1691,8 +1691,8 @@ static VOID PhpOptionsNotifyChangeCallback(
             PhMainWndHandle,
             TD_YES_BUTTON | TD_NO_BUTTON,
             TD_INFORMATION_ICON,
-            L"One or more options you have changed requires a restart of System Informer.",
-            L"Do you want to restart System Informer now?"
+            L"One or more options you have changed requires a restart of TaskManagerPlus.",
+            L"Do you want to restart TaskManagerPlus now?"
             ) == IDYES)
         {
             SystemInformer_PrepareForEarlyShutdown();
@@ -1729,8 +1729,8 @@ VOID PhShowOptionsRestartRequired(
         ownerWindowHandle,
         TD_YES_BUTTON | TD_NO_BUTTON,
         TD_INFORMATION_ICON,
-        L"One or more options you have changed requires a restart of System Informer.",
-        L"Do you want to restart System Informer now?"
+        L"One or more options you have changed requires a restart of TaskManagerPlus.",
+        L"Do you want to restart TaskManagerPlus now?"
         ) == IDYES)
     {
         SystemInformer_PrepareForEarlyShutdown();
@@ -1777,8 +1777,8 @@ BOOLEAN PhShowOptionsDefaultInstallLocation(
                         ParentWindowHandle,
                         TD_YES_BUTTON | TD_NO_BUTTON,
                         TD_WARNING_ICON,
-                        L"WARNING: You have not installed System Informer into a secure location.",
-                        L"%s is not recommended when running System Informer from outside a secure location (e.g. Program Files).\r\n\r\nAre you sure you want to continue?",
+                        L"WARNING: You have not installed TaskManagerPlus into a secure location.",
+                        L"%s is not recommended when running TaskManagerPlus from outside a secure location (e.g. Program Files).\r\n\r\nAre you sure you want to continue?",
                         Message
                         ) == IDNO)
                     {
@@ -3846,7 +3846,7 @@ typedef enum _PH_OPTIONS_HIGHLIGHTING_GROUP
 
 static COLOR_ITEM ColorItems[] =
 {
-    COLOR_ITEM(SETTING_COLOR_OWN_PROCESSES, PH_OPTIONS_HIGHLIGHTING_GROUP_PROCESSES_AND_THREADS, L"Own processes", L"Processes running under the same user account as System Informer."),
+    COLOR_ITEM(SETTING_COLOR_OWN_PROCESSES, PH_OPTIONS_HIGHLIGHTING_GROUP_PROCESSES_AND_THREADS, L"Own processes", L"Processes running under the same user account as TaskManagerPlus."),
     COLOR_ITEM(SETTING_COLOR_SYSTEM_PROCESSES, PH_OPTIONS_HIGHLIGHTING_GROUP_PROCESSES_AND_THREADS, L"System processes", L"Processes running under the NT AUTHORITY\\SYSTEM user account."),
     COLOR_ITEM(SETTING_COLOR_SERVICE_PROCESSES, PH_OPTIONS_HIGHLIGHTING_GROUP_PROCESSES_AND_THREADS, L"Service processes", L"Processes which host one or more services."),
     COLOR_ITEM(SETTING_COLOR_BACKGROUND_PROCESSES, PH_OPTIONS_HIGHLIGHTING_GROUP_PROCESSES_AND_THREADS, L"Background processes", L"Processes with a background scheduling priority."),

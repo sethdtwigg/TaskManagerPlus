@@ -1306,7 +1306,7 @@ VOID PhMwpOnCommand(
             PVOID fileDialog = PhCreateSaveFileDialog();
             PH_FORMAT format[3];
 
-            PhInitFormatS(&format[0], L"System Informer ");
+            PhInitFormatS(&format[0], L"TaskManagerPlus ");
             PhInitFormatSR(&format[1], CurrentPage->Name);
             PhInitFormatS(&format[2], L".txt");
 
@@ -4324,7 +4324,7 @@ PPH_EMENU PhpCreateIconMenu(
     PPH_EMENU menu;
 
     menu = PhCreateEMenu();
-    PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_ICON_SHOWHIDEPROCESSHACKER, L"&Show/Hide System Informer", NULL, NULL), ULONG_MAX);
+    PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_ICON_SHOWHIDEPROCESSHACKER, L"&Show/Hide TaskManagerPlus", NULL, NULL), ULONG_MAX);
     PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_ICON_SYSTEMINFORMATION, L"System &information", NULL, NULL), ULONG_MAX);
     PhInsertEMenuItem(menu, PhpCreateNotificationMenu(), ULONG_MAX);
     PhInsertEMenuItem(menu, PhpCreateNotificationSettingsMenu(), ULONG_MAX);

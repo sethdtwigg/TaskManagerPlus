@@ -1464,7 +1464,7 @@ NTSTATUS KsiConnect(
             STATUS_SI_KSIDLL_VERSION_MISMATCH,
             FALSE,
             L"Unable to load kernel driver",
-            L"The last System Informer update requires a reboot."
+            L"The last TaskManagerPlus update requires a reboot."
             );
         goto CleanupExit;
     }
@@ -1743,7 +1743,7 @@ VOID KsiShowInitializingSplashScreen(
     config.hMainIcon = PhGetApplicationIcon(FALSE, USER_DEFAULT_SCREEN_DPI);
     config.pfCallback = KsiSplashScreenDialogCallbackProc;
     config.pszWindowTitle = PhApplicationName;
-    config.pszMainInstruction = L"Initializing System Informer kernel driver...";
+    config.pszMainInstruction = L"Initializing TaskManagerPlus kernel driver...";
     config.pszContent = L"0 ms...";
     config.cxWidth = 200;
 
