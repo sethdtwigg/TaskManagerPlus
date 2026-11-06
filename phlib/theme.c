@@ -374,60 +374,60 @@ static HBRUSH PhpStockDCBrush = NULL;
 // the chosen theme with the hard-coded Dark/System default.
 static BOOLEAN PhpWindowThemePaletteApplied = FALSE;
 
-// TaskManagerPlus: light palette, teal accent (RGB 14,138,143 light / 45,185,190 dark); text contrast >= 6.7:1 (WCAG AA), accent >= 4:1 on background.
+// TaskManagerPlus: light palette, cool charcoal surfaces with a blue accent (RGB 0,95,184 light / 58,150,221 dark).
 static CONST PH_WINDOW_THEME_PALETTE PhpWindowThemeLightPalette =
 {
     RGB(255, 255, 255), // ForegroundColor
-    RGB(251, 252, 252), // BackgroundColor
-    RGB(238, 243, 243), // Background2Color
-    RGB(207, 235, 236), // HighlightColor
-    RGB(160, 214, 216), // Highlight2Color
-    RGB(26, 32, 33), // TextColor
-    RGB(122, 132, 133), // DisabledTextColor
-    RGB(208, 216, 217), // BorderColor
-    RGB(184, 224, 226), // PressedColor
+    RGB(250, 251, 253), // BackgroundColor
+    RGB(238, 242, 247), // Background2Color
+    RGB(204, 226, 246), // HighlightColor
+    RGB(150, 196, 236), // Highlight2Color
+    RGB(24, 29, 36), // TextColor
+    RGB(118, 128, 140), // DisabledTextColor
+    RGB(206, 213, 222), // BorderColor
+    RGB(184, 212, 240), // PressedColor
     RGB(255, 255, 255), // EditColor
-    RGB(236, 241, 241), // ScrollbarColor
-    RGB(70, 82, 84), // DropdownGlyphColor
-    RGB(14, 138, 143), // WindowActiveBorderColor
-    RGB(208, 216, 217), // WindowInactiveBorderColor
+    RGB(236, 240, 245), // ScrollbarColor
+    RGB(66, 76, 90), // DropdownGlyphColor
+    RGB(0, 95, 184), // WindowActiveBorderColor
+    RGB(206, 213, 222), // WindowInactiveBorderColor
     RGB(255, 0, 0), // FilteredBorderColor
     RGB(255, 128, 0), // ProtectedBorderColor
-    RGB(14, 138, 143), // FocusBorderColor
-    RGB(220, 227, 228), // GroupBoxFrameColor
-    RGB(208, 216, 217), // WindowFrameColor
-    RGB(160, 214, 216), // EditHotBorderColor
-    RGB(208, 216, 217), // EditNormalBorderColor
+    RGB(0, 95, 184), // FocusBorderColor
+    RGB(220, 226, 234), // GroupBoxFrameColor
+    RGB(206, 213, 222), // WindowFrameColor
+    RGB(150, 196, 236), // EditHotBorderColor
+    RGB(206, 213, 222), // EditNormalBorderColor
     RGB(255, 255, 255), // MenuSelectedTextColor
-    RGB(122, 132, 133)  // MenuDisabledTextColor
+    RGB(118, 128, 140)  // MenuDisabledTextColor
 };
 
-// TaskManagerPlus: dark palette, teal accent (RGB 14,138,143 light / 45,185,190 dark); text contrast >= 6.7:1 (WCAG AA), accent >= 4:1 on background.
+// TaskManagerPlus: dark palette, cool charcoal surfaces with a blue accent (RGB 0,95,184 light / 58,150,221 dark).
 static CONST PH_WINDOW_THEME_PALETTE PhpWindowThemeDarkPalette =
 {
-    RGB(24, 28, 29), // ForegroundColor
-    RGB(32, 37, 38), // BackgroundColor
-    RGB(46, 53, 54), // Background2Color
-    RGB(31, 92, 95), // HighlightColor
-    RGB(38, 118, 122), // Highlight2Color
-    RGB(236, 241, 241), // TextColor
-    RGB(138, 150, 151), // DisabledTextColor
-    RGB(70, 80, 81), // BorderColor
-    RGB(58, 69, 70), // PressedColor
-    RGB(46, 53, 54), // EditColor
-    RGB(26, 31, 32), // ScrollbarColor
-    RGB(214, 222, 223), // DropdownGlyphColor
-    RGB(45, 185, 190), // WindowActiveBorderColor
-    RGB(70, 80, 81), // WindowInactiveBorderColor
+    RGB(22, 25, 30), // ForegroundColor
+    RGB(30, 34, 40), // BackgroundColor
+    RGB(41, 46, 54), // Background2Color
+    RGB(32, 80, 122), // HighlightColor
+    RGB(40, 100, 150), // Highlight2Color
+    RGB(234, 238, 243), // TextColor
+    RGB(134, 144, 156), // DisabledTextColor
+    RGB(62, 69, 79), // BorderColor
+    RGB(52, 60, 70), // PressedColor
+    RGB(41, 46, 54), // EditColor
+    RGB(24, 27, 32), // ScrollbarColor
+    RGB(214, 220, 228), // DropdownGlyphColor
+    RGB(58, 150, 221), // WindowActiveBorderColor
+    RGB(62, 69, 79), // WindowInactiveBorderColor
     RGB(255, 0, 0), // FilteredBorderColor
     RGB(255, 128, 0), // ProtectedBorderColor
-    RGB(45, 185, 190), // FocusBorderColor
-    RGB(70, 80, 81), // GroupBoxFrameColor
-    RGB(70, 80, 81), // WindowFrameColor
-    RGB(96, 150, 153), // EditHotBorderColor
-    RGB(70, 80, 81), // EditNormalBorderColor
+    RGB(58, 150, 221), // FocusBorderColor
+    RGB(62, 69, 79), // GroupBoxFrameColor
+    RGB(62, 69, 79), // WindowFrameColor
+    RGB(90, 140, 190), // EditHotBorderColor
+    RGB(62, 69, 79), // EditNormalBorderColor
     RGB(255, 255, 255), // MenuSelectedTextColor
-    RGB(138, 150, 151)  // MenuDisabledTextColor
+    RGB(134, 144, 156)  // MenuDisabledTextColor
 };
 
 // Windows 11 File Explorer colors. The Highlight/Focus/border entries are

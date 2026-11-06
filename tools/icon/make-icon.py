@@ -7,14 +7,14 @@ import os
 from PIL import Image, ImageDraw
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-TEAL = (14, 138, 143, 255)
+TEAL = (30, 112, 196, 255)
 WHITE = (255, 255, 255, 255)
 # 256-unit design grid: (x, y, w, h)
 BARS = [(48, 148, 40, 60), (108, 112, 40, 96), (168, 76, 40, 132)]
 RADIUS = 56
 
 SVG = f'''<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <rect width="256" height="256" rx="{RADIUS}" fill="#0E8A8F"/>
+  <rect width="256" height="256" rx="{RADIUS}" fill="#1E70C4"/>
 {chr(10).join(f'  <rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8" fill="#FFFFFF"/>' for x, y, w, h in BARS)}
   <rect x="48" y="30" width="96" height="12" rx="6" fill="#FFFFFF" fill-opacity="0.55"/>
 </svg>

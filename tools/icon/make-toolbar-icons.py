@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, 'plugins', 'ToolStatus', 'resources')
 INKS = {'onlight': '#2F3E46', 'ondark': '#E4ECEF'}
-ACCENT = {'onlight': '#0E8A8F', 'ondark': '#4DC3C8'}   # teal accent, matches theme palettes
+ACCENT = {'onlight': '#005FB8', 'ondark': '#3A96DD'}   # blue accent, matches theme palettes
 SW = 1.75          # stroke width in grid units
 PX = 512           # PNG size
 SS = 4             # supersampling

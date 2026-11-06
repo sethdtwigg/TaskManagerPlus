@@ -491,12 +491,12 @@ VOID PhAddDefaultSettings(
 
     PhpAddIntegerSetting(SETTING_GRAPH_SHOW_TEXT, L"1");
     PhpAddIntegerSetting(SETTING_GRAPH_COLOR_MODE, L"0");
-    PhpAddIntegerSetting(SETTING_COLOR_CPU_KERNEL, L"3f7ae0"); // TaskManagerPlus: RGB(224, 122, 63)
-    PhpAddIntegerSetting(SETTING_COLOR_CPU_USER, L"8f8a0e"); // TaskManagerPlus: RGB(14, 138, 143)
-    PhpAddIntegerSetting(SETTING_COLOR_IO_READ_OTHER, L"f48542"); // TaskManagerPlus: RGB(66, 133, 244)
-    PhpAddIntegerSetting(SETTING_COLOR_IO_WRITE, L"bc47ab"); // TaskManagerPlus: RGB(171, 71, 188)
-    PhpAddIntegerSetting(SETTING_COLOR_PRIVATE, L"9aa626"); // TaskManagerPlus: RGB(38, 166, 154)
-    PhpAddIntegerSetting(SETTING_COLOR_PHYSICAL, L"e4725e"); // TaskManagerPlus: RGB(94, 114, 228)
+    PhpAddIntegerSetting(SETTING_COLOR_CPU_KERNEL, L"5056e0"); // TaskManagerPlus: RGB(224, 86, 80)
+    PhpAddIntegerSetting(SETTING_COLOR_CPU_USER, L"dd963a"); // TaskManagerPlus: RGB(58, 150, 221)
+    PhpAddIntegerSetting(SETTING_COLOR_IO_READ_OTHER, L"3cb2d6"); // TaskManagerPlus: RGB(214, 178, 60)
+    PhpAddIntegerSetting(SETTING_COLOR_IO_WRITE, L"3c78e0"); // TaskManagerPlus: RGB(224, 120, 60)
+    PhpAddIntegerSetting(SETTING_COLOR_PRIVATE, L"d26e96"); // TaskManagerPlus: RGB(150, 110, 210)
+    PhpAddIntegerSetting(SETTING_COLOR_PHYSICAL, L"d26e96"); // TaskManagerPlus: RGB(150, 110, 210)
 
     PhpAddIntegerSetting(SETTING_COLOR_POWER_USAGE, L"00ff00");
     PhpAddIntegerSetting(SETTING_COLOR_TEMPERATURE, L"0000ff");
