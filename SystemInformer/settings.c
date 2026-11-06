@@ -164,6 +164,7 @@ VOID PhAddDefaultSettings(
     PhpAddIntegerSetting(SETTING_GROUP_PROCESSES, L"1"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_HEAT_MAP, L"1"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_MINI_METERS, L"1"); // TaskManagerPlus
+    PhpAddStringSetting(SETTING_DETACHED_GRAPHS, L""); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_HIDE_MICROSOFT_PROCESSES, L"0");
     PhpAddIntegerSetting(SETTING_HIDE_WAITING_CONNECTIONS, L"0");
     PhpAddIntegerSetting(SETTING_HIGHLIGHTING_DURATION, L"3e8"); // 1000ms

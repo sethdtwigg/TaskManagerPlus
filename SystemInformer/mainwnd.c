@@ -42,6 +42,7 @@
 
 #include <mainwndp.h>
 #include <minimeters.h> // TaskManagerPlus
+#include <graphwnd.h> // TaskManagerPlus
 
 typedef struct _PH_MWP_KPH
 {
@@ -699,6 +700,7 @@ VOID PhMwpInitializeControls(
     PhProcessTreeListInitialization();
     PhInitializeProcessTreeList(PhMwpProcessTreeNewHandle);
     PhMiniMetersInitialization(WindowHandle); // TaskManagerPlus: see minimeters.c
+    PhDetachedGraphsInitialization(); // TaskManagerPlus: reopen detached graph windows, see graphwnd.c
 
     // TaskManagerPlus: Performance tab (sysinfo sections as a tile sidebar), see perftab.c.
     PhMwpCreateInternalPage(L"Performance", 0, PhMwpPerformancePageCallback);
@@ -1451,6 +1453,16 @@ VOID PhMwpOnCommand(
     case ID_VIEW_MINIMETERS: // TaskManagerPlus
         {
             PhToggleMiniMeters();
+        }
+        break;
+    case ID_VIEW_DETACHEDGRAPH_FIRST: // TaskManagerPlus: ids are consecutive, one per mini meter
+    case ID_VIEW_DETACHEDGRAPH_FIRST + 1:
+    case ID_VIEW_DETACHEDGRAPH_FIRST + 2:
+    case ID_VIEW_DETACHEDGRAPH_FIRST + 3:
+    case ID_VIEW_DETACHEDGRAPH_FIRST + 4:
+    case ID_VIEW_DETACHEDGRAPH_LAST:
+        {
+            PhToggleDetachedGraph(Id - ID_VIEW_DETACHEDGRAPH_FIRST);
         }
         break;
     case ID_VIEW_GROUPPROCESSES: // TaskManagerPlus

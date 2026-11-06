@@ -363,6 +363,7 @@ EXT ULONG PhCsProcessMonitorCacheLimit;
 #define SETTING_GROUP_PROCESSES                                     L"GroupProcesses" // TaskManagerPlus
 #define SETTING_HEAT_MAP                                            L"HeatMap" // TaskManagerPlus
 #define SETTING_MINI_METERS                                         L"MiniMeters" // TaskManagerPlus
+#define SETTING_DETACHED_GRAPHS                                     L"DetachedGraphs" // TaskManagerPlus
 #define SETTING_HIDE_MICROSOFT_PROCESSES                            L"HideMicrosoftProcesses"
 #define SETTING_HIDE_WAITING_CONNECTIONS                            L"HideWaitingConnections"
 #define SETTING_HIGHLIGHTING_DURATION                               L"HighlightingDuration"

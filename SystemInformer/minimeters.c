@@ -29,6 +29,7 @@
 #include <procprv.h>
 #include <treenew.h>
 #include <minimeters.h>
+#include <graphwnd.h>
 
 #define MM_CLASS_NAME L"PhMiniMeters"
 #define WM_MM_LAYOUT (WM_APP + 0x3a1)
@@ -664,6 +665,8 @@ VOID PhMiniMetersUpdate(
 
     if (IsWindowVisible(MmWindow))
         InvalidateRect(MmWindow, NULL, FALSE);
+
+    PhDetachedGraphsUpdate(); // TaskManagerPlus: detached graph windows share these samples
 }
 
 VOID PhToggleMiniMeters(
@@ -673,4 +676,29 @@ VOID PhToggleMiniMeters(
     PhMiniMetersEnabled = !PhMiniMetersEnabled;
     PhSetIntegerSetting(SETTING_MINI_METERS, PhMiniMetersEnabled);
     MmApplyLayout();
+}
+
+BOOLEAN PhMiniMetersGetMeter(
+    _In_ ULONG Index,
+    _Out_ PPH_MINIMETER_DATA Data
+    )
+{
+    MM_METER *meter;
+
+    C_ASSERT(PH_MINIMETER_COUNT == MM_COUNT);
+    C_ASSERT(PH_MINIMETER_HISTORY == MM_HISTORY);
+
+    if (Index >= MM_COUNT)
+        return FALSE;
+
+    meter = &MmMeters[Index];
+    Data->Title = meter->Title;
+    Data->Available = meter->Available;
+    Data->Limit = meter->Limit;
+    Data->MinScale = meter->MinScale;
+    Data->Color = MmSeriesColor(Index);
+    memcpy(Data->Text, meter->Text, sizeof(Data->Text));
+    memcpy(Data->History, meter->History, sizeof(Data->History));
+
+    return TRUE;
 }

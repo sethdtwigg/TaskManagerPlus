@@ -28,6 +28,7 @@
 
 #include <mainwndp.h>
 #include <minimeters.h> // TaskManagerPlus
+#include <graphwnd.h> // TaskManagerPlus
 
 PPH_MAIN_TAB_PAGE PhMwpProcessesPage;
 HWND PhMwpProcessTreeNewHandle;
@@ -121,6 +122,27 @@ BOOLEAN PhMwpProcessesPageCallback(
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_GROUPPROCESSES, L"&Group processes", NULL, NULL), ULONG_MAX); // TaskManagerPlus
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_HEATMAP, L"Hea&t map", NULL, NULL), ULONG_MAX); // TaskManagerPlus
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_MINIMETERS, L"&Mini meters", NULL, NULL), ULONG_MAX); // TaskManagerPlus
+            // TaskManagerPlus: pop a mini meter out into its own always-on-top window (graphwnd.c)
+            {
+                PPH_EMENU_ITEM detachedMenu = PhCreateEMenuItem(0, 0, L"Detached &graphs", NULL, NULL);
+
+                for (LONG meterIndex = PH_MINIMETER_COUNT - 1; meterIndex >= 0; meterIndex--)
+                {
+                    PH_MINIMETER_DATA meterData;
+
+                    if (PhMiniMetersGetMeter((ULONG)meterIndex, &meterData))
+                    {
+                        PPH_EMENU_ITEM meterItem = PhCreateEMenuItem(0, ID_VIEW_DETACHEDGRAPH_FIRST + meterIndex, (PWSTR)meterData.Title, NULL, NULL);
+
+                        if (PhIsDetachedGraphOpen((ULONG)meterIndex))
+                            meterItem->Flags |= PH_EMENU_CHECKED;
+
+                        PhInsertEMenuItem(detachedMenu, meterItem, ULONG_MAX);
+                    }
+                }
+
+                PhInsertEMenuItem(menu, detachedMenu, ULONG_MAX);
+            }
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_HIDEPROCESSESFROMOTHERUSERS, L"&Hide processes from other users", NULL, NULL), ULONG_MAX);
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_HIDESIGNEDPROCESSES, L"Hide si&gned processes", NULL, NULL), ULONG_MAX);
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_HIDEMICROSOFTPROCESSES, L"Hide &system processes", NULL, NULL), ULONG_MAX);
