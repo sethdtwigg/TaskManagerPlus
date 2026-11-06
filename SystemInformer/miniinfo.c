@@ -3520,7 +3520,7 @@ static BOOLEAN PhMipGraphsTreeNewCallback(
             graphRect.right -= padding;
 
             graphHeight = graphRect.bottom - graphRect.top;
-            borderColor = PhCsGraphColorMode == 0 ? RGB(0xc7, 0xc7, 0xc7) : RGB(0x00, 0x57, 0x00);
+            borderColor = PhSipGetGraphColorMode() == 0 ? RGB(0xc7, 0xc7, 0xc7) : (PhSipGetGraphColorMode() == 2 ? PhThemeWindowBorderColor : RGB(0x00, 0x57, 0x00)); // TaskManagerPlus
 
             textRect = graphRect;
             textRect.left += padding;
@@ -3529,7 +3529,7 @@ static BOOLEAN PhMipGraphsTreeNewCallback(
             if (graphRect.right > graphRect.left && graphRect.bottom > graphRect.top)
             {
                 memset(&drawInfo, 0, sizeof(PH_GRAPH_DRAW_INFO));
-                drawInfo.BackColor = (PhCsGraphColorMode == 0) ? RGB(0xef, 0xef, 0xef) : RGB(0x00, 0x00, 0x00);
+                drawInfo.BackColor = (PhSipGetGraphColorMode() == 0) ? RGB(0xef, 0xef, 0xef) : (PhSipGetGraphColorMode() == 2 ? PhThemeWindowForegroundColor : RGB(0x00, 0x00, 0x00)); // TaskManagerPlus
                 drawInfo.Width = graphRect.right - graphRect.left;
                 drawInfo.Height = graphHeight;
                 drawInfo.Step = 2;

@@ -45,6 +45,23 @@
 #include <guisup.h>
 #include <phplug.h>
 #include <phsettings.h>
+
+// TaskManagerPlus: effective graph colour mode. 0 = light panels, 1 = classic black/green,
+// 2 = dark panels derived from the active theme palette (used when the theme is dark).
+ULONG PhSipGetGraphColorMode(
+    VOID
+    )
+{
+    if (PhCsGraphColorMode == 0 && PhEnableThemeSupport)
+    {
+        COLORREF color = PhThemeWindowBackgroundColor;
+
+        if ((ULONG)GetRValue(color) * 299 + (ULONG)GetGValue(color) * 587 + (ULONG)GetBValue(color) * 114 < 128000)
+            return 2;
+    }
+
+    return PhCsGraphColorMode;
+}
 #include <emenu.h>
 
 HWND PhSipWindow = NULL;
@@ -86,12 +103,13 @@ static VOID PhSipFillContainerBackground(
     _In_ PRECT rect
     )
 {
-    switch (PhCsGraphColorMode)
+    switch (PhSipGetGraphColorMode())
     {
     case 0: // New colors
         SetDCBrushColor(hdc, GetSysColor(COLOR_WINDOW));
         FillRect(hdc, rect, PhGetStockBrush(DC_BRUSH));
         break;
+    case 2: // TaskManagerPlus: themed dark
     case 1: // Old colors
         SetDCBrushColor(hdc, PhThemeWindowBackgroundColor);
         FillRect(hdc, rect, PhGetStockBrush(DC_BRUSH));
@@ -495,12 +513,13 @@ INT_PTR CALLBACK PhSipSysInfoDialogProc(
 
             if (PhEnableThemeSupport)
             {
-                switch (PhCsGraphColorMode)
+                switch (PhSipGetGraphColorMode())
                 {
                 case 0: // New colors
                     SetTextColor((HDC)wParam, RGB(0x0, 0x0, 0x0));
                     SetDCBrushColor((HDC)wParam, RGB(0xef, 0xef, 0xef)); // GetSysColor(COLOR_WINDOW)
                     break;
+                case 2: // TaskManagerPlus: themed dark
                 case 1: // Old colors
                     SetTextColor((HDC)wParam, RGB(0xff, 0xff, 0xff));
                     SetDCBrushColor((HDC)wParam, PhThemeWindowBackgroundColor); // RGB(30, 30, 30));
@@ -584,12 +603,13 @@ INT_PTR CALLBACK PhSipContainerDialogProc(
 
             if (PhEnableThemeSupport)
             {
-                switch (PhCsGraphColorMode)
+                switch (PhSipGetGraphColorMode())
                 {
                 case 0: // New colors
                     SetTextColor((HDC)wParam, RGB(0x0, 0x0, 0x0));
                     SetDCBrushColor((HDC)wParam, GetSysColor(COLOR_WINDOW));
                     break;
+                case 2: // TaskManagerPlus: themed dark
                 case 1: // Old colors
                     SetTextColor((HDC)wParam, RGB(0xff, 0xff, 0xff));
                     SetDCBrushColor((HDC)wParam, PhThemeWindowBackgroundColor);
@@ -1357,7 +1377,7 @@ VOID PhSiSetColorsGraphDrawInfo(
 
     // Set up the colors.
 
-    switch (PhCsGraphColorMode)
+    switch (PhSipGetGraphColorMode())
     {
     case 0: // New colors
         DrawInfo->BackColor = RGB(0xef, 0xef, 0xef);
@@ -1369,6 +1389,17 @@ VOID PhSiSetColorsGraphDrawInfo(
         DrawInfo->LabelYColor = RGB(0xa0, 0x60, 0x20);
         DrawInfo->TextColor = RGB(0x00, 0x00, 0x00);
         DrawInfo->TextBoxColor = RGB(0xe7, 0xe7, 0xe7);
+        break;
+    case 2: // TaskManagerPlus: themed dark
+        DrawInfo->BackColor = PhThemeWindowForegroundColor;
+        DrawInfo->LineColor1 = Color1;
+        DrawInfo->LineBackColor1 = PhHalveColorBrightness(Color1);
+        DrawInfo->LineColor2 = Color2;
+        DrawInfo->LineBackColor2 = PhHalveColorBrightness(Color2);
+        DrawInfo->GridColor = PhThemeWindowBorderColor;
+        DrawInfo->LabelYColor = RGB(0xd0, 0xa0, 0x70);
+        DrawInfo->TextColor = PhThemeWindowTextColor;
+        DrawInfo->TextBoxColor = PhThemeWindowBackground2Color;
         break;
     case 1: // Old colors
         DrawInfo->BackColor = RGB(0x00, 0x00, 0x00);
@@ -1588,11 +1619,15 @@ VOID PhSipUpdateColorParameters(
     VOID
     )
 {
-    switch (PhCsGraphColorMode)
+    switch (PhSipGetGraphColorMode())
     {
     case 0: // New colors
         CurrentParameters.GraphBackColor = RGB(0xef, 0xef, 0xef);
         CurrentParameters.PanelForeColor = RGB(0x00, 0x00, 0x00);
+        break;
+    case 2: // TaskManagerPlus: themed dark
+        CurrentParameters.GraphBackColor = PhThemeWindowForegroundColor;
+        CurrentParameters.PanelForeColor = PhThemeWindowTextColor;
         break;
     case 1: // Old colors
         CurrentParameters.GraphBackColor = RGB(0x00, 0x00, 0x00);
@@ -1742,13 +1777,14 @@ VOID PhSipDrawRestoreSummaryPanel(
 
     if (PhEnableThemeSupport)
     {
-        switch (PhCsGraphColorMode)
+        switch (PhSipGetGraphColorMode())
         {
         case 0: // New colors
             SetTextColor(bufferDc, RGB(0x00, 0x00, 0x00));
             SetDCBrushColor(bufferDc, RGB(0xff, 0xff, 0xff));
             FillRect(bufferDc, &bufferRect, PhGetStockBrush(DC_BRUSH));
             break;
+        case 2: // TaskManagerPlus: themed dark
         case 1: // Old colors
         default:
             SetTextColor(bufferDc, PhThemeWindowTextColor);
@@ -1824,7 +1860,7 @@ VOID PhSipDrawSeparator(
 
     if (PhEnableThemeSupport)
     {
-        switch (PhCsGraphColorMode)
+        switch (PhSipGetGraphColorMode())
         {
         case 0: // New colors
             {
@@ -1834,6 +1870,7 @@ VOID PhSipDrawSeparator(
                 //bufferRect.left -= 1;
             }
             break;
+        case 2: // TaskManagerPlus: themed dark
         case 1: // Old colors
             {
                 SetDCBrushColor(bufferDc, PhThemeWindowBackgroundColor);
@@ -1882,12 +1919,13 @@ VOID PhSipDrawPanel(
     {
         if (PhEnableThemeSupport)
         {
-            switch (PhCsGraphColorMode)
+            switch (PhSipGetGraphColorMode())
             {
             case 0: // New colors
                 SetDCBrushColor(hdc, RGB(0xff, 0xff, 0xff));
                 FillRect(hdc, Rect, PhGetStockBrush(DC_BRUSH));
                 break;
+            case 2: // TaskManagerPlus: themed dark
             case 1: // Old colors
             default:
                 SetDCBrushColor(hdc, PhThemeWindowBackgroundColor);
@@ -2042,13 +2080,14 @@ VOID PhSipDefaultDrawPanel(
 
     if (PhEnableThemeSupport)
     {
-        switch (PhCsGraphColorMode)
+        switch (PhSipGetGraphColorMode())
         {
         case 0: // New colors
             SetTextColor(hdc, RGB(0x00, 0x00, 0x00));
             //SetDCBrushColor(hdc, RGB(0xff, 0xff, 0xff));
             //FillRect(hdc, Rect, PhGetStockBrush(DC_BRUSH));
             break;
+        case 2: // TaskManagerPlus: themed dark
         case 1: // Old colors
             SetTextColor(hdc, RGB(0xff, 0xff, 0xff));
             //SetDCBrushColor(hdc, RGB(0xff, 0xff, 0x00));

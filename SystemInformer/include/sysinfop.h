@@ -147,6 +147,11 @@ VOID PhSipDeleteParameters(
     VOID
     );
 
+// TaskManagerPlus: 0 = light panels, 1 = classic black/green, 2 = themed dark.
+ULONG PhSipGetGraphColorMode(
+    VOID
+    );
+
 VOID PhSipUpdateColorParameters(
     VOID
     );
