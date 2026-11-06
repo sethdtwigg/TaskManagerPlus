@@ -20,12 +20,13 @@ PPH_LIST StatusBarItemList = NULL;
 ULONG StatusBarItems[MAX_STATUSBAR_ITEMS] =
 {
     // Default items (displayed)
+    // TaskManagerPlus: calm look = process count, CPU, memory; Free is the complement of memory %
+    ID_STATUS_NUMBEROFPROCESSES,
     ID_STATUS_CPUUSAGE,
     ID_STATUS_PHYSICALMEMORY,
-    ID_STATUS_FREEMEMORY,
     // Available items (hidden)
+    ID_STATUS_FREEMEMORY,
     ID_STATUS_COMMITCHARGE,
-    ID_STATUS_NUMBEROFPROCESSES,
     ID_STATUS_NUMBEROFTHREADS,
     ID_STATUS_NUMBEROFHANDLES,
     ID_STATUS_NUMBEROFVISIBLEITEMS,

@@ -31,8 +31,8 @@
 #include <math.h>
 
 #define PH_HEAT_MIN_FRACTION 0.02
-#define PH_HEAT_MIN_ALPHA 0.10
-#define PH_HEAT_MAX_ALPHA 0.60
+#define PH_HEAT_MIN_ALPHA 0.06 // TaskManagerPlus: subtle default (was 0.10 / 0.60)
+#define PH_HEAT_MAX_ALPHA 0.35
 #define PH_HEAT_WARM_START 0.70
 #define PH_HEAT_WARM_COLOR RGB(0xe8, 0x91, 0x3a)
 
