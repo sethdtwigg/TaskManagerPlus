@@ -361,7 +361,8 @@ VOID PhSaveSettingsProcessTreeList(
     PPH_STRING sortSettings;
 
     settings = PhCmSaveSettingsEx(ProcessTreeListHandle, &ProcessTreeListCm, 0, &sortSettings);
-    PhSetStringSetting2(SETTING_PROCESS_TREE_LIST_COLUMNS, &settings->sr);
+    if (!PhProcessColumnsResetPending) // TaskManagerPlus
+        PhSetStringSetting2(SETTING_PROCESS_TREE_LIST_COLUMNS, &settings->sr);
     PhSetStringSetting2(SETTING_PROCESS_TREE_LIST_SORT, &sortSettings->sr);
     PhDereferenceObject(settings);
     PhDereferenceObject(sortSettings);
@@ -6431,6 +6432,7 @@ VOID PhExpandAllProcessNodes(
 
 // TaskManagerPlus: View > Count pill.
 BOOLEAN PhShowCountPill = FALSE;
+BOOLEAN PhProcessColumnsResetPending = FALSE; // TaskManagerPlus: calm look reset the saved column set, do not overwrite it on exit
 
 VOID PhToggleProcessCountPill(
     VOID

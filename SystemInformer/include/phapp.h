@@ -868,6 +868,15 @@ HPROPSHEETPAGE PhCreateMappingsPage(
 
 // options
 
+// TaskManagerPlus: calm / dense look presets and the one-time offer
+VOID PhApplyLookPreset(
+    _In_ BOOLEAN Calm
+    );
+
+VOID PhOfferCalmLook(
+    VOID
+    );
+
 VOID PhShowOptionsDialog(
     _In_ HWND ParentWindowHandle,
     _In_opt_ PCWSTR SectionName

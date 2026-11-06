@@ -455,6 +455,7 @@ PhExpandAllProcessNodes(
 
 // TaskManagerPlus
 extern BOOLEAN PhShowCountPill;
+extern BOOLEAN PhProcessColumnsResetPending;
 
 VOID PhToggleProcessCountPill(
     VOID

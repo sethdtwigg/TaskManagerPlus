@@ -26,6 +26,7 @@
 #include <proctree.h>
 #include <phplug.h>
 #include <phsettings.h>
+#include <minimeters.h> // TaskManagerPlus
 
 #define WM_PH_CHILD_EXIT (WM_APP + 301)
 
@@ -42,6 +43,81 @@ INT_PTR CALLBACK PhpOptionsAdvancedDlgProc(
     _In_ WPARAM wParam,
     _In_ LPARAM lParam
     );
+
+// TaskManagerPlus: the row-highlight rules the calm look switches off (Suspended, Debugged, New, Removed stay).
+static PCWSTR PhpClassicHighlightSettings[] =
+{
+    SETTING_USE_COLOR_OWN_PROCESSES, SETTING_USE_COLOR_SYSTEM_PROCESSES, SETTING_USE_COLOR_SERVICE_PROCESSES,
+    SETTING_USE_COLOR_ELEVATED_PROCESSES, SETTING_USE_COLOR_HANDLE_FILTERED, SETTING_USE_COLOR_IMMERSIVE_PROCESSES,
+    SETTING_USE_COLOR_UI_ACCESS_PROCESSES, SETTING_USE_COLOR_PICO_PROCESSES, SETTING_USE_COLOR_DOT_NET,
+    SETTING_USE_COLOR_PACKED, SETTING_USE_COLOR_LOW_IMAGE_COHERENCY, SETTING_USE_COLOR_EFFICIENCY_MODE
+};
+
+/**
+ * Applies the calm look (the new defaults) or the dense look (the old defaults) to an existing install.
+ * Highlighting, mini meters and the count pill change live; the column set, toolbar and status bar are
+ * reset in the settings and take effect after a restart.
+ */
+VOID PhApplyLookPreset(
+    _In_ BOOLEAN Calm
+    )
+{
+    for (ULONG i = 0; i < RTL_NUMBER_OF(PhpClassicHighlightSettings); i++)
+        PhSetIntegerSetting(PhpClassicHighlightSettings[i], Calm ? 0 : 1);
+
+    PhSetIntegerSetting(SETTING_HIGHLIGHT_MODE, Calm ? 1 : 2);
+    PhUpdateCachedSettings();
+
+    if (PhMiniMetersEnabled == Calm)
+        PhToggleMiniMeters();
+
+    PhSetIntegerSetting(SETTING_SHOW_COUNT_PILL, Calm ? 0 : 1);
+    PhShowCountPill = !Calm;
+
+    PhSetStringSetting(SETTING_PROCESS_TREE_LIST_COLUMNS, L"");
+    PhProcessColumnsResetPending = TRUE;
+
+    // ToolStatus: empty config means "use the built-in default" (calm); the dense toolbar is the old text-label look.
+    PhSetStringSetting(L"ToolStatus.ToolbarButtonConfig", L"");
+    PhSetStringSetting(L"ToolStatus.StatusbarConfig", L"");
+    PhSetIntegerSetting(L"ToolStatus.ToolbarDisplayStyle", Calm ? 0 : 1);
+
+    PhInvalidateAllProcessNodes();
+}
+
+/**
+ * One-time "Switch to the calm look?" prompt. Fresh installs already have the calm defaults and are not asked.
+ * The answer is remembered; nothing is changed without a yes.
+ */
+VOID PhOfferCalmLook(
+    VOID
+    )
+{
+    BOOLEAN dense;
+
+    if (PhGetIntegerSetting(SETTING_CALM_LOOK_OFFERED))
+        return;
+
+    dense = PhMiniMetersEnabled || PhGetIntegerSetting(SETTING_USE_COLOR_OWN_PROCESSES) || PhGetIntegerSetting(SETTING_USE_COLOR_SYSTEM_PROCESSES);
+
+    PhSetIntegerSetting(SETTING_CALM_LOOK_OFFERED, TRUE);
+
+    if (!dense)
+        return;
+
+    if (PhShowMessage2(
+        PhMainWndHandle,
+        TD_YES_BUTTON | TD_NO_BUTTON,
+        TD_INFORMATION_ICON,
+        L"Switch to the calm look?",
+        L"The calm look uses minimal row highlighting, no floating mini meters, fewer columns and a simpler toolbar and "
+        L"status bar. Your other settings are kept. You can switch at any time in Options > General (Apply calm look / "
+        L"Restore dense look). Columns, toolbar and status bar change after a restart."
+        ) == IDYES)
+    {
+        PhApplyLookPreset(TRUE);
+    }
+}
 
 INT_PTR CALLBACK PhpOptionsHighlightingDlgProc(
     _In_ HWND hwndDlg,
@@ -2612,6 +2688,24 @@ INT_PTR CALLBACK PhpOptionsGeneralDlgProc(
                         ));
                 }
                 break;
+            case IDC_APPLYCALMLOOK: // TaskManagerPlus
+            case IDC_APPLYDENSELOOK:
+                {
+                    BOOLEAN calm = GET_WM_COMMAND_ID(wParam, lParam) == IDC_APPLYCALMLOOK;
+
+                    if (PhShowMessage2(
+                        hwndDlg,
+                        TD_YES_BUTTON | TD_NO_BUTTON,
+                        TD_INFORMATION_ICON,
+                        calm ? L"Apply the calm look?" : L"Restore the dense look?",
+                        L"Row highlighting, mini meters and the count pill change now. The column set, toolbar and status bar "
+                        L"are reset and change after a restart. Your other settings are kept."
+                        ) == IDYES)
+                    {
+                        PhApplyLookPreset(calm);
+                    }
+                }
+                break;
             case IDC_SAMPLECOUNTAUTOMATIC:
                 {
                     EnableWindow(GetDlgItem(hwndDlg, IDC_SAMPLECOUNT), Button_GetCheck(GetDlgItem(hwndDlg, IDC_SAMPLECOUNTAUTOMATIC)) != BST_CHECKED);
@@ -4446,6 +4540,8 @@ INT_PTR CALLBACK PhpOptionsHighlightingDlgProc(
             PhAddLayoutItem(&LayoutManager, GetDlgItem(hwndDlg, IDC_ENABLE_WINDOW_BORDER_COLOR), NULL, PH_ANCHOR_TOP | PH_ANCHOR_LEFT);
             PhAddLayoutItem(&LayoutManager, HighlightingListViewHandle, NULL, PH_ANCHOR_ALL);
             PhAddLayoutItem(&LayoutManager, GetDlgItem(hwndDlg, IDC_INFO), NULL, PH_ANCHOR_BOTTOM | PH_ANCHOR_LEFT | PH_LAYOUT_FORCE_INVALIDATE);
+            PhAddLayoutItem(&LayoutManager, GetDlgItem(hwndDlg, IDC_HIGHLIGHTMINIMAL), NULL, PH_ANCHOR_BOTTOM | PH_ANCHOR_LEFT); // TaskManagerPlus
+            PhAddLayoutItem(&LayoutManager, GetDlgItem(hwndDlg, IDC_HIGHLIGHTCLASSIC), NULL, PH_ANCHOR_BOTTOM | PH_ANCHOR_LEFT); // TaskManagerPlus
             PhAddLayoutItem(&LayoutManager, GetDlgItem(hwndDlg, IDC_ENABLEALL), NULL, PH_ANCHOR_BOTTOM | PH_ANCHOR_RIGHT);
             PhAddLayoutItem(&LayoutManager, GetDlgItem(hwndDlg, IDC_DISABLEALL), NULL, PH_ANCHOR_BOTTOM | PH_ANCHOR_RIGHT);
         }
@@ -4499,6 +4595,29 @@ INT_PTR CALLBACK PhpOptionsHighlightingDlgProc(
                         if (index != INT_ERROR)
                             ListView_SetCheckState(HighlightingListViewHandle, index, TRUE);
                     }
+                }
+                break;
+            case IDC_HIGHLIGHTMINIMAL: // TaskManagerPlus: calm preset, applied when the page closes like the other checks
+            case IDC_HIGHLIGHTCLASSIC:
+                {
+                    BOOLEAN classic = GET_WM_COMMAND_ID(wParam, lParam) == IDC_HIGHLIGHTCLASSIC;
+
+                    for (ULONG i = 0; i < RTL_NUMBER_OF(ColorItems); i++)
+                    {
+                        for (ULONG j = 0; j < RTL_NUMBER_OF(PhpClassicHighlightSettings); j++)
+                        {
+                            if (wcscmp(ColorItems[i].UseSettingName, PhpClassicHighlightSettings[j]) == 0)
+                            {
+                                INT index = PhFindListViewItemByParam(HighlightingListViewHandle, INT_ERROR, &ColorItems[i]);
+
+                                if (index != INT_ERROR)
+                                    ListView_SetCheckState(HighlightingListViewHandle, index, classic);
+                                break;
+                            }
+                        }
+                    }
+
+                    PhSetIntegerSetting(SETTING_HIGHLIGHT_MODE, classic ? 2 : 1);
                 }
                 break;
             case IDC_DISABLEALL:

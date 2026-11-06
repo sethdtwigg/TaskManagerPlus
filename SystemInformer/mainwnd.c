@@ -138,6 +138,8 @@ BOOLEAN PhMainWndInitialization(
 
     PhMwpShowWindow(PhMainWndHandle, SW_SHOWDEFAULT);
 
+    PhOfferCalmLook(); // TaskManagerPlus: one-time "Switch to the calm look?" for installs that predate the calm defaults
+
     return TRUE;
 }
 
