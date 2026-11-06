@@ -6430,6 +6430,19 @@ VOID PhExpandAllProcessNodes(
         TreeNew_NodesStructured(ProcessTreeListHandle);
 }
 
+// TaskManagerPlus: View > Compact rows (setting ThinRows; the process list changes live, other lists on restart).
+VOID PhToggleProcessCompactRows(
+    VOID
+    )
+{
+    BOOLEAN thin = !PhGetIntegerSetting(SETTING_THIN_ROWS);
+
+    PhSetIntegerSetting(SETTING_THIN_ROWS, thin);
+
+    if (ProcessTreeListHandle)
+        TreeNew_SetStyleFlags(ProcessTreeListHandle, TN_STYLE_THIN_ROWS, thin ? TN_STYLE_THIN_ROWS : 0);
+}
+
 // TaskManagerPlus: View > Totals row.
 VOID PhToggleProcessTotalsRow(
     VOID

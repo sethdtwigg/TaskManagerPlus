@@ -1478,6 +1478,11 @@ VOID PhMwpOnCommand(
             PhMwpToggleTabHidden(Id - ID_VIEW_TABS_FIRST);
         }
         break;
+    case ID_VIEW_COMPACTROWS: // TaskManagerPlus
+        {
+            PhToggleProcessCompactRows();
+        }
+        break;
     case ID_VIEW_TOTALSROW: // TaskManagerPlus
         {
             PhToggleProcessTotalsRow();

@@ -124,6 +124,7 @@ BOOLEAN PhMwpProcessesPageCallback(
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_MINIMETERS, L"&Mini meters", NULL, NULL), ULONG_MAX); // TaskManagerPlus
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_COUNTPILL, L"Count &pill", NULL, NULL), ULONG_MAX); // TaskManagerPlus
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_TOTALSROW, L"&Totals row", NULL, NULL), ULONG_MAX); // TaskManagerPlus
+            PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_COMPACTROWS, L"Compact ro&ws", NULL, NULL), ULONG_MAX); // TaskManagerPlus
             // TaskManagerPlus: pop a mini meter out into its own always-on-top window (graphwnd.c)
             {
                 PPH_EMENU_ITEM detachedMenu = PhCreateEMenuItem(0, 0, L"Detached &graphs", NULL, NULL);
@@ -158,6 +159,8 @@ BOOLEAN PhMwpProcessesPageCallback(
             if (PhGetIntegerSetting(SETTING_HEAT_MAP) && (menuItem = PhFindEMenuItem(menu, 0, NULL, ID_VIEW_HEATMAP))) // TaskManagerPlus
                 menuItem->Flags |= PH_EMENU_CHECKED;
             if (PhGetIntegerSetting(SETTING_SHOW_TOTALS_ROW) && (menuItem = PhFindEMenuItem(menu, 0, NULL, ID_VIEW_TOTALSROW))) // TaskManagerPlus
+                menuItem->Flags |= PH_EMENU_CHECKED;
+            if (PhGetIntegerSetting(SETTING_THIN_ROWS) && (menuItem = PhFindEMenuItem(menu, 0, NULL, ID_VIEW_COMPACTROWS))) // TaskManagerPlus
                 menuItem->Flags |= PH_EMENU_CHECKED;
             if (PhShowCountPill && (menuItem = PhFindEMenuItem(menu, 0, NULL, ID_VIEW_COUNTPILL))) // TaskManagerPlus
                 menuItem->Flags |= PH_EMENU_CHECKED;
