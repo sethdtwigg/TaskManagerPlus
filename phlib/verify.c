@@ -314,7 +314,7 @@ BOOLEAN PhIsChainedToMicrosoft(
                 0,
                 cryptStoreHandle,
                 &chainPara,
-                0,
+                CERT_CHAIN_CACHE_ONLY_URL_RETRIEVAL, // TaskManagerPlus: no network
                 0,
                 &chainContext
                 ))
@@ -478,21 +478,16 @@ VERIFY_RESULT PhpVerifyFile(
     trustData.cbStruct = sizeof(WINTRUST_DATA);
     trustData.pPolicyCallbackData = PolicyCallbackData;
     trustData.dwUIChoice = WTD_UI_NONE;
-    trustData.fdwRevocationChecks = WTD_REVOKE_WHOLECHAIN;
+    // TaskManagerPlus: never allow CRL/OCSP or other URL retrieval (offline-only fork).
+    trustData.fdwRevocationChecks = WTD_REVOKE_NONE;
     trustData.dwUnionChoice = UnionChoice;
     trustData.dwStateAction = WTD_STATEACTION_VERIFY;
-    trustData.dwProvFlags = WTD_SAFER_FLAG | WTD_DISABLE_MD2_MD4;
+    trustData.dwProvFlags = WTD_SAFER_FLAG | WTD_DISABLE_MD2_MD4 | WTD_CACHE_ONLY_URL_RETRIEVAL | WTD_REVOCATION_CHECK_NONE;
 
     trustData.pFile = UnionData;
 
     if (UnionChoice == WTD_CHOICE_CATALOG)
         trustData.pCatalog = UnionData;
-
-    if (FlagOn(Information->Flags, PH_VERIFY_PREVENT_NETWORK_ACCESS))
-    {
-        trustData.fdwRevocationChecks = WTD_REVOKE_NONE;
-        trustData.dwProvFlags |= WTD_CACHE_ONLY_URL_RETRIEVAL;
-    }
 
     status = WinVerifyTrust_I(INVALID_HANDLE_VALUE, ActionId, &trustData);
     PhpGetSignaturesFromStateData(trustData.hWVTStateData, Signatures, NumberOfSignatures);
@@ -1290,7 +1285,7 @@ BOOLEAN PhpGetCertificateRootThumbprint(
         NULL,
         Certificate->hCertStore,
         &chainPara,
-        0,
+        CERT_CHAIN_CACHE_ONLY_URL_RETRIEVAL, // TaskManagerPlus: no network
         NULL,
         &chainContext
         ))
