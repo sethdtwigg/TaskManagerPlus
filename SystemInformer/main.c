@@ -1563,6 +1563,20 @@ VOID PhInitializeAppSettings(
         }
     }
 
+    // TaskManagerPlus: migrate the old default symbol path (it downloaded PDBs from a remote
+    // server) to the local-only default. Other values, including user-configured symbol
+    // servers, are left alone.
+    {
+        PPH_STRING symbolSearchPath = PhGetStringSetting(SETTING_DBGHELP_SEARCH_PATH);
+
+        if (PhEqualStringRef2(&symbolSearchPath->sr, L"SRV*C:\\Symbols*https://msdl.microsoft.com/download/symbols", TRUE)) // migrate-old-default
+        {
+            PhSetStringSetting(SETTING_DBGHELP_SEARCH_PATH, L"C:\\Symbols");
+        }
+
+        PhDereferenceObject(symbolSearchPath);
+    }
+
     PhUpdateCachedSettings();
 
     // Apply basic global settings.

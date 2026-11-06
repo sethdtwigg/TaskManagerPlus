@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://example.com/systeminformer/settings.schema.json",
+  "$id": "settings.schema.json",
   "title": "System Informer Settings (settings.json)",
   "description": "Schema for System Informer JSON settings file. Includes known keys and allows additional plugin keys. Each property description contains value-format notes plus a setting description.",
   "type": "object",
@@ -9,7 +9,7 @@
       "type": "string",
       "description": "Optional schema reference for editor tooling.",
       "examples": [
-        "https://example.com/systeminformer/SystemInformer.exe.settings.schema.json"
+        "settings.schema.json"
       ]
     },
     "AllowOnlyOneInstance": {
@@ -44,7 +44,7 @@
     },
     "DbgHelpSearchPath": {
       "type": "string",
-      "description": "Setting: The search path used for symbol resolution. Contains a semicolon-delimited list of local paths and symbol server connection strings (e.g. srv*C:\\Symbols*https://msdl.microsoft.com/download/symbols) used to locate PDB files."
+      "description": "Setting: The search path used for symbol resolution. Contains a semicolon-delimited list of local paths (default: C:\\Symbols) used to locate PDB files. A symbol server connection string may be added manually; none is configured by default."
     },
     "DbgHelpUndecorate": {
       "description": "Boolean-like flag stored as '0' or '1'.\n\nSetting: Controls whether C++ decorated symbol names are undecorated (demangled) into human-readable function signatures.",
@@ -6342,260 +6342,6 @@
           "type": "boolean"
         }
       ]
-    },
-    "NetworkTools.AddressHistory": {
-      "type": "string",
-      "description": "Setting: Stores history of addresses used in Network Tools."
-    },
-    "NetworkTools.PingWindowPosition": {
-      "description": "Integer pair encoded as 'x,y' (decimal).\n\nSetting: Stores the position of the Ping window.",
-      "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^-?\\d+,-?\\d+$"
-        },
-        {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          },
-          "minItems": 2,
-          "maxItems": 2
-        }
-      ]
-    },
-    "NetworkTools.PingWindowSize": {
-      "type": "string",
-      "description": "Scale-prefixed setting string (often starts with '@<dpi>' and may include newlines).\n\nSetting: Stores the size of the Ping window."
-    },
-    "NetworkTools.PingMinScaling": {
-      "description": "Unsigned integer encoded as hexadecimal (up to 32-bit).\n\nSetting: Minimum scaling factor for the Ping graph.",
-      "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^[0-9A-Fa-f]{1,8}$"
-        },
-        {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 4294967295
-        }
-      ]
-    },
-    "NetworkTools.PingTimeout": {
-      "description": "Unsigned integer encoded as hexadecimal (up to 32-bit).\n\nSetting: Timeout value for Ping requests.",
-      "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^[0-9A-Fa-f]{1,8}$"
-        },
-        {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 4294967295
-        }
-      ]
-    },
-    "NetworkTools.PingSize": {
-      "description": "Unsigned integer encoded as hexadecimal (up to 32-bit).\n\nSetting: Packet size for Ping requests.",
-      "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^[0-9A-Fa-f]{1,8}$"
-        },
-        {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 4294967295
-        }
-      ]
-    },
-    "NetworkTools.TracertWindowPosition": {
-      "description": "Integer pair encoded as 'x,y' (decimal).\n\nSetting: Stores the position of the Traceroute window.",
-      "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^-?\\d+,-?\\d+$"
-        },
-        {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          },
-          "minItems": 2,
-          "maxItems": 2
-        }
-      ]
-    },
-    "NetworkTools.TracertWindowSize": {
-      "type": "string",
-      "description": "Scale-prefixed setting string (often starts with '@<dpi>' and may include newlines).\n\nSetting: Stores the size of the Traceroute window."
-    },
-    "NetworkTools.TracertTreeColumns": {
-      "type": "string",
-      "description": "Setting: Stores column configuration for the Traceroute tree."
-    },
-    "NetworkTools.TracertTreeSort": {
-      "description": "Integer pair encoded as 'x,y' (decimal).\n\nSetting: Stores sorting configuration for the Traceroute tree.",
-      "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^-?\\d+,-?\\d+$"
-        },
-        {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          },
-          "minItems": 2,
-          "maxItems": 2
-        }
-      ]
-    },
-    "NetworkTools.TracertMaxHops": {
-      "description": "Unsigned integer encoded as hexadecimal (up to 32-bit).\n\nSetting: Maximum number of hops for Traceroute.",
-      "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^[0-9A-Fa-f]{1,8}$"
-        },
-        {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 4294967295
-        }
-      ]
-    },
-    "NetworkTools.WhoisWindowPosition": {
-      "description": "Integer pair encoded as 'x,y' (decimal).\n\nSetting: Stores the position of the Whois window.",
-      "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^-?\\d+,-?\\d+$"
-        },
-        {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          },
-          "minItems": 2,
-          "maxItems": 2
-        }
-      ]
-    },
-    "NetworkTools.WhoisWindowSize": {
-      "type": "string",
-      "description": "Scale-prefixed setting string (often starts with '@<dpi>' and may include newlines).\n\nSetting: Stores the size of the Whois window."
-    },
-    "NetworkTools.WhoisProtocalSupport": {
-      "description": "Boolean-like flag stored as '0' or '1'.\n\nSetting: Enables support for the Whois protocol.",
-      "anyOf": [
-        {
-          "type": "string",
-          "enum": [
-            "0",
-            "1"
-          ]
-        },
-        {
-          "type": "boolean"
-        }
-      ]
-    },
-    "NetworkTools.EnableExtendedTcpStats": {
-      "description": "Boolean-like flag stored as '0' or '1'.\n\nSetting: Enables extended TCP statistics.",
-      "anyOf": [
-        {
-          "type": "string",
-          "enum": [
-            "0",
-            "1"
-          ]
-        },
-        {
-          "type": "boolean"
-        }
-      ]
-    },
-    "NetworkTools.MaxMindApiKey": {
-      "type": "string",
-      "description": "Setting: API key for MaxMind GeoIP services."
-    },
-    "NetworkTools.MaxMindApiId": {
-      "type": "string",
-      "description": "Setting: API ID for MaxMind GeoIP services."
-    },
-    "NetworkTools.MaxMindType": {
-      "description": "Boolean-like flag stored as '0' or '1'.\n\nSetting: Type of MaxMind service to use.",
-      "anyOf": [
-        {
-          "type": "string",
-          "enum": [
-            "0",
-            "1"
-          ]
-        },
-        {
-          "type": "boolean"
-        }
-      ]
-    },
-    "OnlineChecks.EnableVirusTotalScanning": {
-      "description": "Boolean-like flag stored as '0' or '1'.\n\nSetting: Enables VirusTotal scanning integration.",
-      "anyOf": [
-        {
-          "type": "string",
-          "enum": [
-            "0",
-            "1"
-          ]
-        },
-        {
-          "type": "boolean"
-        }
-      ]
-    },
-    "OnlineChecks.VirusTotalHighlightDetection": {
-      "description": "Boolean-like flag stored as '0' or '1'.\n\nSetting: Highlights processes with positive VirusTotal detections.",
-      "anyOf": [
-        {
-          "type": "string",
-          "enum": [
-            "0",
-            "1"
-          ]
-        },
-        {
-          "type": "boolean"
-        }
-      ]
-    },
-    "OnlineChecks.VirusTotalDefautAction": {
-      "description": "Boolean-like flag stored as '0' or '1'.\n\nSetting: Default action for VirusTotal checks.",
-      "anyOf": [
-        {
-          "type": "string",
-          "enum": [
-            "0",
-            "1"
-          ]
-        },
-        {
-          "type": "boolean"
-        }
-      ]
-    },
-    "OnlineChecks.VirusTotalDefautPAT": {
-      "type": "string",
-      "description": "Setting: Default Personal Access Token (PAT) for VirusTotal."
-    },
-    "OnlineChecks.HybridAnalysisDefautPAT": {
-      "type": "string",
-      "description": "Setting: Default Personal Access Token (PAT) for Hybrid Analysis."
-    },
-    "OnlineChecks.FileScanDefautPAT": {
-      "type": "string",
-      "description": "Setting: Default Personal Access Token (PAT) for File Scan."
     },
     "ToolStatus.Config": {
       "description": "Unsigned integer encoded as hexadecimal (up to 32-bit).\n\nSetting: Configuration for the status bar and toolbars.",

@@ -20,10 +20,10 @@ VOID PhAddDefaultSettings(
     VOID
     )
 {
-    PhpAddStringSetting(SETTING_SCHEMA_FILE, L"https://systeminformer.io/settings.schema.json");
+    PhpAddStringSetting(SETTING_SCHEMA_FILE, L"settings.schema.json");
     PhpAddIntegerSetting(SETTING_ALLOW_ONLY_ONE_INSTANCE, L"1");
     PhpAddIntegerSetting(SETTING_CLOSE_ON_ESCAPE, L"0");
-    PhpAddStringSetting(SETTING_DBGHELP_SEARCH_PATH, L"SRV*C:\\Symbols*https://msdl.microsoft.com/download/symbols");
+    PhpAddStringSetting(SETTING_DBGHELP_SEARCH_PATH, L"C:\\Symbols"); // TaskManagerPlus: local symbols only, no symbol server by default
     PhpAddIntegerSetting(SETTING_DBGHELP_UNDECORATE, L"1");
     PhpAddIntegerSetting(SETTING_DBGHELP_VERIFY_MICROSOFT_CHAIN, L"1");
     PhpAddStringSetting(SETTING_DISABLED_PLUGINS, L"");
