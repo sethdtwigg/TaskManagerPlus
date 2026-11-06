@@ -670,6 +670,20 @@ BOOLEAN PhMwpPerformancePageCallback(
     );
 
 //
+// Information (TaskManagerPlus)
+//
+
+extern PPH_MAIN_TAB_PAGE PhMwpInformationPage;
+
+_Function_class_(PH_MAIN_TAB_PAGE_CALLBACK)
+BOOLEAN PhMwpInformationPageCallback(
+    _In_ PPH_MAIN_TAB_PAGE Page,
+    _In_ PH_MAIN_TAB_PAGE_MESSAGE Message,
+    _In_ PVOID Parameter1,
+    _In_ PVOID Parameter2
+    );
+
+//
 // Network
 //
 

@@ -703,6 +703,9 @@ VOID PhMwpInitializeControls(
     // TaskManagerPlus: Performance tab (sysinfo sections as a tile sidebar), see perftab.c.
     PhMwpCreateInternalPage(L"Performance", 0, PhMwpPerformancePageCallback);
 
+    // TaskManagerPlus: Information tab (cards of local system facts), see infotab.c.
+    PhMwpCreateInternalPage(L"Information", 0, PhMwpInformationPageCallback);
+
     PhMwpCreateInternalPage(L"Services", 0, PhMwpServicesPageCallback);
     PhServiceTreeListInitialization();
     PhInitializeServiceTreeList(PhMwpServiceTreeNewHandle);
