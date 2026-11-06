@@ -416,6 +416,39 @@ static VOID EtpProcessTreeGetTotalsText(
     }
 }
 
+// TaskManagerPlus: EXTENDEDTOOLS_INTERFACE version 4, read by the main window mini meters.
+VOID NTAPI EtGetSystemSummary(
+    _Out_ PEXTENDEDTOOLS_SYSTEM_SUMMARY Summary
+    )
+{
+    memset(Summary, 0, sizeof(EXTENDEDTOOLS_SYSTEM_SUMMARY));
+
+    if (EtGpuEnabled)
+    {
+        FLOAT usage = EtGpuNodeUsage;
+
+        if (usage < 0)
+            usage = 0;
+        if (usage > 1)
+            usage = 1;
+
+        Summary->HaveGpu = TRUE;
+        Summary->GpuUtilization = usage;
+        Summary->DedicatedBytes = EtGpuDedicatedUsage;
+        Summary->DedicatedLimitBytes = EtGpuDedicatedLimit;
+    }
+
+    if (EtEtwEnabled)
+    {
+        Summary->HaveDisk = TRUE;
+        Summary->DiskReadRate = EtCalculateRate(EtDiskReadDelta.Delta);
+        Summary->DiskWriteRate = EtCalculateRate(EtDiskWriteDelta.Delta);
+        Summary->HaveNetwork = TRUE;
+        Summary->NetworkReceiveRate = EtCalculateRate(EtNetworkReceiveDelta.Delta);
+        Summary->NetworkSendRate = EtCalculateRate(EtNetworkSendDelta.Delta);
+    }
+}
+
 VOID EtProcessTreeNewMessage(
     _In_ PVOID Parameter
     )

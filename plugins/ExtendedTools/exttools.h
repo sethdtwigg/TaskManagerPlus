@@ -1411,6 +1411,11 @@ BOOLEAN EtLookupProcessIoStatistics(
     _Out_ PEXTENDEDTOOLS_PROCESS_IO Statistics
     );
 
+// EXTENDEDTOOLS_INTERFACE (TaskManagerPlus)
+VOID NTAPI EtGetSystemSummary(
+    _Out_ PEXTENDEDTOOLS_SYSTEM_SUMMARY Summary
+    );
+
 // Firewall
 extern BOOLEAN EtFwEnabled;
 extern ULONG EtFwFlagsMask;

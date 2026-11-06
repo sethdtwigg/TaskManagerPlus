@@ -69,7 +69,8 @@ EXTENDEDTOOLS_INTERFACE PluginInterface =
     EtLookupTotalGpuAdapterEngineUtilization,
     EtLookupProcessIoStatistics,
     EtLookupProcessGpuStatistics,
-    EtLookupProcessGpuEngineUtilization
+    EtLookupProcessGpuEngineUtilization,
+    EtGetSystemSummary // TaskManagerPlus
 };
 
 /**

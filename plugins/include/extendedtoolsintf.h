@@ -14,7 +14,7 @@
 #define _EXTENDEDTOOLSINTF_H
 
 #define EXTENDEDTOOLS_PLUGIN_NAME L"ExtendedTools"
-#define EXTENDEDTOOLS_INTERFACE_VERSION 3
+#define EXTENDEDTOOLS_INTERFACE_VERSION 4
 
 typedef FLOAT (NTAPI* PEXTENDEDTOOLS_GET_GPUADAPTERUTILIZATION)(
     _In_ LUID AdapterLuid
@@ -91,6 +91,28 @@ typedef FLOAT (NTAPI* PEXTENDEDTOOLS_GET_PROCESSGPUENGINE)(
     _In_ ULONG EngineId
     );
 
+// TaskManagerPlus: system-wide summary for the main window mini meters (interface version 4).
+// Rates are bytes per second. Each Have* flag says whether that group was measured at all.
+typedef struct _EXTENDEDTOOLS_SYSTEM_SUMMARY
+{
+    BOOLEAN HaveGpu;
+    BOOLEAN HaveDisk;
+    BOOLEAN HaveNetwork;
+
+    FLOAT GpuUtilization; // 0..1, busiest engine group across all adapters
+    ULONG64 DedicatedBytes; // video memory in use
+    ULONG64 DedicatedLimitBytes; // 0 when the total is unknown
+
+    ULONG64 DiskReadRate;
+    ULONG64 DiskWriteRate;
+    ULONG64 NetworkReceiveRate;
+    ULONG64 NetworkSendRate;
+} EXTENDEDTOOLS_SYSTEM_SUMMARY, *PEXTENDEDTOOLS_SYSTEM_SUMMARY;
+
+typedef VOID (NTAPI* PEXTENDEDTOOLS_GET_SYSTEMSUMMARY)(
+    _Out_ PEXTENDEDTOOLS_SYSTEM_SUMMARY Summary
+    );
+
 typedef struct _EXTENDEDTOOLS_INTERFACE
 {
     ULONG Version;
@@ -101,6 +123,7 @@ typedef struct _EXTENDEDTOOLS_INTERFACE
     PEXTENDEDTOOLS_GET_PROCESSIO GetProcessIoStatistics; // Version 2
     PEXTENDEDTOOLS_GET_PROCESSGPU GetProcessGpuStatistics; // Version 3
     PEXTENDEDTOOLS_GET_PROCESSGPUENGINE GetProcessGpuEngineUtilization; // Version 3
+    PEXTENDEDTOOLS_GET_SYSTEMSUMMARY GetSystemSummary; // Version 4, TaskManagerPlus
 } EXTENDEDTOOLS_INTERFACE, *PEXTENDEDTOOLS_INTERFACE;
 
 #endif
