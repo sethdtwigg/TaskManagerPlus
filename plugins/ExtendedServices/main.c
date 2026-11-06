@@ -33,7 +33,7 @@ VOID NTAPI MenuItemCallback(
     {
     case ID_SERVICE_GOTOSERVICE:
         {
-            SystemInformer_SelectTabPage(1);
+            SystemInformer_SelectTabPage(2); // TaskManagerPlus: Services moved after the Performance tab
             SystemInformer_SelectServiceItem((PPH_SERVICE_ITEM)menuItem->Context);
             SystemInformer_ToggleVisible(TRUE);
         }

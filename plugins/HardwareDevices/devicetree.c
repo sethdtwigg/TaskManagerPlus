@@ -950,7 +950,7 @@ BOOLEAN NTAPI DeviceTreeCallback(
                             {
                                 if (serviceItem = PhReferenceServiceItem(&serviceName->sr))
                                 {
-                                    SystemInformer_SelectTabPage(1);
+                                    SystemInformer_SelectTabPage(2); // TaskManagerPlus: Services moved after the Performance tab
                                     SystemInformer_SelectServiceItem(serviceItem);
                                     PhDereferenceObject(serviceItem);
                                 }

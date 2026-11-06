@@ -609,7 +609,7 @@ INT_PTR CALLBACK PhpServicesPageProc(
                                 {
                                     SetForegroundWindow(PhMwpServiceTreeNewHandle);
 
-                                    SystemInformer_SelectTabPage(1);
+                                    SystemInformer_SelectTabPage(PhMwpServicesPage->Index); // TaskManagerPlus: Performance tab shifted the indices
 
                                     SetFocus(PhMwpServiceTreeNewHandle);
 
