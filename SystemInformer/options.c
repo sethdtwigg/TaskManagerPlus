@@ -81,6 +81,20 @@ VOID PhApplyLookPreset(
     PhSetStringSetting(L"ToolStatus.ToolbarButtonConfig", L"");
     PhSetStringSetting(L"ToolStatus.StatusbarConfig", L"");
     PhSetIntegerSetting(L"ToolStatus.ToolbarDisplayStyle", Calm ? 0 : 1);
+    PhSetIntegerSetting(SETTING_SEARCH_OPTIONS_MENU, Calm ? 1 : 0);
+
+    {
+        // ToolStatus.Config bit 6 = AutoHideMenu (Alt reveals the menu bar). Only hide it while the toolbar, and with
+        // it the menu button, is enabled so the menu never becomes unreachable.
+        ULONG toolStatusConfig = PhGetIntegerSetting(L"ToolStatus.Config");
+
+        if (Calm && (toolStatusConfig & 0x1))
+            toolStatusConfig |= 0x40;
+        else
+            toolStatusConfig &= ~0x40;
+
+        PhSetIntegerSetting(L"ToolStatus.Config", toolStatusConfig);
+    }
 
     PhInvalidateAllProcessNodes();
 }

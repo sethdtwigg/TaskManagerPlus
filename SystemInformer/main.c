@@ -1579,6 +1579,8 @@ VOID PhInitializeAppSettings(
 
     PhUpdateCachedSettings();
 
+    PhSearchControlCollapsed = !!PhGetIntegerSetting(SETTING_SEARCH_OPTIONS_MENU); // TaskManagerPlus
+
     // Apply basic global settings.
     PhPluginsEnabled = !!PhGetIntegerSetting(SETTING_ENABLE_PLUGINS);
     PhMaxSizeUnit = PhGetIntegerSetting(SETTING_MAX_SIZE_UNIT);

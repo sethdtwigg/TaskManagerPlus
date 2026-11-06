@@ -42,6 +42,9 @@ typedef struct _PH_SEARCHCONTROL_BUTTON
 
 #define PH_SC_BUTTON_COUNT 4
 
+// TaskManagerPlus: when set, the Case / Regex / Fuzzy toggles collapse into one funnel button that opens a menu.
+BOOLEAN PhSearchControlCollapsed = FALSE;
+
 typedef struct _PH_SEARCHCONTROL_CONTEXT
 {
     union
@@ -77,6 +80,7 @@ typedef struct _PH_SEARCHCONTROL_CONTEXT
     PH_SEARCHCONTROL_BUTTON FuzzyButton;
 
     LONG ButtonWidth;
+    LONG ButtonCount; // TaskManagerPlus: 4 buttons, or 2 (funnel + clear) when collapsed
     LONG BorderSize;
     LONG ImageWidth;
     LONG ImageHeight;
@@ -203,10 +207,22 @@ VOID PhSearchControlInitializeTheme(
 
     borderSize = PhGetSystemMetrics(SM_CXBORDER, Context->WindowDpi);
 
-    Context->CaseButton.Index = 0;
-    Context->FuzzyButton.Index = 1;
-    Context->RegexButton.Index = 2;
-    Context->SearchButton.Index = 3;
+    if (PhSearchControlCollapsed) // TaskManagerPlus
+    {
+        Context->FuzzyButton.Index = 0; // the funnel
+        Context->SearchButton.Index = 1;
+        Context->CaseButton.Index = 2; // unused
+        Context->RegexButton.Index = 3; // unused
+        Context->ButtonCount = 2;
+    }
+    else
+    {
+        Context->CaseButton.Index = 0;
+        Context->FuzzyButton.Index = 1;
+        Context->RegexButton.Index = 2;
+        Context->SearchButton.Index = 3;
+        Context->ButtonCount = PH_SC_BUTTON_COUNT;
+    }
 
     Context->ButtonWidth = PhScaleToDisplay(20, Context->WindowDpi);
     Context->BorderSize = borderSize;
@@ -338,6 +354,12 @@ VOID PhSearchControlButtonRect(
     _Out_ PRECT ButtonRect
     )
 {
+    if (PhSearchControlCollapsed && (Button == &Context->CaseButton || Button == &Context->RegexButton))
+    {
+        SetRectEmpty(ButtonRect); // TaskManagerPlus: hidden behind the funnel menu
+        return;
+    }
+
     memcpy(ButtonRect, WindowRect, sizeof(RECT));
 
     ButtonRect->left = ((ButtonRect->right - Context->ButtonWidth) - Context->BorderSize - 1);
@@ -346,8 +368,8 @@ VOID PhSearchControlButtonRect(
     ButtonRect->bottom -= Context->BorderSize;
 
     // Shift the button rect to the left based on the button index.
-    ButtonRect->left -= ((Context->ButtonWidth + Context->BorderSize - 1) * (PH_SC_BUTTON_COUNT - 1 - Button->Index));
-    ButtonRect->right -= ((Context->ButtonWidth + Context->BorderSize - 1) * (PH_SC_BUTTON_COUNT - 1 - Button->Index));
+    ButtonRect->left -= ((Context->ButtonWidth + Context->BorderSize - 1) * (Context->ButtonCount - 1 - Button->Index));
+    ButtonRect->right -= ((Context->ButtonWidth + Context->BorderSize - 1) * (Context->ButtonCount - 1 - Button->Index));
 }
 
 /**
@@ -546,8 +568,37 @@ VOID PhSearchControlPaintButton(
 
     PhSearchControlButtonRect(Context, Button, WindowRect, &buttonRect);
 
+    if (IsRectEmpty(&buttonRect)) // TaskManagerPlus: collapsed toggles
+        return;
+
     SetDCBrushColor(Hdc, PhSearchControlButtonColor(Context, Button));
     FillRect(Hdc, &buttonRect, Context->DcBrush);
+
+    if (PhSearchControlCollapsed && Button == &Context->FuzzyButton) // TaskManagerPlus: funnel glyph
+    {
+        COLORREF ink = PhEnableThemeSupport ? RGB(222, 222, 222) : GetSysColor(COLOR_BTNTEXT);
+        LONG unit = max(1, PhScaleToDisplay(1, Context->WindowDpi));
+        LONG cx = buttonRect.left + (buttonRect.right - buttonRect.left) / 2;
+        LONG cy = buttonRect.top + (buttonRect.bottom - buttonRect.top) / 2;
+        POINT funnel[6];
+        HGDIOBJ oldBrush;
+        HGDIOBJ oldPen;
+
+        funnel[0].x = cx - 5 * unit; funnel[0].y = cy - 4 * unit;
+        funnel[1].x = cx + 5 * unit; funnel[1].y = cy - 4 * unit;
+        funnel[2].x = cx + 1 * unit; funnel[2].y = cy + 1 * unit;
+        funnel[3].x = cx + 1 * unit; funnel[3].y = cy + 5 * unit;
+        funnel[4].x = cx - 1 * unit; funnel[4].y = cy + 4 * unit;
+        funnel[5].x = cx - 1 * unit; funnel[5].y = cy + 1 * unit;
+
+        SetDCBrushColor(Hdc, ink);
+        oldBrush = SelectObject(Hdc, GetStockObject(DC_BRUSH));
+        oldPen = SelectObject(Hdc, GetStockObject(NULL_PEN));
+        Polygon(Hdc, funnel, RTL_NUMBER_OF(funnel));
+        SelectObject(Hdc, oldPen);
+        SelectObject(Hdc, oldBrush);
+        return;
+    }
 
     if (Button->Active && Button->ActiveImageIndex != ULONG_MAX)
         imageIndex = Button->ActiveImageIndex;
@@ -670,7 +721,7 @@ VOID PhSearchControlExcludeClient(
         Hdc,
         WindowRect->left + (Context->BorderSize + 1),
         WindowRect->top + (Context->BorderSize + 1),
-        WindowRect->right - (Context->ButtonWidth * PH_SC_BUTTON_COUNT) - (Context->BorderSize + 1),
+        WindowRect->right - (Context->ButtonWidth * Context->ButtonCount) - (Context->BorderSize + 1),
         WindowRect->bottom - (Context->BorderSize + 1)
         );
 }
@@ -1107,7 +1158,7 @@ LRESULT CALLBACK PhSearchWndSubclassProc(
             // border inset reserved on the other three sides below - otherwise the text
             // area butts directly against the button row with no frame between them,
             // while the other sides show a proper 2px border. (dmex)
-            ncCalcSize->rgrc[0].right -= (context->ButtonWidth * PH_SC_BUTTON_COUNT) + (context->BorderSize + 1);
+            ncCalcSize->rgrc[0].right -= (context->ButtonWidth * context->ButtonCount) + (context->BorderSize + 1);
 
             // Note: Also reserve the border drawn by PhSearchControlPaintFrame (a 2px-deep
             // frame: the outer edge plus an inset edge). Without this, the client edit control's
@@ -1239,7 +1290,58 @@ LRESULT CALLBACK PhSearchWndSubclassProc(
             }
 
             PhSearchControlButtonRect(context, &context->FuzzyButton, &windowRect, &buttonRect);
-            if (PhPtInRect(&buttonRect, &windowPoint))
+            if (PhSearchControlCollapsed && PhPtInRect(&buttonRect, &windowPoint)) // TaskManagerPlus: funnel menu
+            {
+                PPH_EMENU menu = PhCreateEMenu();
+                PPH_EMENU_ITEM item;
+
+                PhInsertEMenuItem(menu, PhCreateEMenuItem(context->CaseButton.Active ? PH_EMENU_CHECKED : 0, 1, L"Match case", NULL, NULL), ULONG_MAX);
+                PhInsertEMenuItem(menu, PhCreateEMenuItem(context->FuzzyButton.Active ? PH_EMENU_CHECKED : 0, 2, L"Fuzzy match", NULL, NULL), ULONG_MAX);
+                PhInsertEMenuItem(menu, PhCreateEMenuItem(context->RegexButton.Active ? PH_EMENU_CHECKED : 0, 3, L"Regular expression", NULL, NULL), ULONG_MAX);
+
+                if (GetCapture() == WindowHandle)
+                {
+                    context->FuzzyButton.Pushed = FALSE;
+                    ReleaseCapture();
+                }
+
+                item = PhShowEMenu(menu, WindowHandle, PH_EMENU_SHOW_LEFTRIGHT, PH_ALIGN_LEFT | PH_ALIGN_TOP, buttonRect.left, buttonRect.bottom);
+
+                if (item)
+                {
+                    switch (item->Id)
+                    {
+                    case 1:
+                        context->CaseButton.Active = !context->CaseButton.Active;
+                        PhSetIntegerSetting(context->CaseSetting, context->CaseButton.Active);
+                        PhSearchUpdateText(WindowHandle, context, FALSE);
+                        break;
+                    case 2:
+                        context->FuzzyButton.Active = !context->FuzzyButton.Active;
+                        PhSetIntegerSetting(context->FuzzySetting, context->FuzzyButton.Active);
+                        if (context->FuzzyButton.Active)
+                        {
+                            context->RegexButton.Active = FALSE;
+                            PhSetIntegerSetting(context->RegexSetting, FALSE);
+                        }
+                        PhSearchUpdateText(WindowHandle, context, TRUE);
+                        break;
+                    case 3:
+                        context->RegexButton.Active = !context->RegexButton.Active;
+                        PhSetIntegerSetting(context->RegexSetting, context->RegexButton.Active);
+                        if (context->RegexButton.Active)
+                        {
+                            context->FuzzyButton.Active = FALSE;
+                            PhSetIntegerSetting(context->FuzzySetting, FALSE);
+                        }
+                        PhSearchUpdateText(WindowHandle, context, TRUE);
+                        break;
+                    }
+                }
+
+                PhDestroyEMenu(menu);
+            }
+            else if (PhPtInRect(&buttonRect, &windowPoint))
             {
                 context->FuzzyButton.Active = !context->FuzzyButton.Active;
                 PhSetIntegerSetting(context->FuzzySetting, context->FuzzyButton.Active);
@@ -1473,7 +1575,7 @@ LRESULT CALLBACK PhSearchWndSubclassProc(
 
             if (context->FuzzyButton.Hot && !wasHot)
             {
-                PhSearchControlCreateTooltip(context, WindowHandle, &buttonRect, L"Fuzzy Match");
+                PhSearchControlCreateTooltip(context, WindowHandle, &buttonRect, PhSearchControlCollapsed ? L"Search options" : L"Fuzzy Match");
             }
 
             PhSearchControlButtonRect(context, &context->SearchButton, &windowRect, &buttonRect);

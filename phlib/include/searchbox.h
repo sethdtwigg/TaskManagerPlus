@@ -15,6 +15,9 @@
 
 EXTERN_C_START
 
+// TaskManagerPlus: collapse the Case / Regex / Fuzzy toggles into a funnel menu (set once at startup).
+extern BOOLEAN PhSearchControlCollapsed;
+
 typedef _Function_class_(PH_SEARCHCONTROL_CALLBACK)
 VOID NTAPI PH_SEARCHCONTROL_CALLBACK(
     _In_ ULONG_PTR MatchHandle,
