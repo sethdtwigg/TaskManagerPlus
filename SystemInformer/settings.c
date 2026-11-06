@@ -240,9 +240,9 @@ VOID PhAddDefaultSettings(
     PhpAddStringSetting(SETTING_NETWORK_TREE_LIST_COLUMNS, L"");
     PhpAddStringSetting(SETTING_NETWORK_TREE_LIST_SORT, L"0,1"); // 0, AscendingSortOrder
     PhpAddIntegerSetting(SETTING_USE_COLOR_NETWORK_UNKNOWN_PROCESS, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_NETWORK_UNKNOWN_PROCESS, L"9314ff");
+    PhpAddIntegerSetting(SETTING_COLOR_NETWORK_UNKNOWN_PROCESS, L"894cbd"); // TaskManagerPlus: RGB(189, 76, 137)
     PhpAddIntegerSetting(SETTING_USE_COLOR_NETWORK_SUBSYSTEM_PROCESS, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_NETWORK_SUBSYSTEM_PROCESS, L"ff8000");
+    PhpAddIntegerSetting(SETTING_COLOR_NETWORK_SUBSYSTEM_PROCESS, L"cb9e72"); // TaskManagerPlus: RGB(114, 158, 203)
     PhpAddIntegerSetting(SETTING_NON_POLL_FLUSH_INTERVAL, L"A"); // % 10
     PhpAddIntegerSetting(SETTING_NO_PURGE_PROCESS_RECORDS, L"0");
     PhpAddStringSetting(SETTING_OPTIONS_CUSTOM_COLOR_LIST, L"");
@@ -359,58 +359,58 @@ VOID PhAddDefaultSettings(
     PhpAddScalableIntegerPairSetting(SETTING_ZOMBIE_PROCESSES_WINDOW_SIZE, L"@96|520,400");
 
     // Colors are specified with R in the lowest byte, then G, then B. So: bbggrr.
-    PhpAddIntegerSetting(SETTING_COLOR_NEW, L"00ff7f"); // Chartreuse
-    PhpAddIntegerSetting(SETTING_COLOR_REMOVED, L"283cff");
+    PhpAddIntegerSetting(SETTING_COLOR_NEW, L"4cbd84"); // TaskManagerPlus: RGB(132, 189, 76)
+    PhpAddIntegerSetting(SETTING_COLOR_REMOVED, L"4c57bd"); // TaskManagerPlus: RGB(189, 87, 76)
     PhpAddIntegerSetting(SETTING_USE_COLOR_OWN_PROCESSES, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_OWN_PROCESSES, L"aaffff");
+    PhpAddIntegerSetting(SETTING_COLOR_OWN_PROCESSES, L"4cbdbd"); // TaskManagerPlus: RGB(189, 189, 76)
     PhpAddIntegerSetting(SETTING_USE_COLOR_SYSTEM_PROCESSES, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_SYSTEM_PROCESSES, L"ffccaa");
+    PhpAddIntegerSetting(SETTING_COLOR_SYSTEM_PROCESSES, L"cb9572"); // TaskManagerPlus: RGB(114, 149, 203)
     PhpAddIntegerSetting(SETTING_USE_COLOR_SERVICE_PROCESSES, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_SERVICE_PROCESSES, L"ffffcc");
+    PhpAddIntegerSetting(SETTING_COLOR_SERVICE_PROCESSES, L"bdbd4c"); // TaskManagerPlus: RGB(76, 189, 189)
     PhpAddIntegerSetting(SETTING_USE_COLOR_BACKGROUND_PROCESSES, L"0");
-    PhpAddIntegerSetting(SETTING_COLOR_BACKGROUND_PROCESSES, L"bcbc78");
+    PhpAddIntegerSetting(SETTING_COLOR_BACKGROUND_PROCESSES, L"a9a960"); // TaskManagerPlus: RGB(96, 169, 169)
     PhpAddIntegerSetting(SETTING_USE_COLOR_JOB_PROCESSES, L"0");
-    PhpAddIntegerSetting(SETTING_COLOR_JOB_PROCESSES, L"3f85cd"); // Peru
+    PhpAddIntegerSetting(SETTING_COLOR_JOB_PROCESSES, L"6084a9"); // TaskManagerPlus: RGB(169, 132, 96)
     PhpAddIntegerSetting(SETTING_USE_COLOR_WOW64_PROCESSES, L"0");
-    PhpAddIntegerSetting(SETTING_COLOR_WOW64_PROCESSES, L"8f8fbc"); // Rosy Brown
+    PhpAddIntegerSetting(SETTING_COLOR_WOW64_PROCESSES, L"6060a9"); // TaskManagerPlus: RGB(169, 96, 96)
     PhpAddIntegerSetting(SETTING_USE_COLOR_DEBUGGED_PROCESSES, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_DEBUGGED_PROCESSES, L"ffbbcc");
+    PhpAddIntegerSetting(SETTING_COLOR_DEBUGGED_PROCESSES, L"cb7288"); // TaskManagerPlus: RGB(136, 114, 203)
     PhpAddIntegerSetting(SETTING_USE_COLOR_ELEVATED_PROCESSES, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_ELEVATED_PROCESSES, L"00aaff");
+    PhpAddIntegerSetting(SETTING_COLOR_ELEVATED_PROCESSES, L"4c97bd"); // TaskManagerPlus: RGB(189, 151, 76)
     PhpAddIntegerSetting(SETTING_USE_COLOR_HANDLE_FILTERED, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_HANDLE_FILTERED, L"000000"); // Black
+    PhpAddIntegerSetting(SETTING_COLOR_HANDLE_FILTERED, L"666666"); // TaskManagerPlus: RGB(102, 102, 102)
     PhpAddIntegerSetting(SETTING_USE_COLOR_IMMERSIVE_PROCESSES, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_IMMERSIVE_PROCESSES, L"cbc0ff"); // Pink
+    PhpAddIntegerSetting(SETTING_COLOR_IMMERSIVE_PROCESSES, L"604cbd"); // TaskManagerPlus: RGB(189, 76, 96)
     PhpAddIntegerSetting(SETTING_USE_COLOR_UI_ACCESS_PROCESSES, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_UI_ACCESS_PROCESSES, L"00aaff"); // Orange
+    PhpAddIntegerSetting(SETTING_COLOR_UI_ACCESS_PROCESSES, L"4c97bd"); // TaskManagerPlus: RGB(189, 151, 76)
     PhpAddIntegerSetting(SETTING_USE_COLOR_PICO_PROCESSES, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_PICO_PROCESSES, L"ff8000"); // Blue
+    PhpAddIntegerSetting(SETTING_COLOR_PICO_PROCESSES, L"cb9e72"); // TaskManagerPlus: RGB(114, 158, 203)
     PhpAddIntegerSetting(SETTING_USE_COLOR_SUSPENDED, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_SUSPENDED, L"777777");
+    PhpAddIntegerSetting(SETTING_COLOR_SUSPENDED, L"808080"); // TaskManagerPlus: RGB(128, 128, 128)
     PhpAddIntegerSetting(SETTING_USE_COLOR_DOT_NET, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_DOT_NET, L"00ffde");
+    PhpAddIntegerSetting(SETTING_COLOR_DOT_NET, L"4cbdae"); // TaskManagerPlus: RGB(174, 189, 76)
     PhpAddIntegerSetting(SETTING_USE_COLOR_PACKED, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_PACKED, L"9314ff"); // Deep Pink
+    PhpAddIntegerSetting(SETTING_COLOR_PACKED, L"894cbd"); // TaskManagerPlus: RGB(189, 76, 137)
     PhpAddIntegerSetting(SETTING_USE_COLOR_LOW_IMAGE_COHERENCY, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_LOW_IMAGE_COHERENCY, L"ff14b9"); // Deep Purple
+    PhpAddIntegerSetting(SETTING_COLOR_LOW_IMAGE_COHERENCY, L"cb72b0"); // TaskManagerPlus: RGB(176, 114, 203)
     PhpAddIntegerSetting(SETTING_USE_COLOR_PARTIALLY_SUSPENDED, L"0");
-    PhpAddIntegerSetting(SETTING_COLOR_PARTIALLY_SUSPENDED, L"c0c0c0");
+    PhpAddIntegerSetting(SETTING_COLOR_PARTIALLY_SUSPENDED, L"808080"); // TaskManagerPlus: RGB(128, 128, 128)
     PhpAddIntegerSetting(SETTING_USE_COLOR_GUI_THREADS, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_GUI_THREADS, L"77ffff");
+    PhpAddIntegerSetting(SETTING_COLOR_GUI_THREADS, L"4cbdbd"); // TaskManagerPlus: RGB(189, 189, 76)
     PhpAddIntegerSetting(SETTING_USE_COLOR_THREAD_SUSPENDED, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_THREAD_SUSPENDED, L"777777");
+    PhpAddIntegerSetting(SETTING_COLOR_THREAD_SUSPENDED, L"808080"); // TaskManagerPlus: RGB(128, 128, 128)
     PhpAddIntegerSetting(SETTING_USE_COLOR_THREAD_DELAY_EXECUTION, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_THREAD_DELAY_EXECUTION, L"cbc0ff"); // Pink
+    PhpAddIntegerSetting(SETTING_COLOR_THREAD_DELAY_EXECUTION, L"604cbd"); // TaskManagerPlus: RGB(189, 76, 96)
     PhpAddIntegerSetting(SETTING_USE_COLOR_THREAD_USER_REQUEST, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_THREAD_USER_REQUEST, L"ffd57f");
+    PhpAddIntegerSetting(SETTING_COLOR_THREAD_USER_REQUEST, L"cbad72"); // TaskManagerPlus: RGB(114, 173, 203)
     PhpAddIntegerSetting(SETTING_USE_COLOR_THREAD_ALERT_BY_THREAD_ID, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_THREAD_ALERT_BY_THREAD_ID, L"ffbbcc");
+    PhpAddIntegerSetting(SETTING_COLOR_THREAD_ALERT_BY_THREAD_ID, L"cb7288"); // TaskManagerPlus: RGB(136, 114, 203)
     PhpAddIntegerSetting(SETTING_USE_COLOR_THREAD_QUEUE, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_THREAD_QUEUE, L"80ff00");
+    PhpAddIntegerSetting(SETTING_COLOR_THREAD_QUEUE, L"85bd4c"); // TaskManagerPlus: RGB(76, 189, 133)
     PhpAddIntegerSetting(SETTING_USE_COLOR_THREAD_EXECUTIVE, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_THREAD_EXECUTIVE, L"ff7f7f");
+    PhpAddIntegerSetting(SETTING_COLOR_THREAD_EXECUTIVE, L"cb7272"); // TaskManagerPlus: RGB(114, 114, 203)
     PhpAddIntegerSetting(SETTING_USE_COLOR_THREAD_GUI_THREADS, L"0");
-    PhpAddIntegerSetting(SETTING_COLOR_THREAD_GUI_THREADS, L"77ffff");
+    PhpAddIntegerSetting(SETTING_COLOR_THREAD_GUI_THREADS, L"4cbdbd"); // TaskManagerPlus: RGB(189, 189, 76)
     PhpAddIntegerSetting(SETTING_USE_COLOR_TOKEN_ENABLED_DEFAULT, L"1");
     PhpAddIntegerSetting(SETTING_COLOR_TOKEN_ENABLED_DEFAULT, L"e0f0e0");
     PhpAddIntegerSetting(SETTING_USE_COLOR_TOKEN_ENABLED, L"1");
@@ -470,11 +470,11 @@ VOID PhAddDefaultSettings(
     PhpAddIntegerSetting(SETTING_USE_COLOR_PROTECTED_INHERIT_HANDLES, L"1");
     PhpAddIntegerSetting(SETTING_COLOR_PROTECTED_INHERIT_HANDLES, L"c0c0c0");
     PhpAddIntegerSetting(SETTING_USE_COLOR_PROTECTED_PROCESS, L"0");
-    PhpAddIntegerSetting(SETTING_COLOR_PROTECTED_PROCESS, L"ff8080");
+    PhpAddIntegerSetting(SETTING_COLOR_PROTECTED_PROCESS, L"cb7272"); // TaskManagerPlus: RGB(114, 114, 203)
     PhpAddIntegerSetting(SETTING_USE_COLOR_INHERIT_HANDLES, L"1");
     PhpAddIntegerSetting(SETTING_COLOR_INHERIT_HANDLES, L"ffff77");
     PhpAddIntegerSetting(SETTING_USE_COLOR_EFFICIENCY_MODE, L"1");
-    PhpAddIntegerSetting(SETTING_COLOR_EFFICIENCY_MODE, L"80ff00");
+    PhpAddIntegerSetting(SETTING_COLOR_EFFICIENCY_MODE, L"85bd4c"); // TaskManagerPlus: RGB(76, 189, 133)
     PhpAddIntegerSetting(SETTING_USE_COLOR_SERVICE_DISABLED, L"1");
     PhpAddIntegerSetting(SETTING_COLOR_SERVICE_DISABLED, L"6d6d6d"); // Dark grey
     PhpAddIntegerSetting(SETTING_USE_COLOR_SERVICE_STOP, L"1");
