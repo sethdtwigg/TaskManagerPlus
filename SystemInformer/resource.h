@@ -931,6 +931,7 @@
 #define ID_VIEW_HIDESIGNEDPROCESSES     10347
 #define ID_VIEW_GROUPPROCESSES          10360 // TaskManagerPlus
 #define ID_VIEW_HEATMAP                 10361 // TaskManagerPlus
+#define ID_VIEW_MINIMETERS              10362 // TaskManagerPlus
 #define ID_VIEW_UPDATEAUTOMATICALLY     10235
 #define ID_HACKER_RUNASLIMITEDUSER      10236
 #define ID_USER_REMOTECONTROL           10237

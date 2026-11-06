@@ -27,6 +27,7 @@
 #include <settings.h>
 
 #include <mainwndp.h>
+#include <minimeters.h> // TaskManagerPlus
 
 PPH_MAIN_TAB_PAGE PhMwpProcessesPage;
 HWND PhMwpProcessTreeNewHandle;
@@ -119,6 +120,7 @@ BOOLEAN PhMwpProcessesPageCallback(
             PhInsertEMenuItem(menu, PhCreateEMenuSeparator(), ULONG_MAX);
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_GROUPPROCESSES, L"&Group processes", NULL, NULL), ULONG_MAX); // TaskManagerPlus
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_HEATMAP, L"Hea&t map", NULL, NULL), ULONG_MAX); // TaskManagerPlus
+            PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_MINIMETERS, L"&Mini meters", NULL, NULL), ULONG_MAX); // TaskManagerPlus
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_HIDEPROCESSESFROMOTHERUSERS, L"&Hide processes from other users", NULL, NULL), ULONG_MAX);
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_HIDESIGNEDPROCESSES, L"Hide si&gned processes", NULL, NULL), ULONG_MAX);
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_HIDEMICROSOFTPROCESSES, L"Hide &system processes", NULL, NULL), ULONG_MAX);
@@ -130,6 +132,8 @@ BOOLEAN PhMwpProcessesPageCallback(
             if (PhGetIntegerSetting(SETTING_GROUP_PROCESSES) && (menuItem = PhFindEMenuItem(menu, 0, NULL, ID_VIEW_GROUPPROCESSES))) // TaskManagerPlus
                 menuItem->Flags |= PH_EMENU_CHECKED;
             if (PhGetIntegerSetting(SETTING_HEAT_MAP) && (menuItem = PhFindEMenuItem(menu, 0, NULL, ID_VIEW_HEATMAP))) // TaskManagerPlus
+                menuItem->Flags |= PH_EMENU_CHECKED;
+            if (PhMiniMetersEnabled && (menuItem = PhFindEMenuItem(menu, 0, NULL, ID_VIEW_MINIMETERS))) // TaskManagerPlus
                 menuItem->Flags |= PH_EMENU_CHECKED;
             if (PhGetIntegerSetting(SETTING_HIDE_OTHER_USER_PROCESSES) && (menuItem = PhFindEMenuItem(menu, 0, NULL, ID_VIEW_HIDEPROCESSESFROMOTHERUSERS)))
                 menuItem->Flags |= PH_EMENU_CHECKED;
@@ -1452,7 +1456,9 @@ VOID PhMwpOnProcessesUpdated(
 
     if (PhPluginsEnabled)
     {
-        PhInvokeCallback(PhGetGeneralCallback(GeneralCallbackProcessesUpdated), UlongToPtr(RunId));
+        PhMiniMetersUpdate(); // TaskManagerPlus: sample and repaint the mini meters
+
+    PhInvokeCallback(PhGetGeneralCallback(GeneralCallbackProcessesUpdated), UlongToPtr(RunId));
     }
 
     if (NeedsSelectPid != 0)

@@ -41,6 +41,7 @@
 #include <srvprv.h>
 
 #include <mainwndp.h>
+#include <minimeters.h> // TaskManagerPlus
 
 typedef struct _PH_MWP_KPH
 {
@@ -697,6 +698,7 @@ VOID PhMwpInitializeControls(
     PhMwpCreateInternalPage(L"Processes", 0, PhMwpProcessesPageCallback);
     PhProcessTreeListInitialization();
     PhInitializeProcessTreeList(PhMwpProcessTreeNewHandle);
+    PhMiniMetersInitialization(WindowHandle); // TaskManagerPlus: see minimeters.c
 
     // TaskManagerPlus: Performance tab (sysinfo sections as a tile sidebar), see perftab.c.
     PhMwpCreateInternalPage(L"Performance", 0, PhMwpPerformancePageCallback);
@@ -1441,6 +1443,11 @@ VOID PhMwpOnCommand(
     case ID_VIEW_HEATMAP: // TaskManagerPlus
         {
             PhToggleProcessHeatMap();
+        }
+        break;
+    case ID_VIEW_MINIMETERS: // TaskManagerPlus
+        {
+            PhToggleMiniMeters();
         }
         break;
     case ID_VIEW_GROUPPROCESSES: // TaskManagerPlus
@@ -4670,6 +4677,8 @@ VOID PhMwpLayoutTabControl(
             SWP_NOACTIVATE | SWP_NOZORDER //| SWP_NOOWNERZORDER
             );
     }
+
+    PhMiniMetersRequestLayout(); // TaskManagerPlus: reposition once the deferred layout has been applied
 }
 
 /**
