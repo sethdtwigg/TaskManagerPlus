@@ -138,6 +138,7 @@ set(SOURCES
     "mtgndlg.c"
     "mwpgdev.c"
     "mwpgnet.c"
+    "perftab.c"
     "mwpgproc.c"
     "mwpgsrv.c"
     "netlist.c"

@@ -203,6 +203,40 @@ VOID PhSipLayoutSectionView(
     VOID
     );
 
+// TaskManagerPlus: Performance tab hosting (tile sidebar, child window on the main thread).
+VOID PhSipPaintEmbeddedBackground(
+    _In_ HDC hdc
+    );
+
+VOID PhSipLayoutEmbeddedView(
+    VOID
+    );
+
+BOOLEAN PhSipIsStandaloneOpen(
+    VOID
+    );
+
+BOOLEAN PhSipIsEmbeddedOpen(
+    VOID
+    );
+
+HWND PhSipCreateEmbeddedWindow(
+    _In_ HWND ParentWindowHandle
+    );
+
+VOID PhSipDestroyEmbeddedWindow(
+    VOID
+    );
+
+VOID PhSipSelectEmbeddedSection(
+    _In_ PCWSTR SectionName
+    );
+
+// Implemented in perftab.c: tears down the tab's instance (the tab shows a hint instead).
+VOID PhPerfTabReleaseSysInfo(
+    VOID
+    );
+
 _Function_class_(PH_SYSINFO_ENTER_SECTION_VIEW)
 VOID PhSipEnterSectionView(
     _In_ PPH_SYSINFO_SECTION NewSection

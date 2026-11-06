@@ -69,6 +69,89 @@ static ULONG64 CpuL2CacheSize;
 static ULONG64 CpuL3CacheSize;
 
 _Function_class_(PH_SYSINFO_SECTION_CALLBACK)
+// TaskManagerPlus: Performance tab toolbar (Overall / Kernel toggles) and Total/Kernel legend.
+#define IDC_TMP_CPU_OVERALL 0x7A01
+#define IDC_TMP_CPU_KERNEL 0x7A02
+static BOOLEAN CpuEmbedded;
+static BOOLEAN CpuShowKernel = TRUE;
+static HWND CpuOverallButton;
+static HWND CpuKernelButton;
+
+static VOID PhSipFoldCpuKernel(
+    _Inout_ PFLOAT Kernel,
+    _Inout_ PFLOAT User,
+    _In_ ULONG Count
+    )
+{
+    if (CpuShowKernel)
+        return;
+
+    // Kernel off: draw the total as the single series.
+    for (ULONG i = 0; i < Count; i++)
+    {
+        User[i] += Kernel[i];
+        Kernel[i] = 0;
+    }
+}
+
+static VOID PhSipGetCpuToolbarRect(
+    _Out_ PRECT Rect
+    )
+{
+    RECT clientRect;
+    ULONG dpi = CpuSection->Parameters->WindowDpi;
+
+    GetClientRect(CpuDialog, &clientRect);
+    Rect->left = CpuGraphMarginScaled.left;
+    Rect->right = clientRect.right - CpuGraphMarginScaled.right;
+    Rect->top = CpuGraphMarginScaled.top;
+    Rect->bottom = Rect->top + PhScaleToDisplay(32, dpi);
+}
+
+static VOID PhSipPaintCpuLegend(
+    _In_ HDC hdc
+    )
+{
+    RECT toolbar;
+    ULONG dpi = CpuSection->Parameters->WindowDpi;
+    LONG size = PhScaleToDisplay(12, dpi);
+    LONG gap = PhScaleToDisplay(8, dpi);
+    LONG x;
+    LONG y;
+    HFONT oldFont;
+    SIZE textSize;
+
+    PhSipGetCpuToolbarRect(&toolbar);
+    x = toolbar.left;
+    y = toolbar.top + (toolbar.bottom - toolbar.top - size) / 2;
+    oldFont = SelectFont(hdc, CpuSection->Parameters->Font);
+    SetBkMode(hdc, TRANSPARENT);
+    SetTextColor(hdc, PhEnableThemeSupport ? PhThemeWindowTextColor : GetSysColor(COLOR_WINDOWTEXT));
+
+    for (ULONG i = 0; i < 2; i++)
+    {
+        PCWSTR text = i == 0 ? L"Total" : L"Kernel";
+        RECT swatch;
+
+        if (i == 1 && !CpuShowKernel)
+            break;
+
+        swatch.left = x;
+        swatch.top = y;
+        swatch.right = x + size;
+        swatch.bottom = y + size;
+        SetDCBrushColor(hdc, i == 0 ? PhCsColorCpuUser : PhCsColorCpuKernel);
+        FillRect(hdc, &swatch, PhGetStockBrush(DC_BRUSH));
+        x += size + gap / 2;
+
+        GetTextExtentPoint32(hdc, text, (ULONG)wcslen(text), &textSize);
+        TextOut(hdc, x, toolbar.top + (toolbar.bottom - toolbar.top - textSize.cy) / 2, text, (ULONG)wcslen(text));
+        x += textSize.cx + gap * 2;
+    }
+
+    SelectFont(hdc, oldFont);
+}
+
 BOOLEAN PhSipCpuSectionCallback(
     _In_ PPH_SYSINFO_SECTION Section,
     _In_ PH_SYSINFO_SECTION_MESSAGE Message,
@@ -427,7 +510,39 @@ INT_PTR CALLBACK PhSipCpuDialogProc(
 
             PhSipCreateCpuGraphs();
 
-            if (NumberOfProcessors != 1)
+            // TaskManagerPlus: in the Performance tab the toolbar buttons replace the checkbox.
+            CpuEmbedded = PhSipIsEmbeddedOpen();
+            CpuShowKernel = TRUE;
+
+            if (CpuEmbedded)
+            {
+                ShowWindow(GetDlgItem(CpuPanel, IDC_ONEGRAPHPERCPU), SW_HIDE);
+
+                CpuOverallButton = PhCreateWindow(
+                    WC_BUTTON, L"Overall",
+                    WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX | BS_PUSHLIKE,
+                    0, 0, 0, 0, hwndDlg, UlongToHandle(IDC_TMP_CPU_OVERALL), NULL, NULL
+                    );
+                CpuKernelButton = PhCreateWindow(
+                    WC_BUTTON, L"Kernel on",
+                    WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX | BS_PUSHLIKE,
+                    0, 0, 0, 0, hwndDlg, UlongToHandle(IDC_TMP_CPU_KERNEL), NULL, NULL
+                    );
+                SetWindowFont(CpuOverallButton, CpuSection->Parameters->Font, FALSE);
+                SetWindowFont(CpuKernelButton, CpuSection->Parameters->Font, FALSE);
+                Button_SetCheck(CpuKernelButton, BST_CHECKED);
+                EnableWindow(CpuOverallButton, NumberOfProcessors != 1);
+            }
+
+            if (CpuEmbedded)
+            {
+                // Per-CPU grid by default; "Overall" switches to the single combined graph.
+                OneGraphPerCpu = NumberOfProcessors != 1;
+                Button_SetCheck(CpuOverallButton, OneGraphPerCpu ? BST_UNCHECKED : BST_CHECKED);
+                Button_SetCheck(GetDlgItem(CpuPanel, IDC_ONEGRAPHPERCPU), OneGraphPerCpu ? BST_CHECKED : BST_UNCHECKED);
+                PhSipSetOneGraphPerCpu();
+            }
+            else if (NumberOfProcessors != 1)
             {
                 OneGraphPerCpu = (BOOLEAN)PhGetIntegerSetting(SETTING_SYSINFO_WINDOW_ONE_GRAPH_PER_CPU);
                 Button_SetCheck(GetDlgItem(CpuPanel, IDC_ONEGRAPHPERCPU), OneGraphPerCpu ? BST_CHECKED : BST_UNCHECKED);
@@ -444,9 +559,55 @@ INT_PTR CALLBACK PhSipCpuDialogProc(
             PhSipUpdateCpuPanel();
         }
         break;
+    case WM_COMMAND:
+        {
+            // TaskManagerPlus: Performance tab toolbar toggles.
+            switch (GET_WM_COMMAND_ID(wParam, lParam))
+            {
+            case IDC_TMP_CPU_OVERALL:
+                {
+                    OneGraphPerCpu = Button_GetCheck(CpuOverallButton) != BST_CHECKED;
+                    Button_SetCheck(GetDlgItem(CpuPanel, IDC_ONEGRAPHPERCPU), OneGraphPerCpu ? BST_CHECKED : BST_UNCHECKED);
+
+                    SendMessage(CpuDialog, WM_SETREDRAW, FALSE, 0);
+                    PhSipLayoutCpuGraphs();
+                    PhSipSetOneGraphPerCpu();
+                    PhSipUpdateCpuGraphs();
+                    SendMessage(CpuDialog, WM_SETREDRAW, TRUE, 0);
+                    RedrawWindow(CpuDialog, NULL, NULL, RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW);
+                }
+                break;
+            case IDC_TMP_CPU_KERNEL:
+                {
+                    RECT toolbarRect;
+
+                    CpuShowKernel = Button_GetCheck(CpuKernelButton) == BST_CHECKED;
+                    PhSetWindowText(CpuKernelButton, CpuShowKernel ? L"Kernel on" : L"Kernel off");
+                    PhSipUpdateCpuGraphs();
+                    PhSipGetCpuToolbarRect(&toolbarRect);
+                    InvalidateRect(CpuDialog, &toolbarRect, TRUE);
+                }
+                break;
+            }
+        }
+        break;
+    case WM_PAINT:
+        {
+            if (CpuEmbedded)
+            {
+                PAINTSTRUCT paintStruct;
+                HDC hdc = BeginPaint(hwndDlg, &paintStruct);
+
+                PhSipPaintCpuLegend(hdc);
+                EndPaint(hwndDlg, &paintStruct);
+                return TRUE;
+            }
+        }
+        break;
     case WM_DESTROY:
         {
             PhDeleteLayoutManager(&CpuLayoutManager);
+            CpuEmbedded = FALSE; // TaskManagerPlus
         }
         break;
     case WM_DPICHANGED_AFTERPARENT:
@@ -667,6 +828,25 @@ VOID PhSipLayoutCpuGraphs(
     if (!PhGetClientRect(CpuDialog, &clientRect))
         return;
 
+    if (CpuEmbedded)
+    {
+        // TaskManagerPlus: toolbar row (legend left, toggle buttons right) above the graphs.
+        RECT toolbar;
+        ULONG dpi = CpuSection->Parameters->WindowDpi;
+        LONG buttonHeight = PhScaleToDisplay(24, dpi);
+        LONG buttonTop;
+        LONG kernelWidth = PhScaleToDisplay(88, dpi);
+        LONG overallWidth = PhScaleToDisplay(80, dpi);
+        LONG gap = PhScaleToDisplay(8, dpi);
+
+        PhSipGetCpuToolbarRect(&toolbar);
+        buttonTop = toolbar.top + (toolbar.bottom - toolbar.top - buttonHeight) / 2;
+        SetWindowPos(CpuKernelButton, NULL, toolbar.right - kernelWidth, buttonTop, kernelWidth, buttonHeight, SWP_NOACTIVATE | SWP_NOZORDER);
+        SetWindowPos(CpuOverallButton, NULL, toolbar.right - kernelWidth - gap - overallWidth, buttonTop, overallWidth, buttonHeight, SWP_NOACTIVATE | SWP_NOZORDER);
+        rect.top = toolbar.bottom;
+        InvalidateRect(CpuDialog, &toolbar, TRUE);
+    }
+
     deferHandle = BeginDeferWindowPos(OneGraphPerCpu ? NumberOfProcessors : 1);
 
     if (!OneGraphPerCpu)
@@ -797,6 +977,7 @@ BOOLEAN NTAPI PhSipCpuGraphCallback(
                 {
                     PhCopyCircularBuffer_FLOAT(&PhCpuKernelHistory, CpuGraphState.Data1, drawInfo->LineDataCount);
                     PhCopyCircularBuffer_FLOAT(&PhCpuUserHistory, CpuGraphState.Data2, drawInfo->LineDataCount);
+                    PhSipFoldCpuKernel(CpuGraphState.Data1, CpuGraphState.Data2, drawInfo->LineDataCount); // TaskManagerPlus
 
                     if (PhCsEnableGraphMaxScale)
                     {
@@ -851,6 +1032,7 @@ BOOLEAN NTAPI PhSipCpuGraphCallback(
                 {
                     PhCopyCircularBuffer_FLOAT(&PhCpusKernelHistory[index], CpusGraphState[index].Data1, drawInfo->LineDataCount);
                     PhCopyCircularBuffer_FLOAT(&PhCpusUserHistory[index], CpusGraphState[index].Data2, drawInfo->LineDataCount);
+                    PhSipFoldCpuKernel(CpusGraphState[index].Data1, CpusGraphState[index].Data2, drawInfo->LineDataCount); // TaskManagerPlus
 
                     if (PhCsEnableGraphMaxScale)
                     {

@@ -69,6 +69,8 @@ static HANDLE PhSipThread = NULL;
 static PPH_LIST PhSipDialogList = NULL;
 static PH_EVENT InitializedEvent = PH_EVENT_INIT;
 static PCWSTR InitialSectionName;
+// TaskManagerPlus: TRUE while the sysinfo window is a child of the Performance tab (main thread, tile sidebar).
+static BOOLEAN PhSipEmbedded = FALSE;
 static RECT MinimumSize;
 static PH_CALLBACK_REGISTRATION ProcessesUpdatedRegistration;
 static PH_CALLBACK_REGISTRATION SettingsUpdatedRegistration;
@@ -98,11 +100,49 @@ static LONG SummaryGraphSpacing;
 VOID PhSipLayoutSummaryView(VOID);
 VOID PhSipLayoutSectionView(VOID);
 
+// TaskManagerPlus: palette colours for the embedded (Performance tab) tile sidebar.
+static COLORREF PhSipEmbeddedBackColor(VOID)
+{
+    return PhEnableThemeSupport ? PhThemeWindowBackgroundColor : GetSysColor(COLOR_WINDOW);
+}
+
+static COLORREF PhSipEmbeddedTileColor(VOID)
+{
+    return PhEnableThemeSupport ? PhThemeWindowBackground2Color : GetSysColor(COLOR_3DFACE);
+}
+
+static COLORREF PhSipEmbeddedHotColor(VOID)
+{
+    return PhEnableThemeSupport ? PhThemeWindowHighlightColor : GetSysColor(COLOR_HIGHLIGHT);
+}
+
+static COLORREF PhSipEmbeddedAccentColor(VOID)
+{
+    return PhEnableThemeSupport ? PhThemeWindowFocusBorderColor : GetSysColor(COLOR_HOTLIGHT);
+}
+
+static COLORREF PhSipEmbeddedBorderColor(VOID)
+{
+    return PhEnableThemeSupport ? PhThemeWindowBorderColor : GetSysColor(COLOR_3DSHADOW);
+}
+
+static COLORREF PhSipEmbeddedTextColor(VOID)
+{
+    return PhEnableThemeSupport ? PhThemeWindowTextColor : GetSysColor(COLOR_WINDOWTEXT);
+}
+
 static VOID PhSipFillContainerBackground(
     _In_ HDC hdc,
     _In_ PRECT rect
     )
 {
+    if (PhSipEmbedded) // TaskManagerPlus
+    {
+        SetDCBrushColor(hdc, PhSipEmbeddedBackColor());
+        FillRect(hdc, rect, PhGetStockBrush(DC_BRUSH));
+        return;
+    }
+
     switch (PhSipGetGraphColorMode())
     {
     case 0: // New colors
@@ -297,6 +337,10 @@ VOID PhShowSystemInformationDialog(
 {
     InitialSectionName = SectionName;
 
+    // TaskManagerPlus: only one instance of the section code exists; the Performance tab gives up its instance.
+    if (PhSipIsEmbeddedOpen())
+        PhPerfTabReleaseSysInfo();
+
     // The sysinfo thread clears PhSipWindow (WM_NCDESTROY) before its message
     // loop exits; if the window is gone, reap the old thread before recreating.
     if (PhSipThread && !ReadPointerAcquire(&PhSipWindow))
@@ -433,6 +477,15 @@ INT_PTR CALLBACK PhSipSysInfoDialogProc(
             PhSipOnNcDestroy();
         }
         break;
+    case WM_ERASEBKGND:
+        {
+            if (PhSipEmbedded) // TaskManagerPlus: flat background with tile frames
+            {
+                PhSipPaintEmbeddedBackground((HDC)wParam);
+                return TRUE;
+            }
+        }
+        break;
     case WM_NCACTIVATE:
         {
             COLORREF borderColor = PhGetWindowActiveBorderColor((BOOLEAN)wParam);
@@ -511,7 +564,12 @@ INT_PTR CALLBACK PhSipSysInfoDialogProc(
         {
             SetBkMode((HDC)wParam, TRANSPARENT);
 
-            if (PhEnableThemeSupport)
+            if (PhSipEmbedded) // TaskManagerPlus
+            {
+                SetTextColor((HDC)wParam, PhSipEmbeddedTextColor());
+                SetDCBrushColor((HDC)wParam, PhSipEmbeddedBackColor());
+            }
+            else if (PhEnableThemeSupport)
             {
                 switch (PhSipGetGraphColorMode())
                 {
@@ -638,7 +696,9 @@ VOID PhSipOnInitDialog(
     PH_STRINGREF sectionName;
     PPH_SYSINFO_SECTION section;
 
-    PhSetApplicationWindowIcon(PhSipWindow);
+    // TaskManagerPlus: the embedded instance is a child window and has no icon.
+    if (!PhSipEmbedded)
+        PhSetApplicationWindowIcon(PhSipWindow);
 
     PhSetControlTheme(PhSipWindow, L"explorer");
     PhSetWindowStyle(PhSipWindow, WS_CLIPCHILDREN, WS_CLIPCHILDREN);
@@ -751,7 +811,11 @@ VOID PhSipOnInitDialog(
         //    MinimumSize.bottom = newMinimumHeight;
     }
 
-    if (PhValidWindowPlacementFromSetting(SETTING_SYSINFO_WINDOW_POSITION))
+    if (PhSipEmbedded)
+    {
+        // TaskManagerPlus: no window placement for the embedded instance.
+    }
+    else if (PhValidWindowPlacementFromSetting(SETTING_SYSINFO_WINDOW_POSITION))
         PhLoadWindowPlacementFromSetting(SETTING_SYSINFO_WINDOW_POSITION, SETTING_SYSINFO_WINDOW_SIZE, PhSipWindow);
     else
         PhCenterWindow(PhSipWindow, NULL);
@@ -765,11 +829,19 @@ VOID PhSipOnInitDialog(
     {
         PhSipEnterSectionView(section);
     }
+    else if (PhSipEmbedded && SectionList->Count != 0)
+    {
+        // TaskManagerPlus: the tab never shows the summary view; start on the first section.
+        PhSipEnterSectionView(SectionList->Items[0]);
+    }
 
-    PhRegisterWindowCallback(PhSipWindow, PH_PLUGIN_WINDOW_EVENT_TYPE_TOPMOST, NULL);
+    if (!PhSipEmbedded)
+    {
+        PhRegisterWindowCallback(PhSipWindow, PH_PLUGIN_WINDOW_EVENT_TYPE_TOPMOST, NULL);
 
-    //PhInitializeWindowTheme(PhSipWindow, PhEnableThemeSupport);
-    PhInitializeThemeWindowFrame(PhSipWindow);
+        //PhInitializeWindowTheme(PhSipWindow, PhEnableThemeSupport);
+        PhInitializeThemeWindowFrame(PhSipWindow);
+    }
 
     PhSipOnSize(PhSipWindow, 0, 0, 0);
     PhSipOnUserMessage(SI_MSG_SYSINFO_UPDATE, 0, 0);
@@ -779,7 +851,8 @@ VOID PhSipOnDestroy(
     VOID
     )
 {
-    PhUnregisterWindowCallback(PhSipWindow);
+    if (!PhSipEmbedded)
+        PhUnregisterWindowCallback(PhSipWindow);
     PhUnregisterCallback(PhGetGeneralCallback(GeneralCallbackSettingsUpdated), &SettingsUpdatedRegistration);
     PhUnregisterCallback(PhGetGeneralCallback(GeneralCallbackProcessProviderUpdatedEvent), &ProcessesUpdatedRegistration);
 
@@ -788,10 +861,14 @@ VOID PhSipOnDestroy(
     else
         PhSetStringSetting(SETTING_SYSINFO_WINDOW_SECTION, L"");
 
-    PhSaveWindowPlacementToSetting(SETTING_SYSINFO_WINDOW_POSITION, SETTING_SYSINFO_WINDOW_SIZE, PhSipWindow);
-    PhSipSaveWindowState();
+    // TaskManagerPlus: the embedded instance lives on the main thread; no placement, no quit.
+    if (!PhSipEmbedded)
+    {
+        PhSaveWindowPlacementToSetting(SETTING_SYSINFO_WINDOW_POSITION, SETTING_SYSINFO_WINDOW_SIZE, PhSipWindow);
+        PhSipSaveWindowState();
 
-    PostQuitMessage(0);
+        PostQuitMessage(0);
+    }
 }
 
 VOID PhSipOnNcDestroy(
@@ -885,7 +962,8 @@ VOID PhSipOnCommand(
     switch (Id)
     {
     case IDCANCEL:
-        DestroyWindow(PhSipWindow);
+        if (!PhSipEmbedded) // TaskManagerPlus: Esc must not destroy the tab's instance.
+            DestroyWindow(PhSipWindow);
         break;
     case IDC_BACK:
         {
@@ -1915,7 +1993,12 @@ VOID PhSipDrawPanel(
 {
     PH_SYSINFO_DRAW_PANEL sysInfoDrawPanel;
 
-    if (CurrentView == SysInfoSectionView)
+    if (PhSipEmbedded) // TaskManagerPlus: flat tile fill, hot tiles use the palette highlight
+    {
+        SetDCBrushColor(hdc, (Section->GraphHot || Section->PanelHot) ? PhSipEmbeddedHotColor() : PhSipEmbeddedTileColor());
+        FillRect(hdc, Rect, PhGetStockBrush(DC_BRUSH));
+    }
+    else if (CurrentView == SysInfoSectionView)
     {
         if (PhEnableThemeSupport)
         {
@@ -1991,7 +2074,11 @@ VOID PhSipDefaultDrawPanel(
 
     hdc = DrawPanel->hdc;
 
-    if (ThemeHasItemBackground)
+    if (PhSipEmbedded)
+    {
+        // TaskManagerPlus: tile background and selection outline are drawn by the flat tile code.
+    }
+    else if (ThemeHasItemBackground)
     {
         if (CurrentView == SysInfoSummaryView)
         {
@@ -2111,6 +2198,9 @@ VOID PhSipDefaultDrawPanel(
         }
     }
 
+    if (PhSipEmbedded) // TaskManagerPlus
+        SetTextColor(hdc, PhSipEmbeddedTextColor());
+
     rect.left = CurrentParameters.SmallGraphPadding + CurrentParameters.PanelPadding;
     rect.top = CurrentParameters.PanelPadding;
     rect.right = CurrentParameters.PanelWidth;
@@ -2121,7 +2211,12 @@ VOID PhSipDefaultDrawPanel(
     if (CurrentView == SysInfoSummaryView)
         rect.right = DrawPanel->Rect.right; // allow the text to overflow
     else
+    {
+        if (PhSipEmbedded) // TaskManagerPlus: tiles are wider than the classic panel
+            rect.right = DrawPanel->Rect.right - CurrentParameters.PanelPadding;
+
         flags |= DT_END_ELLIPSIS;
+    }
 
     if (DrawPanel->Title)
     {
@@ -2479,6 +2574,12 @@ VOID PhSipLayoutSectionView(
     ShowScrollBar(PhSipWindow, SB_VERT, FALSE);
 #endif
 
+    if (PhSipEmbedded) // TaskManagerPlus: tile sidebar layout
+    {
+        PhSipLayoutEmbeddedView();
+        return;
+    }
+
     if (!PhGetClientRect(PhSipWindow, &clientRect))
         return;
 
@@ -2641,6 +2742,13 @@ VOID PhSipEnterSectionView(
 
     if (fromSummaryView && NewSection->DialogHandle)
         RedrawWindow(NewSection->DialogHandle, NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+
+    if (PhSipEmbedded) // TaskManagerPlus: no back button or separator; repaint the tile frames.
+    {
+        ShowWindow(RestoreSummaryControl, SW_HIDE);
+        ShowWindow(SeparatorControl, SW_HIDE);
+        InvalidateRect(PhSipWindow, NULL, TRUE);
+    }
 }
 
 VOID PhSipEnterSectionViewInner(
@@ -2683,6 +2791,9 @@ VOID PhSipRestoreSummaryView(
     PPH_SYSINFO_SECTION section;
 
     if (CurrentView == SysInfoSummaryView)
+        return;
+
+    if (PhSipEmbedded) // TaskManagerPlus: the Performance tab has no summary view.
         return;
 
     CurrentView = SysInfoSummaryView;
@@ -3103,4 +3214,261 @@ VOID NTAPI PhSipSysInfoSettingsCallback(
     )
 {
     PostMessage(PhSipWindow, SI_MSG_SYSINFO_CHANGE_SETTINGS, 0, 0);
+}
+
+// TaskManagerPlus: Performance tab hosting. The sysinfo window is created as a child of the
+// tab page on the main thread. Only one instance exists: the standalone window and the tab
+// share the section code and its state, so perftab.c closes one before opening the other.
+
+#define PH_SYSINFO_TAB_PADDING 8
+#define PH_SYSINFO_TAB_SIDEBAR_WIDTH 264
+#define PH_SYSINFO_TAB_TILE_HEIGHT 64
+#define PH_SYSINFO_TAB_TILE_MIN_HEIGHT 40
+#define PH_SYSINFO_TAB_TILE_GRAPH_WIDTH 80
+#define PH_SYSINFO_TAB_TILE_INSET 2
+
+static LONG PhSipEmbeddedTileHeight(
+    _In_ LONG ClientHeight
+    )
+{
+    LONG padding = PhScaleToDisplay(PH_SYSINFO_TAB_PADDING, CurrentParameters.WindowDpi);
+    LONG height = PhScaleToDisplay(PH_SYSINFO_TAB_TILE_HEIGHT, CurrentParameters.WindowDpi);
+    LONG minimum = PhScaleToDisplay(PH_SYSINFO_TAB_TILE_MIN_HEIGHT, CurrentParameters.WindowDpi);
+    LONG count = SectionList ? (LONG)SectionList->Count : 0;
+
+    if (count != 0)
+    {
+        LONG fit = (ClientHeight - padding - padding * count) / count;
+
+        if (fit < height)
+            height = fit;
+    }
+
+    return max(height, minimum);
+}
+
+static VOID PhSipGetEmbeddedTileRect(
+    _In_ ULONG Index,
+    _Out_ PRECT Rect
+    )
+{
+    RECT clientRect;
+    LONG padding = PhScaleToDisplay(PH_SYSINFO_TAB_PADDING, CurrentParameters.WindowDpi);
+    LONG tileHeight;
+
+    memset(&clientRect, 0, sizeof(RECT));
+    GetClientRect(PhSipWindow, &clientRect);
+    tileHeight = PhSipEmbeddedTileHeight(clientRect.bottom);
+
+    Rect->left = padding;
+    Rect->right = padding + PhScaleToDisplay(PH_SYSINFO_TAB_SIDEBAR_WIDTH, CurrentParameters.WindowDpi);
+    Rect->top = padding + (LONG)Index * (tileHeight + padding);
+    Rect->bottom = Rect->top + tileHeight;
+}
+
+static VOID PhSipFillFrame(
+    _In_ HDC hdc,
+    _In_ PRECT Rect,
+    _In_ LONG Thickness,
+    _In_ COLORREF Color
+    )
+{
+    RECT part;
+
+    SetDCBrushColor(hdc, Color);
+
+    part = *Rect; part.bottom = part.top + Thickness;
+    FillRect(hdc, &part, PhGetStockBrush(DC_BRUSH));
+    part = *Rect; part.top = part.bottom - Thickness;
+    FillRect(hdc, &part, PhGetStockBrush(DC_BRUSH));
+    part = *Rect; part.right = part.left + Thickness;
+    FillRect(hdc, &part, PhGetStockBrush(DC_BRUSH));
+    part = *Rect; part.left = part.right - Thickness;
+    FillRect(hdc, &part, PhGetStockBrush(DC_BRUSH));
+}
+
+VOID PhSipPaintEmbeddedBackground(
+    _In_ HDC hdc
+    )
+{
+    RECT clientRect;
+
+    if (!GetClientRect(PhSipWindow, &clientRect))
+        return;
+
+    SetDCBrushColor(hdc, PhSipEmbeddedBackColor());
+    FillRect(hdc, &clientRect, PhGetStockBrush(DC_BRUSH));
+
+    if (!SectionList)
+        return;
+
+    for (ULONG i = 0; i < SectionList->Count; i++)
+    {
+        PPH_SYSINFO_SECTION section = SectionList->Items[i];
+        RECT tileRect;
+        BOOLEAN selected = section == CurrentSection;
+
+        PhSipGetEmbeddedTileRect(i, &tileRect);
+
+        // The tile body is painted by the graph and panel windows; the frame is the 2px ring around them.
+        PhSipFillFrame(
+            hdc,
+            &tileRect,
+            PhScaleToDisplay(PH_SYSINFO_TAB_TILE_INSET, CurrentParameters.WindowDpi),
+            selected ? PhSipEmbeddedAccentColor() : PhSipEmbeddedBorderColor()
+            );
+    }
+}
+
+VOID PhSipLayoutEmbeddedView(
+    VOID
+    )
+{
+    RECT clientRect;
+    LONG padding = PhScaleToDisplay(PH_SYSINFO_TAB_PADDING, CurrentParameters.WindowDpi);
+    LONG inset = PhScaleToDisplay(PH_SYSINFO_TAB_TILE_INSET, CurrentParameters.WindowDpi);
+    LONG graphWidth = PhScaleToDisplay(PH_SYSINFO_TAB_TILE_GRAPH_WIDTH, CurrentParameters.WindowDpi);
+    LONG containerLeft;
+    HDWP deferHandle;
+
+    if (!GetClientRect(PhSipWindow, &clientRect))
+        return;
+
+    containerLeft = padding + PhScaleToDisplay(PH_SYSINFO_TAB_SIDEBAR_WIDTH, CurrentParameters.WindowDpi) + padding;
+    deferHandle = BeginDeferWindowPos(SectionList->Count * 2 + 1);
+
+    for (ULONG i = 0; i < SectionList->Count; i++)
+    {
+        PPH_SYSINFO_SECTION section = SectionList->Items[i];
+        RECT tile;
+
+        PhSipGetEmbeddedTileRect(i, &tile);
+
+        deferHandle = DeferWindowPos(
+            deferHandle,
+            section->GraphHandle,
+            NULL,
+            tile.left + inset,
+            tile.top + inset,
+            graphWidth,
+            tile.bottom - tile.top - inset * 2,
+            SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER
+            );
+        deferHandle = DeferWindowPos(
+            deferHandle,
+            section->PanelHandle,
+            NULL,
+            tile.left + inset + graphWidth,
+            tile.top + inset,
+            tile.right - tile.left - inset * 2 - graphWidth,
+            tile.bottom - tile.top - inset * 2,
+            SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER
+            );
+        InvalidateRect(section->PanelHandle, NULL, TRUE);
+        section->GraphState.Valid = FALSE;
+    }
+
+    deferHandle = DeferWindowPos(
+        deferHandle,
+        ContainerControl,
+        NULL,
+        containerLeft,
+        0,
+        max(clientRect.right - containerLeft, 0),
+        clientRect.bottom,
+        SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER
+        );
+    EndDeferWindowPos(deferHandle);
+
+    if (CurrentSection && CurrentSection->DialogHandle)
+    {
+        SetWindowPos(
+            CurrentSection->DialogHandle,
+            NULL,
+            padding,
+            padding,
+            max(clientRect.right - containerLeft - padding * 2, 0),
+            max(clientRect.bottom - padding * 2, 0),
+            SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER
+            );
+    }
+
+    InvalidateRect(PhSipWindow, NULL, TRUE);
+}
+
+BOOLEAN PhSipIsStandaloneOpen(
+    VOID
+    )
+{
+    return !PhSipEmbedded && PhSipThread && ReadPointerAcquire(&PhSipWindow);
+}
+
+BOOLEAN PhSipIsEmbeddedOpen(
+    VOID
+    )
+{
+    return PhSipEmbedded && ReadPointerAcquire(&PhSipWindow);
+}
+
+HWND PhSipCreateEmbeddedWindow(
+    _In_ HWND ParentWindowHandle
+    )
+{
+    HWND windowHandle;
+
+    if (ReadPointerAcquire(&PhSipWindow))
+        return NULL;
+
+    // Reap a standalone thread that has finished closing its window.
+    if (PhSipThread)
+    {
+        NtWaitForSingleObject(PhSipThread, FALSE, NULL);
+        NtClose(PhSipThread);
+        PhSipThread = NULL;
+    }
+
+    PhSipEmbedded = TRUE;
+    InitialSectionName = NULL;
+
+    windowHandle = PhCreateDialogFromTemplate(
+        ParentWindowHandle,
+        DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+        PhInstanceHandle,
+        MAKEINTRESOURCE(IDD_SYSINFO),
+        PhSipSysInfoDialogProc,
+        NULL
+        );
+
+    if (!windowHandle)
+        PhSipEmbedded = FALSE;
+
+    return windowHandle;
+}
+
+VOID PhSipDestroyEmbeddedWindow(
+    VOID
+    )
+{
+    HWND windowHandle = ReadPointerAcquire(&PhSipWindow);
+
+    if (PhSipEmbedded && windowHandle)
+        DestroyWindow(windowHandle);
+
+    PhSipEmbedded = FALSE;
+}
+
+VOID PhSipSelectEmbeddedSection(
+    _In_ PCWSTR SectionName
+    )
+{
+    PH_STRINGREF name;
+    PPH_SYSINFO_SECTION section;
+
+    if (!PhSipEmbedded || !SectionList)
+        return;
+
+    PhInitializeStringRefLongHint(&name, SectionName);
+
+    if (section = PhSipFindSection(&name))
+        PhSipEnterSectionView(section);
 }

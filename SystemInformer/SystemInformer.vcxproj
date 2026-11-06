@@ -283,6 +283,7 @@
         <ClCompile Include="mtgndlg.c" />
         <ClCompile Include="mwpgdev.c" />
         <ClCompile Include="mwpgnet.c" />
+        <ClCompile Include="perftab.c" />
         <ClCompile Include="mwpgproc.c" />
         <ClCompile Include="mwpgsrv.c" />
         <ClCompile Include="netlist.c" />
