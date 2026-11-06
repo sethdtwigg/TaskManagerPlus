@@ -45,7 +45,7 @@ $urlRule = 'https?://'
 # path-regex => (line-regex, reason). A hit is allowed only if both match.
 $Allow = @(
     @{ Path = '^SystemInformer/main\.c$'; Line = 'migrate-old-default'; Why = 'migrates the old default symbol path to the local-only default' },
-    @{ Path = '\.svg$|\.filters$|\.pubxml$'; Line = 'www\.w3\.org|schemas\.microsoft\.com'; Why = 'XML namespaces in resources/project files, never fetched' },
+    @{ Path = '\.svg$|\.filters$|\.pubxml$|^tools/icon/make-icon\.py$'; Line = 'www\.w3\.org|schemas\.microsoft\.com'; Why = 'XML namespaces in resources/project files, never fetched' },
     @{ Path = '^SystemInformer/resources/etwguids\.txt$'; Line = '.'; Why = 'local ETW provider GUID/name table' },
     @{ Path = '^tools/peview/hashprp\.c$'; Line = 'ws2_32\.dll'; Why = 'file name of a system DLL parsed for export ordinals, not loaded' },
     @{ Path = '^tools/tests/phlib-test/t_util\.c$'; Line = 'python\.org'; Why = 'namespace string hashed into a test GUID, not contacted' },
