@@ -21,6 +21,7 @@
 #include <phapp.h>
 #include <proctree.h>
 #include <procgroup.h> // TaskManagerPlus
+#include <heatmap.h> // TaskManagerPlus
 
 #include <appresolver.h>
 #include <cpysave.h>
@@ -117,6 +118,8 @@ VOID PhInitializeProcessTreeList(
     TreeNew_SetCallback(hwnd, PhpProcessTreeNewCallback, NULL);
     PhGroupInitialization(hwnd); // TaskManagerPlus
     TreeNew_SetTotalsRow(hwnd, TRUE); // TaskManagerPlus: totals row under the headers
+    TreeNew_SetCellHeat(hwnd, TRUE); // TaskManagerPlus: heat-map tints and the process count pill
+    PhHeatMapEnabled = !!PhGetIntegerSetting(SETTING_HEAT_MAP);
     TreeNew_SetImageList(hwnd, PhProcessSmallImageList);
     TreeNew_SetMaxId(hwnd, PHPRTLC_MAXIMUM - 1);
 
@@ -128,6 +131,7 @@ VOID PhInitializeProcessTreeList(
     PhAddTreeNewColumnEx(hwnd, PHPRTLC_PRIVATEBYTES, TRUE, L"Private bytes", 70, PH_ALIGN_RIGHT, 3, DT_RIGHT, TRUE);
     PhAddTreeNewColumn(hwnd, PHPRTLC_USERNAME, TRUE, L"User name", 140, PH_ALIGN_LEFT, 4, DT_PATH_ELLIPSIS);
     PhAddTreeNewColumn(hwnd, PHPRTLC_DESCRIPTION, TRUE, L"Description", 180, PH_ALIGN_LEFT, 5, 0);
+    PhAddTreeNewColumnEx(hwnd, PHPRTLC_POWERUSAGE, TRUE, L"Power usage", 100, PH_ALIGN_LEFT, 6, 0, TRUE); // TaskManagerPlus
 
     // Customizable columns (1)
     PhAddTreeNewColumn(hwnd, PHPRTLC_COMPANYNAME, FALSE, L"Company name", 180, PH_ALIGN_LEFT, ULONG_MAX, 0);
@@ -773,6 +777,24 @@ VOID PhTickProcessNodes(
     fullyInvalidated = FALSE;
 
     PhGroupTick(ProcessNodeList); // TaskManagerPlus: refresh groups and repaint the totals row
+
+    {   // TaskManagerPlus: keep the "N Processes" pill current
+        static ULONG lastPillCount = ULONG_MAX;
+
+        if (lastPillCount != ProcessNodeList->Count)
+        {
+            RECT clientRect;
+            RECT band;
+
+            lastPillCount = ProcessNodeList->Count;
+
+            if (GetClientRect(ProcessTreeListHandle, &clientRect))
+            {
+                PhHeatGetCountPillBand(&clientRect, &band);
+                InvalidateRect(ProcessTreeListHandle, &band, FALSE);
+            }
+        }
+    }
 
     if (PhCsSortRootProcesses || PhCsSortChildProcesses || ProcessTreeListSortOrder != NoSortOrder)
     {
@@ -2600,6 +2622,108 @@ BEGIN_SORT_FUNCTION(IoOtherBytes)
 }
 END_SORT_FUNCTION
 
+// TaskManagerPlus: values behind the heat map and the Power usage column (see heatmap.c).
+
+static DOUBLE PhpGetNodeCpuPercent(
+    _In_ PPH_PROCESS_NODE Node
+    )
+{
+    FLOAT cpuUsage = 0;
+
+    PhpAggregateFieldIfNeeded(Node, AggregateTypeFloat, AggregateProcessItem, Node->ProcessItem, FIELD_OFFSET(PH_PROCESS_ITEM, CpuUsage), &cpuUsage);
+
+    return cpuUsage * 100.0;
+}
+
+static DOUBLE PhpGetNodeIoBytesPerSecond(
+    _In_ PPH_PROCESS_NODE Node
+    )
+{
+    PPH_PROCESS_ITEM processItem = Node->ProcessItem;
+    ULONG64 number = 0;
+
+    if (!PhProcessProviderElapsedMilliseconds || processItem->IoReadDelta.Delta == processItem->IoReadDelta.Value) // wrong on the first run
+        return 0;
+
+    PhpAggregateFieldIfNeeded(Node, AggregateTypeInt64, AggregateProcessItem, processItem, FIELD_OFFSET(PH_PROCESS_ITEM, IoReadDelta.Delta), &number);
+    PhpAggregateFieldIfNeeded(Node, AggregateTypeInt64, AggregateProcessItem, processItem, FIELD_OFFSET(PH_PROCESS_ITEM, IoWriteDelta.Delta), &number);
+    PhpAggregateFieldIfNeeded(Node, AggregateTypeInt64, AggregateProcessItem, processItem, FIELD_OFFSET(PH_PROCESS_ITEM, IoOtherDelta.Delta), &number);
+
+    return (DOUBLE)number * 1000.0 / PhProcessProviderElapsedMilliseconds;
+}
+
+static DOUBLE PhpGetNodePrivateBytes(
+    _In_ PPH_PROCESS_NODE Node
+    )
+{
+    SIZE_T value = 0;
+
+    PhpAggregateFieldIfNeeded(Node, AggregateTypeIntPtr, AggregateProcessItem, Node->ProcessItem, FIELD_OFFSET(PH_PROCESS_ITEM, VmCounters.PagefileUsage), &value);
+
+    return (DOUBLE)value;
+}
+
+// The core cannot see GPU data. ExtendedTools answers the same heat query as its GPU column
+// (sub id 24, ETPRTNC_GPU), so ask that column.
+#define PH_EXTTOOLS_GPU_SUBID 24
+
+static DOUBLE PhpGetNodeGpuPercent(
+    _In_ PPH_PROCESS_NODE Node
+    )
+{
+    static ULONG gpuColumnId = ULONG_MAX;
+    PH_TREENEW_COLUMN column;
+    PH_TREENEW_GET_CELL_HEAT heat;
+
+    if (gpuColumnId == ULONG_MAX)
+    {
+        static CONST PH_STRINGREF pluginName = PH_STRINGREF_INIT(L"ExtendedTools");
+        PPH_CM_COLUMN cmColumn = PhCmFindColumn(&ProcessTreeListCm, &pluginName, PH_EXTTOOLS_GPU_SUBID);
+
+        if (!cmColumn)
+            return 0;
+
+        gpuColumnId = cmColumn->Id;
+    }
+
+    if (!TreeNew_GetColumn(ProcessTreeListHandle, gpuColumnId, &column))
+        return 0;
+
+    memset(&heat, 0, sizeof(heat));
+    heat.Node = &Node->Node;
+    heat.Column = &column;
+    PhCmForwardMessage(ProcessTreeListHandle, TreeNewGetCellHeat, &heat, NULL, &ProcessTreeListCm);
+
+    return heat.Kind == PH_HEAT_KIND_GPU ? heat.Value : 0;
+}
+
+static ULONG PhpGetNodePowerLevel(
+    _In_ PPH_PROCESS_NODE Node,
+    _Out_opt_ DOUBLE *CpuPercent
+    )
+{
+    DOUBLE cpu = PhpGetNodeCpuPercent(Node);
+
+    if (CpuPercent)
+        *CpuPercent = cpu;
+
+    return PhPowerGetLevel(cpu, PhpGetNodeGpuPercent(Node), PhpGetNodeIoBytesPerSecond(Node));
+}
+
+BEGIN_SORT_FUNCTION(PowerUsage)
+{
+    DOUBLE cpu1;
+    DOUBLE cpu2;
+    ULONG level1 = PhpGetNodePowerLevel(node1, &cpu1);
+    ULONG level2 = PhpGetNodePowerLevel(node2, &cpu2);
+
+    sortResult = uintcmp(level1, level2);
+
+    if (sortResult == 0)
+        sortResult = singlecmp((FLOAT)cpu1, (FLOAT)cpu2);
+}
+END_SORT_FUNCTION
+
 BEGIN_SORT_FUNCTION(IoTotalBytes)
 {
     ULONG64 number1 = 0;
@@ -3122,6 +3246,69 @@ BOOLEAN NTAPI PhpProcessTreeNewCallback(
 {
     PPH_PROCESS_NODE node;
 
+    // TaskManagerPlus: heat map, count pill and plugin totals. These are handled here, before the
+    // generic column-manager forward below, because the core converts a plugin's answer into colours.
+    switch (Message)
+    {
+    case TreeNewGetCellHeat:
+        {
+            PPH_TREENEW_GET_CELL_HEAT heat = Parameter1;
+            PPH_PROCESS_NODE heatNode = (PPH_PROCESS_NODE)heat->Node;
+
+            if (!PhHeatMapEnabled || PhGroupIsHeaderNode(heat->Node))
+                return FALSE;
+
+            heat->Kind = PH_HEAT_KIND_NONE;
+            heat->Value = 0;
+
+            switch (heat->Column->Id)
+            {
+            case PHPRTLC_CPU:
+                heat->Kind = PH_HEAT_KIND_CPU;
+                heat->Value = PhpGetNodeCpuPercent(heatNode);
+                break;
+            case PHPRTLC_PRIVATEBYTES:
+                heat->Kind = PH_HEAT_KIND_MEMORY;
+                heat->Value = PhpGetNodePrivateBytes(heatNode);
+                break;
+            case PHPRTLC_IOTOTALRATE:
+                heat->Kind = PH_HEAT_KIND_DISK;
+                heat->Value = PhpGetNodeIoBytesPerSecond(heatNode);
+                break;
+            default:
+                if (heat->Column->Id >= PHPRTLC_MAXIMUM) // plugin column (ExtendedTools: GPU, Network)
+                    PhCmForwardMessage(hwnd, Message, Parameter1, Parameter2, &ProcessTreeListCm);
+                break;
+            }
+
+            return heat->Kind != PH_HEAT_KIND_NONE &&
+                PhHeatGetColors(heat->Kind, heat->Value, heat->RowBackColor, heat->RowTextColor, &heat->BackColor, &heat->TextColor);
+        }
+    case TreeNewPaintOverlay:
+        {
+            PPH_TREENEW_PAINT_OVERLAY overlay = Parameter1;
+            RECT band;
+
+            PhHeatGetCountPillBand(&overlay->ClientRect, &band);
+
+            if (IntersectRect(&band, &band, &overlay->PaintRect))
+                PhHeatDrawCountPill(overlay->Dc, &overlay->ClientRect, ProcessNodeList->Count);
+        }
+        return TRUE;
+    case TreeNewGetTotalsText:
+        {
+            PPH_TREENEW_GET_TOTALS_TEXT totals = Parameter1;
+
+            if (totals->ColumnId >= PHPRTLC_MAXIMUM) // plugin column: the plugin supplies the text
+            {
+                totals->Text.Length = 0;
+                PhCmForwardMessage(hwnd, Message, Parameter1, Parameter2, &ProcessTreeListCm);
+                return totals->Text.Length != 0;
+            }
+        }
+        break;
+    }
+
     // TaskManagerPlus: group header rows and the totals row never reach the generic code.
     {
         BOOLEAN groupResult;
@@ -3323,6 +3510,7 @@ BOOLEAN NTAPI PhpProcessTreeNewCallback(
                     SORT_FUNCTION(Services),
                     SORT_FUNCTION(ShortUserName),
                     SORT_FUNCTION(IoTotalBytes),
+                    SORT_FUNCTION(PowerUsage), // TaskManagerPlus
                 };
                 _CoreCrtNonSecureSearchSortCompareFunction sortFunction;
 
@@ -3454,6 +3642,11 @@ BOOLEAN NTAPI PhpProcessTreeNewCallback(
                         PhMoveReference(&node->PrivateBytesText, PhFormatSize(value, ULONG_MAX));
                         getCellText->Text = PhGetStringRef(node->PrivateBytesText);
                     }
+                }
+                break;
+            case PHPRTLC_POWERUSAGE: // TaskManagerPlus
+                {
+                    PhInitializeStringRefLongHint(&getCellText->Text, (PWSTR)PhPowerGetLevelText(PhpGetNodePowerLevel(node, NULL)));
                 }
                 break;
             case PHPRTLC_USERNAME:
@@ -6225,6 +6418,18 @@ VOID PhExpandAllProcessNodes(
 
     if (needsRestructure)
         TreeNew_NodesStructured(ProcessTreeListHandle);
+}
+
+// TaskManagerPlus: View > Heat map.
+VOID PhToggleProcessHeatMap(
+    VOID
+    )
+{
+    PhHeatMapEnabled = !PhHeatMapEnabled;
+    PhSetIntegerSetting(SETTING_HEAT_MAP, PhHeatMapEnabled);
+
+    if (ProcessTreeListHandle)
+        InvalidateRect(ProcessTreeListHandle, NULL, FALSE);
 }
 
 // TaskManagerPlus: View > Group processes.

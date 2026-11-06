@@ -238,6 +238,38 @@ BOOLEAN PhCmForwardMessage(
             plugin = column->Plugin;
         }
         break;
+    case TreeNewGetCellHeat: // TaskManagerPlus
+        {
+            PPH_TREENEW_GET_CELL_HEAT heat = Parameter1;
+            PPH_CM_COLUMN column;
+
+            if (heat->Column->Id < Manager->MinId)
+                return FALSE;
+
+            column = heat->Column->Context;
+            pluginMessage.SubId = column->SubId;
+            pluginMessage.Context = column->Context;
+            plugin = column->Plugin;
+        }
+        break;
+    case TreeNewGetTotalsText: // TaskManagerPlus
+        {
+            PPH_TREENEW_GET_TOTALS_TEXT totals = Parameter1;
+            PH_TREENEW_COLUMN tnColumn;
+            PPH_CM_COLUMN column;
+
+            if (totals->ColumnId < Manager->MinId)
+                return FALSE;
+
+            if (!TreeNew_GetColumn(WindowHandle, totals->ColumnId, &tnColumn))
+                return FALSE;
+
+            column = tnColumn.Context;
+            pluginMessage.SubId = column->SubId;
+            pluginMessage.Context = column->Context;
+            plugin = column->Plugin;
+        }
+        break;
     case TreeNewColumnResized:
         {
             PPH_TREENEW_COLUMN tlColumn = Parameter1;

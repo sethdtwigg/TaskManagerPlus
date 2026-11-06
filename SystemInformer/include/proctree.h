@@ -132,7 +132,9 @@
 #define PHPRTLC_SHORT_USERNAME 107
 #define PHPRTLC_IOTOTALBYTES 108
 
-#define PHPRTLC_MAXIMUM 109
+#define PHPRTLC_POWERUSAGE 109 // TaskManagerPlus
+
+#define PHPRTLC_MAXIMUM 110
 #define PHPRTLC_IOGROUP_COUNT 10
 
 #define PHPN_WSCOUNTERS 0x1
@@ -452,6 +454,10 @@ PhExpandAllProcessNodes(
     );
 
 // TaskManagerPlus
+VOID PhToggleProcessHeatMap(
+    VOID
+    );
+
 VOID PhToggleProcessGrouping(
     VOID
     );

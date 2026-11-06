@@ -158,6 +158,7 @@ set(SOURCES
     "procrec.c"
     "proctree.c"
     "procgroup.c"
+    "heatmap.c"
     "envdlg.c"
     "prpgenv.c"
     "prpggen.c"
