@@ -709,13 +709,9 @@ VOID PhTabNewComputeRows(
             LONG itemWidth = fixedTabWidth ? fixedTabWidth : PhMeasureTabWidth(Context, NULL, item);
             itemExtent = itemWidth;
 
-            if (cursor > 0 && cursor + itemExtent > stripExtent)
-            {
-                row++;
-                cursor = 0;
-            }
-
-            item->Row = row;
+            // TaskManagerPlus: never wrap to a second row; overflow is handled
+            // below by shrinking, truncating and scrolling.
+            item->Row = 0;
             item->Rect.left = cursor;
             item->Rect.right = cursor + itemExtent;
             item->Rect.top = row * Context->RowHeight;
@@ -730,14 +726,113 @@ VOID PhTabNewComputeRows(
         }
     }
 
-    if (vertical || Context->Items->Count == 0)
+    Context->RowCount = 1;
+
+    // TaskManagerPlus: single-row overflow handling. Shrink padding first,
+    // then truncate tabs down to a floor width, then scroll so the selected
+    // tab is always visible.
+    if (!vertical && Context->Items->Count > 0 && cursor > stripExtent)
     {
-        Context->RowCount = 1;
-    }
-    else
-    {
-        PPH_TABNEW_INTERNAL_ITEM lastItem = Context->Items->Items[Context->Items->Count - 1];
-        Context->RowCount = lastItem->Row + 1;
+        LONG count = (LONG)Context->Items->Count;
+        LONG excess = cursor - stripExtent;
+        LONG minPadX = PhScaleToDisplay(3, Context->WindowDpi);
+        LONG maxPadShrink = (Context->PaddingX > minPadX ? (LONG)Context->PaddingX - minPadX : 0) * 2;
+        LONG floorWidth = PhScaleToDisplay(48, Context->WindowDpi);
+        LONG shrinkEach = excess / count + (excess % count ? 1 : 0);
+        LONG x = 0;
+        LONG total;
+
+        if (shrinkEach > maxPadShrink)
+            shrinkEach = maxPadShrink;
+
+        // Pass 1: padding shrink.
+        for (i = 0; i < (ULONG)count; i++)
+        {
+            PPH_TABNEW_INTERNAL_ITEM item = Context->Items->Items[i];
+            LONG w = item->Rect.right - item->Rect.left;
+            item->Rect.right = item->Rect.left + (w - shrinkEach);
+        }
+
+        // Pass 2: truncate the widest tabs until it fits or all are at the floor.
+        for (;;)
+        {
+            LONG widest = 0;
+            LONG widestIndex = -1;
+
+            total = 0;
+            for (i = 0; i < (ULONG)count; i++)
+            {
+                PPH_TABNEW_INTERNAL_ITEM item = Context->Items->Items[i];
+                LONG w = item->Rect.right - item->Rect.left;
+                total += w;
+                if (w > floorWidth && w > widest)
+                {
+                    widest = w;
+                    widestIndex = (LONG)i;
+                }
+            }
+
+            if (total <= stripExtent || widestIndex < 0)
+                break;
+
+            {
+                PPH_TABNEW_INTERNAL_ITEM item = Context->Items->Items[widestIndex];
+                LONG cut = total - stripExtent;
+                LONG w = item->Rect.right - item->Rect.left;
+                LONG target = w - cut;
+                LONG nextWidest = floorWidth;
+
+                // Do not cut below the next widest tab in one step so
+                // truncation is spread evenly.
+                for (i = 0; i < (ULONG)count; i++)
+                {
+                    PPH_TABNEW_INTERNAL_ITEM other = Context->Items->Items[i];
+                    LONG ow = other->Rect.right - other->Rect.left;
+                    if ((LONG)i != widestIndex && ow < w && ow > nextWidest)
+                        nextWidest = ow;
+                }
+
+                if (target < nextWidest)
+                    target = nextWidest;
+                if (target >= w)
+                    target = w - 1;
+                item->Rect.right = item->Rect.left + target;
+            }
+        }
+
+        // Re-pack left to right.
+        for (i = 0; i < (ULONG)count; i++)
+        {
+            PPH_TABNEW_INTERNAL_ITEM item = Context->Items->Items[i];
+            LONG w = item->Rect.right - item->Rect.left;
+            item->Rect.left = x;
+            item->Rect.right = x + w;
+            x += w;
+        }
+
+        // Pass 3: still too wide, scroll so the selected tab is visible.
+        if (x > stripExtent)
+        {
+            LONG scroll = 0;
+
+            if (Context->SelectedIndex >= 0 && Context->SelectedIndex < count)
+            {
+                PPH_TABNEW_INTERNAL_ITEM sel = Context->Items->Items[Context->SelectedIndex];
+
+                if (sel->Rect.right > stripExtent)
+                    scroll = sel->Rect.right - stripExtent;
+            }
+
+            if (scroll > 0)
+            {
+                for (i = 0; i < (ULONG)count; i++)
+                {
+                    PPH_TABNEW_INTERNAL_ITEM item = Context->Items->Items[i];
+                    item->Rect.left -= scroll;
+                    item->Rect.right -= scroll;
+                }
+            }
+        }
     }
 }
 
@@ -1955,7 +2050,7 @@ VOID PhTabNewDrawItemContent(
             Item->Text->Buffer,
             (LONG)(Item->Text->Length / sizeof(WCHAR)),
             &contentRect,
-            DT_SINGLELINE | DT_VCENTER | DT_CENTER
+            DT_SINGLELINE | DT_VCENTER | DT_CENTER | DT_END_ELLIPSIS // TaskManagerPlus
             );
     }
 }
