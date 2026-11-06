@@ -243,6 +243,45 @@ static int __cdecl SmTreeNewNoOrderSortFunction(
     return uintcmp(node1->Index, node2->Index);
 }
 
+// TaskManagerPlus: disabled-row text derived from the active theme palette (halfway between
+// the palette text colour and the palette background), so it works in light and dark.
+static COLORREF SmDisabledTextColor(
+    _In_ HWND WindowHandle
+    )
+{
+    COLORREF color = GetSysColor(COLOR_GRAYTEXT);
+
+    if (PhGetIntegerSetting(L"EnableThemeSupport"))
+    {
+        HDC hdc = CreateCompatibleDC(NULL);
+        LOGBRUSH brush;
+
+        if (hdc)
+        {
+            COLORREF text;
+            HBRUSH backgroundBrush;
+
+            PhWindowThemeControlColor(WindowHandle, hdc, WindowHandle, CTLCOLOR_STATIC);
+            text = GetTextColor(hdc);
+            backgroundBrush = PhWindowThemeControlColor(WindowHandle, hdc, WindowHandle, CTLCOLOR_DLG);
+
+            if (backgroundBrush && GetObject(backgroundBrush, sizeof(LOGBRUSH), &brush))
+            {
+
+                color = RGB(
+                    (GetRValue(text) + GetRValue(brush.lbColor)) / 2,
+                    (GetGValue(text) + GetGValue(brush.lbColor)) / 2,
+                    (GetBValue(text) + GetBValue(brush.lbColor)) / 2
+                    );
+            }
+
+            DeleteDC(hdc);
+        }
+    }
+
+    return color;
+}
+
 // TreeNew callback
 
 static BOOLEAN NTAPI SmTreeNewCallback(
@@ -342,7 +381,7 @@ static BOOLEAN NTAPI SmTreeNewCallback(
 
             if (!node->Enabled)
             {
-                getNodeColor->ForeColor = GetSysColor(COLOR_GRAYTEXT);
+                getNodeColor->ForeColor = SmDisabledTextColor(WindowHandle);
             }
 
             getNodeColor->Flags = TN_CACHE;
