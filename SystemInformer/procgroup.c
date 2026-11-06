@@ -515,6 +515,24 @@ BOOLEAN PhGroupTreeNewCallback(
         }
         break;
     case TreeNewGetNodeColor:
+        if (PhGroupIsHeaderNode(nodeBlock->Node))
+        {
+            // TaskManagerPlus: flat group header, window background with muted text.
+            PPH_TREENEW_GET_NODE_COLOR color = Parameter1;
+            COLORREF back = PhEnableThemeSupport ? PhThemeWindowBackgroundColor : GetSysColor(COLOR_WINDOW);
+            COLORREF fore = PhEnableThemeSupport ? PhThemeWindowTextColor : GetSysColor(COLOR_WINDOWTEXT);
+
+            color->Flags = 0;
+            color->BackColor = back;
+            color->ForeColor = RGB(
+                (GetRValue(fore) * 190 + GetRValue(back) * 65) / 255,
+                (GetGValue(fore) * 190 + GetGValue(back) * 65) / 255,
+                (GetBValue(fore) * 190 + GetBValue(back) * 65) / 255
+                );
+            *Result = TRUE;
+            return TRUE;
+        }
+        break;
     case TreeNewGetNodeIcon:
     case TreeNewGetNodeFont:
     case TreeNewGetCellTooltip:

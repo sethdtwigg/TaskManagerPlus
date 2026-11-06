@@ -117,7 +117,7 @@ VOID PhInitializeProcessTreeList(
     TreeNew_SetExtendedFlags(hwnd, TN_FLAG_ITEM_DRAG_SELECT, TN_FLAG_ITEM_DRAG_SELECT);
     TreeNew_SetCallback(hwnd, PhpProcessTreeNewCallback, NULL);
     PhGroupInitialization(hwnd); // TaskManagerPlus
-    TreeNew_SetTotalsRow(hwnd, TRUE); // TaskManagerPlus: totals row under the headers
+    TreeNew_SetTotalsRow(hwnd, !!PhGetIntegerSetting(SETTING_SHOW_TOTALS_ROW)); // TaskManagerPlus: totals row under the headers (View > Totals row)
     TreeNew_SetCellHeat(hwnd, TRUE); // TaskManagerPlus: heat-map tints and the process count pill
     PhHeatMapEnabled = !!PhGetIntegerSetting(SETTING_HEAT_MAP);
     PhShowCountPill = !!PhGetIntegerSetting(SETTING_SHOW_COUNT_PILL); // TaskManagerPlus
@@ -6428,6 +6428,19 @@ VOID PhExpandAllProcessNodes(
 
     if (needsRestructure)
         TreeNew_NodesStructured(ProcessTreeListHandle);
+}
+
+// TaskManagerPlus: View > Totals row.
+VOID PhToggleProcessTotalsRow(
+    VOID
+    )
+{
+    BOOLEAN enabled = !PhGetIntegerSetting(SETTING_SHOW_TOTALS_ROW);
+
+    PhSetIntegerSetting(SETTING_SHOW_TOTALS_ROW, enabled);
+
+    if (ProcessTreeListHandle)
+        TreeNew_SetTotalsRow(ProcessTreeListHandle, enabled);
 }
 
 // TaskManagerPlus: View > Count pill.

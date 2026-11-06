@@ -933,6 +933,7 @@
 #define ID_VIEW_HEATMAP                 10361 // TaskManagerPlus
 #define ID_VIEW_MINIMETERS              10362 // TaskManagerPlus
 #define ID_VIEW_COUNTPILL               10363 // TaskManagerPlus
+#define ID_VIEW_TOTALSROW               10370 // TaskManagerPlus
 #define IDC_APPLYCALMLOOK               1574 // TaskManagerPlus
 #define IDC_APPLYDENSELOOK              1575 // TaskManagerPlus
 #define IDC_HIGHLIGHTMINIMAL            1576 // TaskManagerPlus

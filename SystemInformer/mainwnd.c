@@ -1452,6 +1452,11 @@ VOID PhMwpOnCommand(
             PhToggleProcessHeatMap();
         }
         break;
+    case ID_VIEW_TOTALSROW: // TaskManagerPlus
+        {
+            PhToggleProcessTotalsRow();
+        }
+        break;
     case ID_VIEW_COUNTPILL: // TaskManagerPlus
         {
             PhToggleProcessCountPill();

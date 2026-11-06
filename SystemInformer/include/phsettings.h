@@ -363,6 +363,7 @@ EXT ULONG PhCsProcessMonitorCacheLimit;
 #define SETTING_GROUP_PROCESSES                                     L"GroupProcesses" // TaskManagerPlus
 #define SETTING_HEAT_MAP                                            L"HeatMap" // TaskManagerPlus
 #define SETTING_MINI_METERS                                         L"MiniMeters" // TaskManagerPlus
+#define SETTING_SHOW_TOTALS_ROW                                     L"ShowTotalsRow" // TaskManagerPlus
 #define SETTING_SHOW_COUNT_PILL                                     L"ShowCountPill" // TaskManagerPlus
 #define SETTING_SEARCH_OPTIONS_MENU                                 L"SearchOptionsMenu" // TaskManagerPlus: 1 = Case/Regex/Fuzzy behind a funnel menu
 #define SETTING_HIGHLIGHT_MODE                                      L"HighlightMode" // TaskManagerPlus: 0 custom, 1 minimal, 2 classic

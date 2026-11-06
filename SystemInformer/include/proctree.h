@@ -457,6 +457,10 @@ PhExpandAllProcessNodes(
 extern BOOLEAN PhShowCountPill;
 extern BOOLEAN PhProcessColumnsResetPending;
 
+VOID PhToggleProcessTotalsRow(
+    VOID
+    );
+
 VOID PhToggleProcessCountPill(
     VOID
     );

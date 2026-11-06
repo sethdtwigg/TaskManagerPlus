@@ -7797,7 +7797,10 @@ static VOID PhpTnpPaintTotalsRow(
 
     SelectFont(hdc, Context->Font);
     SetBkMode(hdc, TRANSPARENT);
-    SetTextColor(hdc, Context->ThemeSupport ? PhThemeWindowTextColor : GetSysColor(COLOR_WINDOWTEXT));
+    // TaskManagerPlus: muted ink (about two thirds text colour over the background), the rows keep full contrast.
+    SetTextColor(hdc, Context->ThemeSupport ?
+        PhpTnpBlendColor(PhThemeWindowBackgroundColor, PhThemeWindowTextColor, 170) :
+        PhpTnpBlendColor(GetSysColor(COLOR_WINDOW), GetSysColor(COLOR_WINDOWTEXT), 170));
 
     // The normal columns scroll horizontally; keep them out of the fixed column.
 
