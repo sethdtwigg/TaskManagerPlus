@@ -487,7 +487,6 @@ EXT ULONG PhCsProcessMonitorCacheLimit;
 #define SETTING_SAMPLE_COUNT_AUTOMATIC                              L"SampleCountAutomatic"
 #define SETTING_SCROLL_TO_NEW_PROCESSES                             L"ScrollToNewProcesses"
 #define SETTING_SCROLL_TO_REMOVED_PROCESSES                         L"ScrollToRemovedProcesses"
-#define SETTING_SEARCH_ENGINE                                       L"SearchEngine"
 #define SETTING_SEGMENT_HEAP_LIST_VIEW_COLUMNS                      L"SegmentHeapListViewColumns"
 #define SETTING_SEGMENT_HEAP_LIST_VIEW_SORT                         L"SegmentHeapListViewSort"
 #define SETTING_SEGMENT_HEAP_WINDOW_POSITION                        L"SegmentHeapWindowPosition"

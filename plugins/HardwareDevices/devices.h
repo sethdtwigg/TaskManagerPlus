@@ -126,8 +126,6 @@ extern PH_QUEUED_LOCK GraphicsDevicesListLock;
 //#define FORCE_DELAY_LABEL_WORKQUEUE
 #endif
 
-#define ID_DEVICE_SEARCH_ONLINE 109
-#define ID_DEVICE_SEARCH_DRIVER_UPDATE 110
 #define ID_DEVICE_PROPERTIES_NATIVE 111
 #define ID_DEVICE_SECURITY 112
 
@@ -169,10 +167,6 @@ BOOLEAN HardwareDeviceOpenKey(
     _In_ HWND ParentWindow,
     _In_ PPH_STRING DeviceInstance,
     _In_ ULONG KeyIndex
-    );
-
-PPH_STRING PhpEncodeDeviceQuery(
-    _In_ PPH_STRING String
     );
 
 VOID ShowDeviceMenu(

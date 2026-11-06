@@ -171,14 +171,6 @@ PPH_STRING PhUnescapeStringForDelimiter(
 PHAPPAPI
 VOID
 NTAPI
-PhSearchOnlineString(
-    _In_ HWND WindowHandle,
-    _In_ PCWSTR String
-    );
-
-PHAPPAPI
-VOID
-NTAPI
 PhShellExecuteUserString(
     _In_ HWND WindowHandle,
     _In_ PCWSTR Setting,

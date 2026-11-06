@@ -1829,7 +1829,6 @@ static VOID PhpAdvancedPageSave(
         RestartRequired = TRUE;
 
     PhSetIntegerSetting(SETTING_SAMPLE_COUNT, sampleCount);
-    PhSetStringSetting2(SETTING_SEARCH_ENGINE, &PhaGetDlgItemText(hwndDlg, IDC_SEARCHENGINE)->sr);
     PhSetStringSetting2(SETTING_PROGRAM_INSPECT_EXECUTABLES, &PhaGetDlgItemText(hwndDlg, IDC_PEVIEWER)->sr);
     PhSetIntegerSetting(SETTING_MAX_SIZE_UNIT, PhMaxSizeUnit = ComboBox_GetCurSel(GetDlgItem(hwndDlg, IDC_MAXSIZEUNIT)));
     PhSetIntegerSetting(SETTING_ICON_PROCESSES, PhGetDialogItemValue(hwndDlg, IDC_ICONPROCESSES));
@@ -1994,7 +1993,6 @@ INT_PTR CALLBACK PhpOptionsGeneralDlgProc(
             else
                 ComboBox_SetCurSel(comboBoxHandle, RTL_NUMBER_OF(PhSizeUnitNames) - 1);
 
-            PhSetDialogItemText(hwndDlg, IDC_SEARCHENGINE, PhaGetStringSetting(SETTING_SEARCH_ENGINE)->Buffer);
             PhSetDialogItemText(hwndDlg, IDC_PEVIEWER, PhaGetStringSetting(SETTING_PROGRAM_INSPECT_EXECUTABLES)->Buffer);
             PhSetDialogItemValue(hwndDlg, IDC_ICONPROCESSES, PhGetIntegerSetting(SETTING_ICON_PROCESSES), FALSE);
             PhSetDialogItemText(hwndDlg, IDC_DBGHELPSEARCHPATH, PhaGetStringSetting(SETTING_DBGHELP_SEARCH_PATH)->Buffer);

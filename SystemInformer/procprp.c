@@ -622,8 +622,6 @@ LRESULT CALLBACK PhpOptionsButtonWndProc(
                 PhInsertEMenuItem(menu, menuItem, ULONG_MAX);
 
                 PhInsertEMenuItem(menu, PhCreateEMenuSeparator(), ULONG_MAX);
-                PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_PROCESS_SEARCHONLINE, L"Search &online\bCtrl+M", NULL, NULL), ULONG_MAX);
-                PhInsertEMenuItem(menu, PhCreateEMenuSeparator(), ULONG_MAX);
                 PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_PROCESS_OPENFILELOCATION, L"Open &file location\bCtrl+Enter", NULL, NULL), ULONG_MAX);
                 PhInsertEMenuItem(menu, PhCreateEMenuSeparator(), ULONG_MAX);
                 PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_HANDLE_SECURITY, L"Security", NULL, NULL), ULONG_MAX);
@@ -766,9 +764,6 @@ LRESULT CALLBACK PhpOptionsButtonWndProc(
                         break;
                     case ID_PROCESS_DEBUG:
                         PhUiDebugProcess(WindowHandle, processItem);
-                        break;
-                    case ID_PROCESS_SEARCHONLINE:
-                        PhSearchOnlineString(WindowHandle, PhGetString(processItem->ProcessName));
                         break;
                     case ID_PROCESS_OPENFILELOCATION:
                         {

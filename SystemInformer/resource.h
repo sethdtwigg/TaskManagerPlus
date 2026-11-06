@@ -362,7 +362,6 @@
 #define IDC_CPU42                       1141
 #define IDC_MESSAGE                     1142
 #define IDC_CPU43                       1142
-#define IDC_SEARCHENGINE                1143
 #define IDC_CPU44                       1143
 #define IDC_MAXSIZEUNIT                 1144
 #define IDC_CPU45                       1144
@@ -792,7 +791,6 @@
 #define ID_WINDOW_MINIMIZE              10057
 #define ID_WINDOW_MAXIMIZE              10058
 #define ID_WINDOW_CLOSE                 10059
-#define ID_PROCESS_SEARCHONLINE         10060
 #define ID_HANDLE_CLOSE                 10061
 #define ID_HANDLE_PROTECTED             10062
 #define ID_HANDLE_INHERIT               10063

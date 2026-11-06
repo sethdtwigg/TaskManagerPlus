@@ -169,7 +169,6 @@ EXPORTS
     PhSearchControlMatchPointer
     PhSearchControlMatchPointerRange
     PhSearchControlMatchZ
-    PhSearchOnlineString
     PhSelectAndEnsureVisibleProcessNode
     PhSelectAndEnsureVisibleServiceNode
     PhSelectWindowFromScreenSnapshot

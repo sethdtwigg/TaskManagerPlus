@@ -2468,16 +2468,6 @@ VOID PhMwpOnCommand(
             }
         }
         break;
-    case ID_PROCESS_SEARCHONLINE:
-        {
-            PPH_PROCESS_ITEM processItem = PhGetSelectedProcessItem();
-
-            if (processItem)
-            {
-                PhSearchOnlineString(WindowHandle, PhGetString(processItem->ProcessName));
-            }
-        }
-        break;
     case ID_PROCESS_PROPERTIES:
         {
             PPH_PROCESS_ITEM processItem = PhGetSelectedProcessItem();

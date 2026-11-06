@@ -139,7 +139,6 @@
 #define EXPORT_PHSEARCHCONTROLMATCHPOINTER                             1117
 #define EXPORT_PHSEARCHCONTROLMATCHPOINTERRANGE                        1118
 #define EXPORT_PHSEARCHCONTROLMATCHZ                                   1119
-#define EXPORT_PHSEARCHONLINESTRING                                    1120
 #define EXPORT_PHSELECTANDENSUREVISIBLEPROCESSNODE                     1121
 #define EXPORT_PHSELECTANDENSUREVISIBLESERVICENODE                     1122
 #define EXPORT_PHSETAPPLICATIONWINDOWICON                              1123

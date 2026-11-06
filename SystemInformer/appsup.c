@@ -1007,14 +1007,6 @@ PPH_STRING PhUnescapeStringForDelimiter(
     return PhFinalStringBuilderString(&stringBuilder);
 }
 
-VOID PhSearchOnlineString(
-    _In_ HWND WindowHandle,
-    _In_ PCWSTR String
-    )
-{
-    PhShellExecuteUserString(WindowHandle, SETTING_SEARCH_ENGINE, String, TRUE, NULL);
-}
-
 VOID PhShellExecuteUserString(
     _In_ HWND WindowHandle,
     _In_ PCWSTR Setting,

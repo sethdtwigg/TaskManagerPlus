@@ -2959,10 +2959,6 @@
         }
       ]
     },
-    "SearchEngine": {
-      "type": "string",
-      "description": "Setting: Configures the search engine used for web searches."
-    },
     "SegmentHeapListViewColumns": {
       "type": "string",
       "description": "Setting: Stores the column configuration for the segment heap list."

@@ -283,7 +283,6 @@ VOID PhAddDefaultSettings(
     PhpAddIntegerSetting(SETTING_SAMPLE_COUNT_AUTOMATIC, L"1");
     PhpAddIntegerSetting(SETTING_SCROLL_TO_NEW_PROCESSES, L"0");
     PhpAddIntegerSetting(SETTING_SCROLL_TO_REMOVED_PROCESSES, L"0");
-    PhpAddStringSetting(SETTING_SEARCH_ENGINE, L"https://duckduckgo.com/?q=\"%s\"");
     PhpAddStringSetting(SETTING_SEGMENT_HEAP_LIST_VIEW_COLUMNS, L"");
     PhpAddStringSetting(SETTING_SEGMENT_HEAP_LIST_VIEW_SORT, L"0,1");
     PhpAddIntegerPairSetting(SETTING_SEGMENT_HEAP_WINDOW_POSITION, L"0,0");
