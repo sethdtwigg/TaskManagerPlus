@@ -43,6 +43,7 @@ static CONST PH_STRINGREF SmTypeStrings[] =
     PH_STRINGREF_INIT(L"Startup folder (user)"),
     PH_STRINGREF_INIT(L"Startup folder (common)"),
     PH_STRINGREF_INIT(L"Scheduled task"),
+    PH_STRINGREF_INIT(L"Store app startup task"),
 };
 
 static CONST PH_STRINGREF SmImpactStrings[] =
@@ -107,6 +108,9 @@ PCPH_STRINGREF SmGetSourceTypeString(
         break;
     case SmSourceStartupFolderCommon:
         index = 9;
+        break;
+    case SmSourcePackagedApp:
+        index = 11;
         break;
     default:
         index = 10;
@@ -1014,6 +1018,180 @@ static HRESULT SmDeleteScheduledTask(
  * Enumerates every startup entry into the list. Items are appended in a stable
  * order and numbered so the unsorted view is deterministic.
  */
+// Packaged (Store/MSIX) app startup tasks
+//
+// Windows keeps the per-user state of every manifest <uap5:StartupTask> under
+// HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\
+// AppModel\SystemAppData\<PackageFamilyName>\<TaskId>, value "State":
+// 0 Disabled, 1 Enabled, 2 DisabledByUser, 3 DisabledByPolicy, 4 EnabledByPolicy.
+// The only supported way to change it is StartupTask.RequestEnableAsync from
+// inside the owning package, so these rows are read-only here.
+
+static CONST PH_STRINGREF SmPackagedRootKey = PH_STRINGREF_INIT(L"Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\SystemAppData");
+static CONST PH_STRINGREF SmPackagedSchemasKey = PH_STRINGREF_INIT(L"Schemas");
+
+typedef struct _SM_PACKAGED_ENUM_CONTEXT
+{
+    PPH_LIST List;
+    PPH_STRING FamilyName;
+    PPH_STRING FullName; // may be NULL
+} SM_PACKAGED_ENUM_CONTEXT, *PSM_PACKAGED_ENUM_CONTEXT;
+
+static BOOLEAN SmQueryDwordValue(
+    _In_ HANDLE KeyHandle,
+    _In_ PCWSTR ValueName,
+    _Out_ PULONG Value
+    )
+{
+    PKEY_VALUE_PARTIAL_INFORMATION information;
+    BOOLEAN result = FALSE;
+
+    if (NT_SUCCESS(PhQueryValueKeyZ(KeyHandle, ValueName, KeyValuePartialInformation, &information)))
+    {
+        if (information->Type == REG_DWORD && information->DataLength >= sizeof(ULONG))
+        {
+            *Value = *(PULONG)information->Data;
+            result = TRUE;
+        }
+
+        PhFree(information);
+    }
+
+    return result;
+}
+
+static BOOLEAN NTAPI SmEnumPackagedTaskCallback(
+    _In_ HANDLE RootDirectory,
+    _In_ PVOID Information,
+    _In_opt_ PVOID Context
+    )
+{
+    PKEY_BASIC_INFORMATION information = Information;
+    PSM_PACKAGED_ENUM_CONTEXT context = Context;
+    PH_STRINGREF taskId;
+    HANDLE keyHandle;
+    ULONG state;
+
+    if (!context)
+        return FALSE;
+
+    taskId.Buffer = information->Name;
+    taskId.Length = information->NameLength;
+
+    if (!NT_SUCCESS(PhOpenKey(&keyHandle, KEY_READ, RootDirectory, &taskId, 0)))
+        return TRUE;
+
+    // Only subkeys carrying a State value are startup tasks (HAM, PSR, Schemas, ... have none).
+    if (SmQueryDwordValue(keyHandle, L"State", &state))
+    {
+        PSM_STARTUP_ITEM item;
+        PH_STRINGREF packageName;
+        PH_STRINGREF remainder;
+
+        item = SmCreateStartupItem(SmSourcePackagedApp);
+        item->CanToggle = FALSE;
+        item->Enabled = state == 1 || state == 4;
+
+        if (!PhSplitStringRefAtChar(&context->FamilyName->sr, L'_', &packageName, &remainder))
+            packageName = context->FamilyName->sr;
+
+        {
+            PPH_STRING taskText = PhCreateString2(&taskId);
+            PPH_STRING packageText = PhCreateString2(&packageName);
+
+            item->Name = PhFormatString(L"%s (%s)", taskText->Buffer, packageText->Buffer);
+            PhDereferenceObject(taskText);
+            PhDereferenceObject(packageText);
+        }
+
+        item->Command = context->FullName ?
+            PhFormatString(L"Packaged app: %s", context->FullName->Buffer) :
+            PhFormatString(L"Packaged app: %s", context->FamilyName->Buffer);
+        item->Location = PhFormatString(L"HKCU\\%s\\%s",
+            SmPackagedRootKey.Buffer, context->FamilyName->Buffer);
+        item->ObjectPath = PhReferenceObject(item->Location);
+
+        PhAddItemList(context->List, item);
+    }
+
+    NtClose(keyHandle);
+
+    return TRUE;
+}
+
+static BOOLEAN NTAPI SmEnumPackagedFamilyCallback(
+    _In_ HANDLE RootDirectory,
+    _In_ PVOID Information,
+    _In_opt_ PVOID Context
+    )
+{
+    PKEY_BASIC_INFORMATION information = Information;
+    PSM_PACKAGED_ENUM_CONTEXT context = Context;
+    PH_STRINGREF familyName;
+    HANDLE keyHandle;
+    HANDLE schemasHandle;
+
+    familyName.Buffer = information->Name;
+    familyName.Length = information->NameLength;
+
+    if (!NT_SUCCESS(PhOpenKey(&keyHandle, KEY_READ, RootDirectory, &familyName, 0)))
+        return TRUE;
+
+    context->FamilyName = PhCreateString2(&familyName);
+    context->FullName = NULL;
+
+    if (NT_SUCCESS(PhOpenKey(&schemasHandle, KEY_READ, keyHandle, &SmPackagedSchemasKey, 0)))
+    {
+        PKEY_VALUE_PARTIAL_INFORMATION value;
+
+        if (NT_SUCCESS(PhQueryValueKeyZ(schemasHandle, L"PackageFullName", KeyValuePartialInformation, &value)))
+        {
+            if (value->Type == REG_SZ && value->DataLength >= sizeof(WCHAR))
+            {
+                PH_STRINGREF text;
+
+                text.Buffer = (PWSTR)value->Data;
+                text.Length = value->DataLength;
+
+                while (text.Length >= sizeof(WCHAR) && text.Buffer[text.Length / sizeof(WCHAR) - 1] == UNICODE_NULL)
+                    text.Length -= sizeof(WCHAR);
+
+                context->FullName = PhCreateString2(&text);
+            }
+
+            PhFree(value);
+        }
+
+        NtClose(schemasHandle);
+    }
+
+    PhEnumerateKey(keyHandle, KeyBasicInformation, SmEnumPackagedTaskCallback, context);
+
+    PhClearReference(&context->FamilyName);
+    PhClearReference(&context->FullName);
+    NtClose(keyHandle);
+
+    return TRUE;
+}
+
+static VOID SmEnumeratePackagedTasks(
+    _Inout_ PPH_LIST List
+    )
+{
+    HANDLE keyHandle;
+    SM_PACKAGED_ENUM_CONTEXT context;
+
+    if (!NT_SUCCESS(PhOpenKey(&keyHandle, KEY_READ, PH_KEY_CURRENT_USER, &SmPackagedRootKey, 0)))
+        return;
+
+    memset(&context, 0, sizeof(context));
+    context.List = List;
+
+    PhEnumerateKey(keyHandle, KeyBasicInformation, SmEnumPackagedFamilyCallback, &context);
+
+    NtClose(keyHandle);
+}
+
 VOID SmEnumerateStartupItems(
     _Inout_ PPH_LIST List
     )
@@ -1027,6 +1205,7 @@ VOID SmEnumerateStartupItems(
     SmEnumerateStartupFolder(List, SmSourceStartupFolderCommon, &SmFolderIdCommonStartup);
 
     SmEnumerateScheduledTasks(List);
+    SmEnumeratePackagedTasks(List);
 
     for (ULONG i = 0; i < List->Count; i++)
     {

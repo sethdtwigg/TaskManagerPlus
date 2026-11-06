@@ -523,6 +523,8 @@ static BOOLEAN NTAPI SmTreeNewCallback(
                 }
                 if (PhIsNullOrEmptyString(items[0]->FileName))
                     PhSetDisabledEMenuItem(openFileItem);
+                if (numberOfItems == 1 && items[0]->Source == SmSourcePackagedApp)
+                    PhSetDisabledEMenuItem(deleteItem);
             }
 
             item = PhShowEMenu(
@@ -646,6 +648,9 @@ static VOID SmDeleteSelectedItems(
         {
             NTSTATUS status;
 
+            if (items[i]->Source == SmSourcePackagedApp)
+                continue; // read-only: uninstall or manage the app from Windows Settings
+
             status = SmDeleteStartupItem(items[i]);
 
             if (NT_SUCCESS(status))
@@ -705,6 +710,9 @@ static VOID SmHandleCommand(
             case SmSourceStartupFolderUser:
             case SmSourceStartupFolderCommon:
                 PhShellExecute(TreeWindowHandle, item->Location->Buffer, NULL);
+                break;
+            case SmSourcePackagedApp:
+                PhShellOpenKey2(TreeWindowHandle, item->Location);
                 break;
             case SmSourceScheduledTask:
                 PhShellExecute(TreeWindowHandle, L"taskschd.msc", NULL);

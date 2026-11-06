@@ -30,6 +30,7 @@ typedef enum _SM_SOURCE_TYPE
     SmSourceStartupFolderUser,
     SmSourceStartupFolderCommon,
     SmSourceScheduledTask,
+    SmSourcePackagedApp, // Store/MSIX StartupTask (read-only)
 } SM_SOURCE_TYPE;
 
 typedef enum _SM_IMPACT
