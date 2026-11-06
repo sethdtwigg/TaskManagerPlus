@@ -51,7 +51,6 @@ EXT BOOLEAN PhEnableServiceQueryStage2;
 EXT BOOLEAN PhEnableWindowText;
 EXT BOOLEAN PhEnableTooltipSupport;
 EXT BOOLEAN PhEnableLinuxSubsystemSupport;
-EXT ULONG PhCsEnableNetworkResolveDoH;
 EXT ULONG PhCsEnableVersionSupport;
 EXT BOOLEAN PhEnableDeferredLayout;
 EXT BOOLEAN PhEnableKsiWarnings;
@@ -253,8 +252,6 @@ EXT ULONG PhCsProcessMonitorCacheLimit;
 #define SETTING_ENABLE_MINIDUMP_SNAPSHOT                            L"EnableMinidumpSnapshot"
 #define SETTING_ENABLE_MONOSPACE_FONT                               L"EnableMonospaceFont"
 #define SETTING_ENABLE_NETWORK_BOUND_CONNECTIONS                    L"EnableNetworkBoundConnections"
-#define SETTING_ENABLE_NETWORK_RESOLVE                              L"EnableNetworkResolve"
-#define SETTING_ENABLE_NETWORK_RESOLVE_DOH                          L"EnableNetworkResolveDoH"
 #define SETTING_ENABLE_MEM_STRINGS_TREE_DIALOG                      L"EnableMemStringsTreeDialog"
 #define SETTING_ENABLE_MEM_STRINGS_BULK_SEARCH                      L"EnableMemStringsBulkSearch"
 #define SETTING_ENABLE_PACKAGE_ICON_SUPPORT                         L"EnablePackageIconSupport"

@@ -49,8 +49,6 @@ VOID PhAddDefaultSettings(
     PhpAddIntegerSetting(SETTING_ENABLE_MINIDUMP_SNAPSHOT, L"0");
     PhpAddIntegerSetting(SETTING_ENABLE_MONOSPACE_FONT, L"0");
     PhpAddIntegerSetting(SETTING_ENABLE_NETWORK_BOUND_CONNECTIONS, L"1");
-    PhpAddIntegerSetting(SETTING_ENABLE_NETWORK_RESOLVE, L"1");
-    PhpAddIntegerSetting(SETTING_ENABLE_NETWORK_RESOLVE_DOH, L"0");
     PhpAddIntegerSetting(SETTING_ENABLE_MEM_STRINGS_TREE_DIALOG, L"0");
     PhpAddIntegerSetting(SETTING_ENABLE_MEM_STRINGS_BULK_SEARCH, L"1");
     PhpAddIntegerSetting(SETTING_ENABLE_PACKAGE_ICON_SUPPORT, L"0");
@@ -699,7 +697,6 @@ VOID PhUpdateCachedSettings(
     PH_GET_INTEGER_CACHED_SETTING(EnableAvxSupport);
     PH_GET_INTEGER_CACHED_SETTING(EnableGraphMaxScale);
     PH_GET_INTEGER_CACHED_SETTING(EnableGraphMaxText);
-    PH_GET_INTEGER_CACHED_SETTING(EnableNetworkResolveDoH);
     PH_GET_INTEGER_CACHED_SETTING(EnableVersionSupport);
     PH_GET_INTEGER_CACHED_SETTING(EnableHandleSnapshot);
 

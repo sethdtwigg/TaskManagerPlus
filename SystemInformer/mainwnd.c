@@ -3312,7 +3312,6 @@ VOID PhMwpLoadSettings(
     PhEnablePurgeProcessRecords = !PhGetIntegerSetting(SETTING_NO_PURGE_PROCESS_RECORDS);
     PhEnableCycleCpuUsage = !!PhGetIntegerSetting(SETTING_ENABLE_CYCLE_CPU_USAGE);
     PhEnableNetworkBoundConnections = !!PhGetIntegerSetting(SETTING_ENABLE_NETWORK_BOUND_CONNECTIONS);
-    PhEnableNetworkProviderResolve = !!PhGetIntegerSetting(SETTING_ENABLE_NETWORK_RESOLVE);
     PhEnableProcessQueryStage2 = !!PhGetIntegerSetting(SETTING_ENABLE_STAGE2);
     PhEnableServiceQueryStage2 = !!PhGetIntegerSetting(SETTING_ENABLE_SERVICE_STAGE2);
     PhEnableTooltipSupport = !!PhGetIntegerSetting(SETTING_ENABLE_TOOLTIP_SUPPORT);

@@ -14,7 +14,6 @@
 #define PH_NETPRV_H
 
 extern PPH_OBJECT_TYPE PhNetworkItemType;
-extern BOOLEAN PhEnableNetworkProviderResolve;
 extern BOOLEAN PhEnableNetworkBoundConnections;
 
 typedef enum _PH_NETWORK_PROVIDER_FLAG

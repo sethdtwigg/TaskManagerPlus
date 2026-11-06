@@ -65,7 +65,6 @@ PH_INITONCE PhNetworkProviderWorkQueueInitOnce = PH_INITONCE_INIT;
 PH_WORK_QUEUE PhNetworkProviderWorkQueue;
 SLIST_HEADER PhNetworkItemQueryListHead;
 
-BOOLEAN PhEnableNetworkProviderResolve = TRUE;
 BOOLEAN PhEnableNetworkBoundConnections = TRUE;
 ULONG PhNetworkProviderFlagsMask = 0;
 static PPH_HASHTABLE PhpResolveCacheHashtable = NULL;
@@ -489,76 +488,6 @@ PPHP_RESOLVE_CACHE_ITEM PhpLookupResolveCacheItem(
         return NULL;
 }
 
-//PPH_STRING PhGetHostNameFromAddress(
-//    _In_ PPH_IP_ADDRESS Address
-//    )
-//{
-//    SOCKADDR_IN ipv4Address;
-//    SOCKADDR_IN6 ipv6Address;
-//    PSOCKADDR address;
-//    socklen_t length;
-//    PPH_STRING hostName;
-//
-//    if (Address->Type == PH_NETWORK_TYPE_IPV4)
-//    {
-//        ipv4Address.sin_family = AF_INET;
-//        ipv4Address.sin_port = 0;
-//        ipv4Address.sin_addr = Address->InAddr;
-//        address = (PSOCKADDR)&ipv4Address;
-//        length = sizeof(ipv4Address);
-//    }
-//    else if (Address->Type == PH_NETWORK_TYPE_IPV6)
-//    {
-//        ipv6Address.sin6_family = AF_INET6;
-//        ipv6Address.sin6_port = 0;
-//        ipv6Address.sin6_flowinfo = 0;
-//        ipv6Address.sin6_addr = Address->In6Addr;
-//        ipv6Address.sin6_scope_id = 0;
-//        address = (PSOCKADDR)&ipv6Address;
-//        length = sizeof(ipv6Address);
-//    }
-//    else
-//    {
-//        return NULL;
-//    }
-//
-//    hostName = PhCreateStringEx(NULL, 128);
-//
-//    if (GetNameInfo(
-//        address,
-//        length,
-//        hostName->Buffer,
-//        (ULONG)hostName->Length / sizeof(WCHAR) + 1,
-//        NULL,
-//        0,
-//        NI_NAMEREQD
-//        ) != 0)
-//    {
-//        // Try with the maximum host name size.
-//        PhDereferenceObject(hostName);
-//        hostName = PhCreateStringEx(NULL, NI_MAXHOST * sizeof(WCHAR));
-//
-//        if (GetNameInfo(
-//            address,
-//            length,
-//            hostName->Buffer,
-//            (ULONG)hostName->Length / sizeof(WCHAR) + 1,
-//            NULL,
-//            0,
-//            NI_NAMEREQD
-//            ) != 0)
-//        {
-//            PhDereferenceObject(hostName);
-//
-//            return NULL;
-//        }
-//    }
-//
-//    PhTrimToNullTerminatorString(hostName);
-//
-//    return hostName;
-//}
-
 /**
  * Gets the DNS reverse name from an IP address.
  *
@@ -668,101 +597,6 @@ PPH_STRING PhpGetDnsReverseNameFromAddress(
 }
 
 /**
- * Gets the host name from an IP address.
- *
- * \param[in] Address The IP address.
- * \return A pointer to the host name string, or NULL if unsuccessful.
- */
-PPH_STRING PhGetHostNameFromAddressEx(
-    _In_ PPH_IP_ADDRESS Address
-    )
-{
-    BOOLEAN dnsLocalQuery = FALSE;
-    PPH_STRING dnsHostNameString = NULL;
-    PPH_STRING dnsReverseNameString = NULL;
-    PDNS_RECORD dnsRecordList;
-
-    switch (Address->Type)
-    {
-    case PH_NETWORK_TYPE_IPV4:
-        {
-            if (IN4_IS_ADDR_UNSPECIFIED(&Address->InAddr))
-                return NULL;
-
-            if (IN4_IS_ADDR_LOOPBACK(&Address->InAddr) ||
-                IN4_IS_ADDR_BROADCAST(&Address->InAddr) ||
-                IN4_IS_ADDR_MULTICAST(&Address->InAddr) ||
-                IN4_IS_ADDR_LINKLOCAL(&Address->InAddr) ||
-                IN4_IS_ADDR_MC_LINKLOCAL(&Address->InAddr) ||
-                IN4_IS_ADDR_RFC1918(&Address->InAddr))
-            {
-                dnsLocalQuery = TRUE;
-            }
-
-            dnsReverseNameString = PhDnsReverseLookupNameFromAddress(PH_NETWORK_TYPE_IPV4, &Address->InAddr);
-        }
-        break;
-    case PH_NETWORK_TYPE_IPV6:
-        {
-            if (IN6_IS_ADDR_UNSPECIFIED(&Address->In6Addr))
-                return NULL;
-
-            if (IN6_IS_ADDR_LOOPBACK(&Address->In6Addr) ||
-                IN6_IS_ADDR_MULTICAST(&Address->In6Addr) ||
-                IN6_IS_ADDR_LINKLOCAL(&Address->In6Addr) ||
-                IN6_IS_ADDR_MC_LINKLOCAL(&Address->In6Addr))
-            {
-                dnsLocalQuery = TRUE;
-            }
-
-            dnsReverseNameString = PhDnsReverseLookupNameFromAddress(PH_NETWORK_TYPE_IPV6, &Address->In6Addr);
-        }
-        break;
-    case PH_NETWORK_TYPE_HYPERV:
-        return PhHvSocketGetVmName(&Address->HvAddr);
-    }
-
-    if (PhIsNullOrEmptyString(dnsReverseNameString))
-        return NULL;
-
-    if (!!PhCsEnableNetworkResolveDoH && !dnsLocalQuery)
-    {
-        dnsRecordList = PhDnsQuery(
-            NULL,
-            dnsReverseNameString->Buffer,
-            DNS_TYPE_PTR
-            );
-    }
-    else
-    {
-        dnsRecordList = PhDnsQuery2(
-            NULL,
-            dnsReverseNameString->Buffer,
-            DNS_TYPE_PTR,
-            DNS_QUERY_NO_HOSTS_FILE // DNS_QUERY_BYPASS_CACHE
-            );
-    }
-
-    if (dnsRecordList)
-    {
-        for (PDNS_RECORD dnsRecord = dnsRecordList; dnsRecord; dnsRecord = dnsRecord->pNext)
-        {
-            if (dnsRecord->wType == DNS_TYPE_PTR)
-            {
-                dnsHostNameString = PhCreateString(dnsRecord->Data.PTR.pNameHost); // Return the first result (dmex)
-                break;
-            }
-        }
-
-        PhDnsFree(dnsRecordList);
-    }
-
-    PhDereferenceObject(dnsReverseNameString);
-
-    return dnsHostNameString;
-}
-
-/**
  * Flushes the network item resolve cache.
  */
 VOID PhFlushNetworkItemResolveCache(
@@ -801,61 +635,6 @@ VOID PhFlushNetworkItemResolveCache(
 }
 
 /**
- * Worker routine for resolving network item host names.
- *
- * \param[in] Parameter A pointer to the network item query data.
- * \return STATUS_SUCCESS.
- */
-_Function_class_(USER_THREAD_START_ROUTINE)
-NTSTATUS PhpNetworkItemQueryWorker(
-    _In_ PVOID Parameter
-    )
-{
-    PPH_NETWORK_ITEM_QUERY_DATA data = (PPH_NETWORK_ITEM_QUERY_DATA)Parameter;
-    PPH_STRING hostString;
-    PPHP_RESOLVE_CACHE_ITEM cacheItem;
-
-    // Last minute check of the cache.
-
-    PhAcquireQueuedLockShared(&PhpResolveCacheHashtableLock);
-    cacheItem = PhpLookupResolveCacheItem(&data->Address);
-    if (cacheItem)
-        data->HostString = PhReferenceObject(cacheItem->HostString);
-    PhReleaseQueuedLockShared(&PhpResolveCacheHashtableLock);
-
-    if (!cacheItem)
-    {
-        hostString = PhGetHostNameFromAddressEx(&data->Address);
-
-        if (hostString)
-        {
-            data->HostString = hostString;
-
-            // Update the cache.
-
-            PhAcquireQueuedLockExclusive(&PhpResolveCacheHashtableLock);
-
-            cacheItem = PhpLookupResolveCacheItem(&data->Address);
-
-            if (!cacheItem)
-            {
-                cacheItem = PhAllocate(sizeof(PHP_RESOLVE_CACHE_ITEM));
-                cacheItem->Address = data->Address;
-                cacheItem->HostString = hostString;
-                PhReferenceObject(hostString);
-
-                PhAddEntryHashtable(PhpResolveCacheHashtable, &cacheItem);
-            }
-
-            PhReleaseQueuedLockExclusive(&PhpResolveCacheHashtableLock);
-        }
-    }
-    RtlInterlockedPushEntrySList(&PhNetworkItemQueryListHead, &data->ListEntry);
-
-    return STATUS_SUCCESS;
-}
-
-/**
  * Queues a network item for host name resolution.
  *
  * \param[in] NetworkItem The network item.
@@ -866,35 +645,11 @@ VOID PhpQueueNetworkItemQuery(
     _In_ BOOLEAN Remote
     )
 {
-    PPH_NETWORK_ITEM_QUERY_DATA data;
-
-    if (!PhEnableNetworkProviderResolve)
-    {
-        if (Remote)
-            NetworkItem->RemoteHostnameResolved = TRUE;
-        else
-            NetworkItem->LocalHostnameResolved = TRUE;
-        return;
-    }
-
-    data = PhAllocateZero(sizeof(PH_NETWORK_ITEM_QUERY_DATA));
-    data->NetworkItem = NetworkItem;
-    data->Remote = Remote;
-
+    // TaskManagerPlus: offline-only fork, hostnames are never resolved (no DNS traffic).
     if (Remote)
-        data->Address = NetworkItem->RemoteEndpoint.Address;
+        NetworkItem->RemoteHostnameResolved = TRUE;
     else
-        data->Address = NetworkItem->LocalEndpoint.Address;
-
-    PhReferenceObject(NetworkItem);
-
-    if (PhBeginInitOnce(&PhNetworkProviderWorkQueueInitOnce))
-    {
-        PhInitializeWorkQueue(&PhNetworkProviderWorkQueue, 0, 3, 500);
-        PhEndInitOnce(&PhNetworkProviderWorkQueueInitOnce);
-    }
-
-    PhQueueItemWorkQueue(&PhNetworkProviderWorkQueue, PhpNetworkItemQueryWorker, data);
+        NetworkItem->LocalHostnameResolved = TRUE;
 }
 
 /**

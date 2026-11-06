@@ -396,36 +396,6 @@
         }
       ]
     },
-    "EnableNetworkResolve": {
-      "description": "Boolean-like flag stored as '0' or '1'.\n\nSetting: Enables the resolution of remote IP addresses to hostnames.",
-      "anyOf": [
-        {
-          "type": "string",
-          "enum": [
-            "0",
-            "1"
-          ]
-        },
-        {
-          "type": "boolean"
-        }
-      ]
-    },
-    "EnableNetworkResolveDoH": {
-      "description": "Boolean-like flag stored as '0' or '1'.\n\nSetting: Enables DNS over HTTPS (DoH) for network address resolution to improve privacy and security.",
-      "anyOf": [
-        {
-          "type": "string",
-          "enum": [
-            "0",
-            "1"
-          ]
-        },
-        {
-          "type": "boolean"
-        }
-      ]
-    },
     "EnableMemStringsTreeDialog": {
       "description": "Boolean-like flag stored as '0' or '1'.\n\nSetting: Enables the use of a tree view dialog for displaying memory strings.",
       "anyOf": [
