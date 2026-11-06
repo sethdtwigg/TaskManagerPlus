@@ -93,7 +93,7 @@
             <PreprocessorDefinitions>_PHLIB_;_WINDOWS;WIN32;DEBUG;%(PreprocessorDefinitions);$(ExternalPreprocessorOptions)</PreprocessorDefinitions>
         </ClCompile>
         <Link>
-            <AdditionalDependencies>thirdparty.lib;comctl32.lib;crypt32.lib;gdiplus.lib;winhttp.lib;ntdll.lib;phlib.lib;shlwapi.lib;userenv.lib;windowscodecs.lib;winsta.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies>thirdparty.lib;comctl32.lib;crypt32.lib;gdiplus.lib;ntdll.lib;phlib.lib;shlwapi.lib;userenv.lib;windowscodecs.lib;winsta.lib;%(AdditionalDependencies)</AdditionalDependencies>
             <AdditionalLibraryDirectories>$(SystemInformerRoot)phlib\bin\$(Configuration)$(PlatformArchitecture);$(SystemInformerRoot)tools\thirdparty\bin\$(Configuration)$(PlatformArchitecture);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
             <DelayLoadDLLs>advapi32.dll;comctl32.dll;comdlg32.dll;gdi32.dll;gdiplus.dll;ole32.dll;shell32.dll;user32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
         </Link>
@@ -111,7 +111,7 @@
             <PreprocessorDefinitions>_PHLIB_;_WINDOWS;WIN32;DEBUG;%(PreprocessorDefinitions);$(ExternalPreprocessorOptions)</PreprocessorDefinitions>
         </ClCompile>
         <Link>
-            <AdditionalDependencies>thirdparty.lib;comctl32.lib;crypt32.lib;gdiplus.lib;winhttp.lib;ntdll.lib;phlib.lib;shlwapi.lib;userenv.lib;windowscodecs.lib;winsta.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies>thirdparty.lib;comctl32.lib;crypt32.lib;gdiplus.lib;ntdll.lib;phlib.lib;shlwapi.lib;userenv.lib;windowscodecs.lib;winsta.lib;%(AdditionalDependencies)</AdditionalDependencies>
             <AdditionalLibraryDirectories>$(SystemInformerRoot)phlib\bin\$(Configuration)$(PlatformArchitecture);$(SystemInformerRoot)tools\thirdparty\bin\$(Configuration)$(PlatformArchitecture);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
             <DelayLoadDLLs>advapi32.dll;comctl32.dll;comdlg32.dll;gdi32.dll;gdiplus.dll;ole32.dll;shell32.dll;user32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
         </Link>
@@ -129,7 +129,7 @@
             <PreprocessorDefinitions>_PHLIB_;_WINDOWS;WIN32;DEBUG;%(PreprocessorDefinitions);$(ExternalPreprocessorOptions)</PreprocessorDefinitions>
         </ClCompile>
         <Link>
-            <AdditionalDependencies>thirdparty.lib;comctl32.lib;crypt32.lib;gdiplus.lib;winhttp.lib;ntdll.lib;phlib.lib;shlwapi.lib;userenv.lib;windowscodecs.lib;winsta.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies>thirdparty.lib;comctl32.lib;crypt32.lib;gdiplus.lib;ntdll.lib;phlib.lib;shlwapi.lib;userenv.lib;windowscodecs.lib;winsta.lib;%(AdditionalDependencies)</AdditionalDependencies>
             <AdditionalLibraryDirectories>$(SystemInformerRoot)phlib\bin\$(Configuration)$(PlatformArchitecture);$(SystemInformerRoot)tools\thirdparty\bin\$(Configuration)$(PlatformArchitecture);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
             <DelayLoadDLLs>advapi32.dll;comctl32.dll;comdlg32.dll;gdi32.dll;gdiplus.dll;ole32.dll;shell32.dll;user32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
         </Link>
@@ -147,7 +147,7 @@
             <PreprocessorDefinitions>_PHLIB_;_WINDOWS;WIN32;NDEBUG;%(PreprocessorDefinitions);$(ExternalPreprocessorOptions)</PreprocessorDefinitions>
         </ClCompile>
         <Link>
-            <AdditionalDependencies>thirdparty.lib;comctl32.lib;crypt32.lib;gdiplus.lib;winhttp.lib;ntdll.lib;phlib.lib;shlwapi.lib;userenv.lib;windowscodecs.lib;winsta.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies>thirdparty.lib;comctl32.lib;crypt32.lib;gdiplus.lib;ntdll.lib;phlib.lib;shlwapi.lib;userenv.lib;windowscodecs.lib;winsta.lib;%(AdditionalDependencies)</AdditionalDependencies>
             <AdditionalLibraryDirectories>$(SystemInformerRoot)phlib\bin\$(Configuration)$(PlatformArchitecture);$(SystemInformerRoot)tools\thirdparty\bin\$(Configuration)$(PlatformArchitecture);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
             <DelayLoadDLLs>advapi32.dll;comctl32.dll;comdlg32.dll;gdi32.dll;gdiplus.dll;ole32.dll;shell32.dll;user32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
         </Link>
@@ -165,7 +165,7 @@
             <PreprocessorDefinitions>_PHLIB_;_WINDOWS;WIN32;NDEBUG;%(PreprocessorDefinitions);$(ExternalPreprocessorOptions)</PreprocessorDefinitions>
         </ClCompile>
         <Link>
-            <AdditionalDependencies>thirdparty.lib;comctl32.lib;crypt32.lib;gdiplus.lib;winhttp.lib;ntdll.lib;phlib.lib;shlwapi.lib;userenv.lib;windowscodecs.lib;winsta.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies>thirdparty.lib;comctl32.lib;crypt32.lib;gdiplus.lib;ntdll.lib;phlib.lib;shlwapi.lib;userenv.lib;windowscodecs.lib;winsta.lib;%(AdditionalDependencies)</AdditionalDependencies>
             <AdditionalLibraryDirectories>$(SystemInformerRoot)phlib\bin\$(Configuration)$(PlatformArchitecture);$(SystemInformerRoot)tools\thirdparty\bin\$(Configuration)$(PlatformArchitecture);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
             <DelayLoadDLLs>advapi32.dll;comctl32.dll;comdlg32.dll;gdi32.dll;gdiplus.dll;ole32.dll;shell32.dll;user32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
         </Link>
@@ -183,7 +183,7 @@
             <PreprocessorDefinitions>_PHLIB_;_WINDOWS;WIN32;NDEBUG;%(PreprocessorDefinitions);$(ExternalPreprocessorOptions)</PreprocessorDefinitions>
         </ClCompile>
         <Link>
-            <AdditionalDependencies>thirdparty.lib;comctl32.lib;crypt32.lib;gdiplus.lib;winhttp.lib;ntdll.lib;phlib.lib;shlwapi.lib;userenv.lib;windowscodecs.lib;winsta.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies>thirdparty.lib;comctl32.lib;crypt32.lib;gdiplus.lib;ntdll.lib;phlib.lib;shlwapi.lib;userenv.lib;windowscodecs.lib;winsta.lib;%(AdditionalDependencies)</AdditionalDependencies>
             <AdditionalLibraryDirectories>$(SystemInformerRoot)phlib\bin\$(Configuration)$(PlatformArchitecture);$(SystemInformerRoot)tools\thirdparty\bin\$(Configuration)$(PlatformArchitecture);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
             <DelayLoadDLLs>advapi32.dll;comctl32.dll;comdlg32.dll;gdi32.dll;gdiplus.dll;ole32.dll;shell32.dll;user32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
         </Link>

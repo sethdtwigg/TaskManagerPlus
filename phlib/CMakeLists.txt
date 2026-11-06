@@ -131,7 +131,7 @@ set(SOURCES
     "handle.c"
     "hexedit.c"
     "hndlinfo.c"
-    "http.c"
+    "ipaddr.c"
     "hvsocketcontrol.c"
     "icotobmp.c"
     "imgcoherency.c"

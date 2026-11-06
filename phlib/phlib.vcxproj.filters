@@ -161,7 +161,7 @@
     <ClCompile Include="wslsup.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="http.c">
+    <ClCompile Include="ipaddr.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="format_std.cpp">

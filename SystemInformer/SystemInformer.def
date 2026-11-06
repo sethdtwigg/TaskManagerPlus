@@ -1427,39 +1427,10 @@ EXPORTS
     PhGetProcessPackageFullName
 
 ; http
-    PhDnsFree
-    PhDnsQuery
-    PhDnsQuery2
-    PhDnsReverseLookupNameFromAddress
-    PhHttpAddRequestHeaders
-    PhHttpBeginRequest
-    PhHttpClose
-    PhHttpConnect
-    PhHttpCrackUrl
-    PhHttpDestroy
-    PhHttpDownloadString
-    PhHttpDownloadUrl
-    PhHttpGetErrorMessage
-    PhHttpInitialize
-    PhHttpQueryHeaders
-    PhHttpQueryHeaderString
-    PhHttpQueryHeaderUlong
-    PhHttpQueryHeaderUlong64
-    PhHttpQueryOptionString
-    PhHttpReadData
-    PhHttpReadDataToBuffer
-    PhHttpReceiveResponse
-    PhHttpSendRequest
-    PhHttpSetCredentials
-    PhHttpSetFeature
-    PhHttpSetProtocol
-    PhHttpSetSecurity
-    PhHttpWriteData
     PhIpv4AddressToString
     PhIpv4StringToAddress
     PhIpv6AddressToString
     PhIpv6StringToAddress
-    PhWinHttpUserAgentString
 
 ; ksiuser
     KphAlpcQueryCommunicationsNamesInfo

@@ -146,7 +146,6 @@ target_link_libraries(peview PRIVATE
     ntdll
     userenv
     windowscodecs
-    winhttp
     winsta
 )
 

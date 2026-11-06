@@ -187,7 +187,7 @@
     <ClCompile Include="treehdr.c" />
     <ClCompile Include="hexedit.c" />
     <ClCompile Include="hndlinfo.c" />
-    <ClCompile Include="http.c" />
+    <ClCompile Include="ipaddr.c" />
     <ClCompile Include="hvsocketcontrol.c" />
     <ClCompile Include="icotobmp.c" />
     <ClCompile Include="filestream.c" />

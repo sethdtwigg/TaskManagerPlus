@@ -245,7 +245,6 @@ target_link_libraries(SystemInformer PRIVATE
     userenv
     wbemuuid
     windowscodecs
-    winhttp
     winsta
 )
 
@@ -256,7 +255,6 @@ target_link_options(SystemInformer PRIVATE
     /DELAYLOAD:comdlg32.dll
     /DELAYLOAD:gdiplus.dll
     /DELAYLOAD:oleaut32.dll
-    /DELAYLOAD:winhttp.dll
     /DELAYLOAD:winsta.dll
 )
 

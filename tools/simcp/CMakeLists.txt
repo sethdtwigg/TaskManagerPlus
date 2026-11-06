@@ -51,7 +51,6 @@ target_link_libraries(simcp PRIVATE
     gdiplus
     ntdll
     userenv
-    winhttp
 )
 
 target_link_options(simcp PRIVATE
@@ -61,7 +60,6 @@ target_link_options(simcp PRIVATE
     /DELAYLOAD:gdi32.dll
     /DELAYLOAD:ole32.dll
     /DELAYLOAD:user32.dll
-    /DELAYLOAD:winhttp.dll
     /DELAYLOAD:winsta.dll
 )
 
