@@ -589,6 +589,8 @@
 #define IDC_FILTERTYPE                  1390
 #define IDC_TREELIST                    1391
 #define IDC_SECTIONTREE                 1393
+#define IDC_OPTSEARCH                   1572
+#define IDC_OPTRESULTS                  1573
 #define IDC_SECTION_SPLITTER            1543
 #define IDC_INFO                        1396
 #define IDC_DEFSTATE                    1398
@@ -1036,7 +1038,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        299
 #define _APS_NEXT_COMMAND_VALUE         10355
-#define _APS_NEXT_CONTROL_VALUE         1572
+#define _APS_NEXT_CONTROL_VALUE         1574
 #define _APS_NEXT_SYMED_VALUE           170
 #endif
 #endif

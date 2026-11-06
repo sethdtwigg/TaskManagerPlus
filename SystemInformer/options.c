@@ -141,6 +141,8 @@ static PPH_LIST SectionList = NULL;
 static PPH_OPTIONS_SECTION CurrentSection = NULL;
 static HWND OptionsTreeControl = NULL;
 static HWND ContainerControl = NULL;
+static HWND OptionsSearchControl = NULL; // TaskManagerPlus
+static HWND OptionsResultsControl = NULL; // TaskManagerPlus
 static RECT MinimumSize;
 static PCWSTR OptionsInitialSectionName = NULL;
 
@@ -209,6 +211,41 @@ VOID PhShowOptionsDialog(
     }
 }
 
+// TaskManagerPlus: grouped navigation tree, settings search and a larger default size.
+#define PH_OPTIONS_GROUP_COUNT 4
+static CONST PCWSTR OptionsGroupNames[PH_OPTIONS_GROUP_COUNT] = { L"Application", L"Notifications", L"Devices", L"Extensions" };
+static HTREEITEM OptionsGroupItems[PH_OPTIONS_GROUP_COUNT];
+
+static ULONG PhpOptionsGetSectionGroup(
+    _In_ PCWSTR Name
+    )
+{
+    static CONST PCWSTR application[] = { L"General", L"Advanced", L"Themes", L"Highlighting", L"Tray Icon", L"Graphs", L"Plugins" };
+    SIZE_T length = wcslen(Name);
+
+    for (ULONG i = 0; i < RTL_NUMBER_OF(application); i++)
+    {
+        if (_wcsicmp(Name, application[i]) == 0)
+            return 0;
+    }
+
+    if (length >= 13 && _wcsnicmp(Name, L"Notifications", 13) == 0)
+        return 1;
+    if (length > 8 && _wcsicmp(Name + length - 8, L" Devices") == 0)
+        return 2;
+
+    return 3;
+}
+
+static HTREEITEM PhpOptionsGetGroupItem(
+    _In_ PCWSTR SectionName
+    )
+{
+    HTREEITEM item = OptionsGroupItems[PhpOptionsGetSectionGroup(SectionName)];
+
+    return item ? item : TVI_ROOT;
+}
+
 static HTREEITEM PhpTreeViewInsertItem(
     _In_opt_ HTREEITEM HandleInsertAfter,
     _In_ PCWSTR Text,
@@ -219,7 +256,7 @@ static HTREEITEM PhpTreeViewInsertItem(
 
     memset(&insert, 0, sizeof(TV_INSERTSTRUCT));
 
-    insert.hParent = TVI_ROOT;
+    insert.hParent = Context ? PhpOptionsGetGroupItem(Text) : TVI_ROOT; // TaskManagerPlus: grouped navigation
     insert.hInsertAfter = HandleInsertAfter;
     insert.item.mask = TVIF_TEXT | TVIF_PARAM;
     insert.item.pszText = (PWSTR)Text;
@@ -314,16 +351,12 @@ static VOID PhpApplyThemeSupportSetting(
     )
 {
     BOOLEAN enableThemeSupport;
-    BOOLEAN themeSupportWasEnabled;
 
-    themeSupportWasEnabled = !!PhGetIntegerSetting(SETTING_ENABLE_THEME_SUPPORT);
     enableThemeSupport = Button_GetCheck(GetDlgItem(hwndDlg, IDC_ENABLETHEME)) == BST_CHECKED;
     PhSetIntegerSetting(SETTING_ENABLE_THEME_SUPPORT, enableThemeSupport);
 
-    // Enabling theme support forces dark graph backgrounds (GraphColorMode); undo that
-    // override when theme support is turned off so the graphs return to the light colors.
-    if (themeSupportWasEnabled && !enableThemeSupport)
-        PhSetIntegerSetting(SETTING_GRAPH_COLOR_MODE, 0);
+    // TaskManagerPlus: graphs follow the theme palette themselves (sysinfo.c, mode 2),
+    // so the old GraphColorMode override is gone.
 
     PhUpdateCachedSettings();
 
@@ -354,12 +387,6 @@ static VOID PhpApplyThemeModeSetting(
         return;
 
     PhSetIntegerSetting(SETTING_THEME_MODE, mode);
-
-    // Graph drawing keys off GraphColorMode rather than the window palette;
-    // pair a dark palette with dark graph backgrounds (same override the
-    // advanced options page applies).
-    if (PhEnableThemeSupport && PhIsThemeModeDark(mode))
-        PhSetIntegerSetting(SETTING_GRAPH_COLOR_MODE, 1);
 
     PhUpdateCachedSettings();
 
@@ -404,6 +431,324 @@ static VOID PhpOptionsSetImageList(
     }
 }
 
+
+// TaskManagerPlus: settings search. Every section dialog is created once (hidden), its
+// labels, check boxes, buttons and list-view rows are harvested as searchable text, and
+// results are shown in place of the navigation tree.
+
+typedef struct _PH_OPTIONS_SEARCH_ENTRY
+{
+    PPH_OPTIONS_SECTION Section;
+    HWND ControlHandle;
+    LONG ListViewItem;
+    PPH_STRING Text;
+} PH_OPTIONS_SEARCH_ENTRY, *PPH_OPTIONS_SEARCH_ENTRY;
+
+static PPH_LIST OptionsSearchIndex = NULL;
+static PPH_LIST OptionsSearchResults = NULL; // PPH_OPTIONS_SEARCH_ENTRY (not owned)
+
+typedef struct _PH_OPTIONS_HARVEST_CONTEXT
+{
+    PPH_OPTIONS_SECTION Section;
+} PH_OPTIONS_HARVEST_CONTEXT, *PPH_OPTIONS_HARVEST_CONTEXT;
+
+static VOID PhpOptionsAddSearchEntry(
+    _In_ PPH_OPTIONS_SECTION Section,
+    _In_opt_ HWND ControlHandle,
+    _In_ LONG ListViewItem,
+    _In_ PPH_STRING Text
+    )
+{
+    PPH_OPTIONS_SEARCH_ENTRY entry;
+    PH_STRING_BUILDER builder;
+    PPH_STRING clean;
+
+    // Drop accelerator ampersands ("&Start hidden").
+    PhInitializeStringBuilder(&builder, Text->Length / sizeof(WCHAR) + 1);
+
+    for (SIZE_T i = 0; i < Text->Length / sizeof(WCHAR); i++)
+    {
+        if (Text->Buffer[i] == L'&')
+        {
+            if (i + 1 < Text->Length / sizeof(WCHAR) && Text->Buffer[i + 1] == L'&')
+            {
+                PhAppendCharStringBuilder(&builder, L'&');
+                i++;
+            }
+
+            continue;
+        }
+
+        PhAppendCharStringBuilder(&builder, Text->Buffer[i]);
+    }
+
+    clean = PhFinalStringBuilderString(&builder);
+    PhDereferenceObject(Text);
+
+    if (clean->Length == 0)
+    {
+        PhDereferenceObject(clean);
+        return;
+    }
+
+    entry = PhAllocateZero(sizeof(PH_OPTIONS_SEARCH_ENTRY));
+    entry->Section = Section;
+    entry->ControlHandle = ControlHandle;
+    entry->ListViewItem = ListViewItem;
+    entry->Text = clean;
+    PhAddItemList(OptionsSearchIndex, entry);
+}
+
+static BOOL CALLBACK PhpOptionsHarvestEnumProc(
+    _In_ HWND WindowHandle,
+    _In_ LPARAM Parameter
+    )
+{
+    PPH_OPTIONS_HARVEST_CONTEXT context = (PPH_OPTIONS_HARVEST_CONTEXT)Parameter;
+    WCHAR className[64];
+
+    if (!GetClassName(WindowHandle, className, RTL_NUMBER_OF(className)))
+        return TRUE;
+
+    if (_wcsicmp(className, L"SysListView32") == 0)
+    {
+        LONG count = ListView_GetItemCount(WindowHandle);
+
+        if (count > 1000)
+            count = 1000;
+
+        for (LONG i = 0; i < count; i++)
+        {
+            WCHAR buffer[256];
+
+            buffer[0] = UNICODE_NULL;
+            ListView_GetItemText(WindowHandle, i, 0, buffer, RTL_NUMBER_OF(buffer));
+            PhpOptionsAddSearchEntry(context->Section, WindowHandle, i, PhCreateString(buffer));
+        }
+    }
+    else if (_wcsicmp(className, L"Button") == 0 || _wcsicmp(className, L"Static") == 0)
+    {
+        PPH_STRING text = PhGetWindowText(WindowHandle);
+
+        if (text)
+            PhpOptionsAddSearchEntry(context->Section, WindowHandle, -1, text);
+    }
+
+    return TRUE;
+}
+
+static VOID PhpOptionsBuildSearchIndex(
+    VOID
+    )
+{
+    if (OptionsSearchIndex)
+        return;
+
+    OptionsSearchIndex = PhCreateList(256);
+
+    for (ULONG i = 0; i < SectionList->Count; i++)
+    {
+        PPH_OPTIONS_SECTION section = SectionList->Items[i];
+        PH_OPTIONS_HARVEST_CONTEXT context;
+
+        if (!section->TreeItemHandle)
+            continue; // not shown in the navigation (Advanced is merged into General)
+
+        if (!section->DialogHandle)
+            PhOptionsCreateSectionDialog(section);
+
+        PhpOptionsAddSearchEntry(section, NULL, -1, PhCreateStringEx(section->Name.Buffer, section->Name.Length));
+
+        if (section->DialogHandle)
+        {
+            context.Section = section;
+            EnumChildWindows(section->DialogHandle, PhpOptionsHarvestEnumProc, (LPARAM)&context);
+        }
+    }
+}
+
+static VOID PhpOptionsFreeSearchIndex(
+    VOID
+    )
+{
+    if (OptionsSearchIndex)
+    {
+        for (ULONG i = 0; i < OptionsSearchIndex->Count; i++)
+        {
+            PPH_OPTIONS_SEARCH_ENTRY entry = OptionsSearchIndex->Items[i];
+
+            PhDereferenceObject(entry->Text);
+            PhFree(entry);
+        }
+
+        PhDereferenceObject(OptionsSearchIndex);
+        OptionsSearchIndex = NULL;
+    }
+
+    if (OptionsSearchResults)
+    {
+        PhDereferenceObject(OptionsSearchResults);
+        OptionsSearchResults = NULL;
+    }
+}
+
+static BOOLEAN PhpOptionsEntryMatches(
+    _In_ PPH_OPTIONS_SEARCH_ENTRY Entry,
+    _In_ PPH_STRING Query
+    )
+{
+    PH_STRINGREF remaining = Query->sr;
+    PH_STRINGREF word;
+
+    while (remaining.Length != 0)
+    {
+        PhSplitStringRefAtChar(&remaining, L' ', &word, &remaining);
+
+        if (word.Length == 0)
+            continue;
+
+        if (PhFindStringInStringRef(&Entry->Text->sr, &word, TRUE) == SIZE_MAX &&
+            PhFindStringInStringRef(&Entry->Section->Name, &word, TRUE) == SIZE_MAX)
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
+static VOID PhpOptionsResultsLayout(
+    VOID
+    )
+{
+    RECT rect;
+
+    if (OptionsResultsControl && GetClientRect(OptionsResultsControl, &rect))
+        ListView_SetColumnWidth(OptionsResultsControl, 0, rect.right - rect.left);
+}
+
+static VOID PhpOptionsRunSearch(
+    VOID
+    )
+{
+    PPH_STRING query = PhGetWindowText(OptionsSearchControl);
+    BOOLEAN active = query && query->Length != 0;
+
+    ShowWindow(OptionsTreeControl, active ? SW_HIDE : SW_SHOW);
+    ShowWindow(OptionsResultsControl, active ? SW_SHOW : SW_HIDE);
+
+    if (!active)
+    {
+        if (query)
+            PhDereferenceObject(query);
+
+        return;
+    }
+
+    PhpOptionsBuildSearchIndex();
+
+    if (!OptionsSearchResults)
+        OptionsSearchResults = PhCreateList(64);
+
+    PhClearList(OptionsSearchResults);
+    ListView_DeleteAllItems(OptionsResultsControl);
+    SendMessage(OptionsResultsControl, WM_SETREDRAW, FALSE, 0);
+
+    for (ULONG i = 0; i < OptionsSearchIndex->Count && OptionsSearchResults->Count < 200; i++)
+    {
+        PPH_OPTIONS_SEARCH_ENTRY entry = OptionsSearchIndex->Items[i];
+
+        if (PhpOptionsEntryMatches(entry, query))
+        {
+            PPH_STRING text;
+            LVITEM item;
+
+            if (entry->ControlHandle)
+                text = PhConcatStrings(3, entry->Section->Name.Buffer, L"  \x203A  ", entry->Text->Buffer);
+            else
+                text = PhFormatString(L"%s  (section)", entry->Section->Name.Buffer);
+
+            memset(&item, 0, sizeof(LVITEM));
+            item.mask = LVIF_TEXT | LVIF_PARAM;
+            item.iItem = MAXINT;
+            item.pszText = text->Buffer;
+            item.lParam = (LPARAM)entry;
+            ListView_InsertItem(OptionsResultsControl, &item);
+            PhAddItemList(OptionsSearchResults, entry);
+            PhDereferenceObject(text);
+        }
+    }
+
+    if (OptionsSearchResults->Count == 0)
+    {
+        LVITEM item;
+
+        memset(&item, 0, sizeof(LVITEM));
+        item.mask = LVIF_TEXT | LVIF_PARAM;
+        item.iItem = 0;
+        item.pszText = L"No matching settings";
+        item.lParam = 0;
+        ListView_InsertItem(OptionsResultsControl, &item);
+    }
+    else
+    {
+        ListView_SetItemState(OptionsResultsControl, 0, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+    }
+
+    SendMessage(OptionsResultsControl, WM_SETREDRAW, TRUE, 0);
+    PhpOptionsResultsLayout();
+    PhDereferenceObject(query);
+}
+
+static VOID PhpOptionsGoToEntry(
+    _In_ PPH_OPTIONS_SEARCH_ENTRY Entry
+    )
+{
+    HWND control;
+
+    if (!Entry || !Entry->Section->TreeItemHandle)
+        return;
+
+    TreeView_SelectItem(OptionsTreeControl, Entry->Section->TreeItemHandle);
+    PhOptionsEnterSectionView(Entry->Section);
+
+    control = Entry->ControlHandle;
+
+    if (control && IsWindow(control))
+    {
+        if (Entry->ListViewItem >= 0)
+        {
+            ListView_SetItemState(control, -1, 0, LVIS_SELECTED);
+            ListView_SetItemState(control, Entry->ListViewItem, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+            ListView_EnsureVisible(control, Entry->ListViewItem, FALSE);
+        }
+        else if (!(GetWindowLongPtr(control, GWL_STYLE) & WS_TABSTOP) && Entry->Section->DialogHandle)
+        {
+            HWND next = GetNextDlgTabItem(Entry->Section->DialogHandle, control, FALSE);
+
+            if (next)
+                control = next;
+        }
+
+        SetFocus(control);
+    }
+}
+
+static VOID PhpOptionsActivateResult(
+    _In_ LONG Index
+    )
+{
+    LVITEM item;
+
+    if (Index < 0)
+        return;
+
+    memset(&item, 0, sizeof(LVITEM));
+    item.mask = LVIF_PARAM;
+    item.iItem = Index;
+
+    if (ListView_GetItem(OptionsResultsControl, &item) && item.lParam)
+        PhpOptionsGoToEntry((PPH_OPTIONS_SEARCH_ENTRY)item.lParam);
+}
+
 INT_PTR CALLBACK PhOptionsDialogProc(
     _In_ HWND hwndDlg,
     _In_ UINT uMsg,
@@ -416,6 +761,32 @@ INT_PTR CALLBACK PhOptionsDialogProc(
     case WM_INITDIALOG:
         {
             OptionsTreeControl = GetDlgItem(hwndDlg, IDC_SECTIONTREE);
+            OptionsSearchControl = GetDlgItem(hwndDlg, IDC_OPTSEARCH); // TaskManagerPlus
+            OptionsResultsControl = GetDlgItem(hwndDlg, IDC_OPTRESULTS);
+            Edit_SetCueBannerText(OptionsSearchControl, L"Search settings");
+            PhSetControlTheme(OptionsResultsControl, L"explorer");
+            ListView_SetExtendedListViewStyleEx(OptionsResultsControl, LVS_EX_DOUBLEBUFFER | LVS_EX_FULLROWSELECT, LVS_EX_DOUBLEBUFFER | LVS_EX_FULLROWSELECT);
+            {
+                LVCOLUMN column;
+
+                memset(&column, 0, sizeof(LVCOLUMN));
+                column.mask = LVCF_WIDTH;
+                column.cx = 100;
+                ListView_InsertColumn(OptionsResultsControl, 0, &column);
+            }
+            memset(OptionsGroupItems, 0, sizeof(OptionsGroupItems));
+            for (ULONG g = 0; g < PH_OPTIONS_GROUP_COUNT; g++)
+            {
+                TV_INSERTSTRUCT groupInsert;
+
+                memset(&groupInsert, 0, sizeof(TV_INSERTSTRUCT));
+                groupInsert.hParent = TVI_ROOT;
+                groupInsert.hInsertAfter = TVI_LAST;
+                groupInsert.item.mask = TVIF_TEXT | TVIF_PARAM;
+                groupInsert.item.pszText = (PWSTR)OptionsGroupNames[g];
+                groupInsert.item.lParam = 0;
+                OptionsGroupItems[g] = TreeView_InsertItem(OptionsTreeControl, &groupInsert);
+            }
             ContainerControl = GetDlgItem(hwndDlg, IDD_CONTAINER);
 
             PhSetApplicationWindowIcon(hwndDlg);
@@ -429,12 +800,14 @@ INT_PTR CALLBACK PhOptionsDialogProc(
 
             MinimumSize.left = 0;
             MinimumSize.top = 0;
-            MinimumSize.right = 423;
-            MinimumSize.bottom = 247;
+            MinimumSize.right = 520; // TaskManagerPlus: larger dialog (matches IDD_OPTIONS)
+            MinimumSize.bottom = 320;
             MapDialogRect(hwndDlg, &MinimumSize);
 
             PhInitializeLayoutManager(&WindowLayoutManager, hwndDlg);
+            PhAddLayoutItem(&WindowLayoutManager, OptionsSearchControl, NULL, PH_ANCHOR_LEFT | PH_ANCHOR_TOP);
             PhAddLayoutItem(&WindowLayoutManager, OptionsTreeControl, NULL, PH_ANCHOR_LEFT | PH_ANCHOR_TOP | PH_ANCHOR_BOTTOM);
+            PhAddLayoutItem(&WindowLayoutManager, OptionsResultsControl, NULL, PH_ANCHOR_LEFT | PH_ANCHOR_TOP | PH_ANCHOR_BOTTOM);
             //PhAddLayoutItem(&WindowLayoutManager, GetDlgItem(hwndDlg, IDC_SEPARATOR), NULL, PH_ANCHOR_LEFT | PH_ANCHOR_TOP | PH_ANCHOR_BOTTOM);
             PhAddLayoutItem(&WindowLayoutManager, ContainerControl, NULL, PH_ANCHOR_LEFT | PH_ANCHOR_TOP | PH_ANCHOR_RIGHT | PH_ANCHOR_BOTTOM);
             PhAddLayoutItem(&WindowLayoutManager, GetDlgItem(hwndDlg, IDC_RESET), NULL, PH_ANCHOR_LEFT | PH_ANCHOR_BOTTOM);
@@ -483,8 +856,18 @@ INT_PTR CALLBACK PhOptionsDialogProc(
                         section = initialSection;
                 }
 
+                // TaskManagerPlus: drop empty groups, then show the one holding the first section.
+                for (ULONG g = 0; g < PH_OPTIONS_GROUP_COUNT; g++)
+                {
+                    if (OptionsGroupItems[g] && !TreeView_GetChild(OptionsTreeControl, OptionsGroupItems[g]))
+                    {
+                        TreeView_DeleteItem(OptionsTreeControl, OptionsGroupItems[g]);
+                        OptionsGroupItems[g] = NULL;
+                    }
+                }
+
                 TreeView_SelectItem(OptionsTreeControl, section->TreeItemHandle);
-                PhSetDialogFocus(hwndDlg, OptionsTreeControl);
+                PhSetDialogFocus(hwndDlg, OptionsSearchControl);
                 //PhOptionsEnterSectionView(section);
                 PhOptionsOnSize();
             }
@@ -503,6 +886,7 @@ INT_PTR CALLBACK PhOptionsDialogProc(
             PhSaveWindowPlacementToSetting(SETTING_OPTIONS_WINDOW_POSITION, SETTING_OPTIONS_WINDOW_SIZE, hwndDlg);
 
             PhDeleteLayoutManager(&WindowLayoutManager);
+            PhpOptionsFreeSearchIndex(); // TaskManagerPlus
 
             for (i = 0; i < SectionList->Count; i++)
             {
@@ -548,9 +932,30 @@ INT_PTR CALLBACK PhOptionsDialogProc(
         {
             switch (GET_WM_COMMAND_ID(wParam, lParam))
             {
+            case IDC_OPTSEARCH:
+                {
+                    if (GET_WM_COMMAND_CMD(wParam, lParam) == EN_CHANGE)
+                        PhpOptionsRunSearch(); // TaskManagerPlus
+                }
+                break;
             case IDCANCEL:
             case IDOK:
                 {
+                    // TaskManagerPlus: Enter jumps to the selected search result, Escape clears the search.
+                    if (GetFocus() == OptionsSearchControl || GetFocus() == OptionsResultsControl)
+                    {
+                        if (GET_WM_COMMAND_ID(wParam, lParam) == IDOK)
+                        {
+                            PhpOptionsActivateResult(ListView_GetNextItem(OptionsResultsControl, -1, LVNI_SELECTED));
+                            break;
+                        }
+                        else if (GetWindowTextLength(OptionsSearchControl) != 0)
+                        {
+                            SetWindowText(OptionsSearchControl, L"");
+                            break;
+                        }
+                    }
+
                     DestroyWindow(hwndDlg);
                 }
                 break;
@@ -660,6 +1065,25 @@ INT_PTR CALLBACK PhOptionsDialogProc(
                     if (section)
                     {
                         PhOptionsEnterSectionView(section);
+                    }
+                    else if (treeview->itemNew.hItem)
+                    {
+                        // TaskManagerPlus: a group header expands and opens its first section.
+                        HTREEITEM child = TreeView_GetChild(OptionsTreeControl, treeview->itemNew.hItem);
+
+                        if (child)
+                            TreeView_SelectItem(OptionsTreeControl, child);
+                    }
+                }
+                break;
+            case NM_CLICK:
+            case LVN_ITEMACTIVATE:
+                {
+                    if (header->hwndFrom == OptionsResultsControl)
+                    {
+                        LPNMITEMACTIVATE activate = (LPNMITEMACTIVATE)lParam;
+
+                        PhpOptionsActivateResult(activate->iItem);
                     }
                 }
                 break;
@@ -1804,12 +2228,10 @@ static VOID PhpAdvancedPageSave(
 {
     HWND listViewHandle;
     ULONG sampleCount;
-    BOOLEAN themeSupportWasEnabled;
 
     if (!hwndDlg)
         return;
 
-    themeSupportWasEnabled = !!PhGetIntegerSetting(SETTING_ENABLE_THEME_SUPPORT);
 
     listViewHandle = GetDlgItem(hwndDlg, IDC_SETTINGS);
     sampleCount = PhGetDialogItemValue(hwndDlg, IDC_SAMPLECOUNT);
@@ -1875,15 +2297,6 @@ static VOID PhpAdvancedPageSave(
     SetSettingForLvItemCheck(listViewHandle, PHP_OPTIONS_INDEX_SHOW_ADVANCED_OPTIONS, SETTING_ENABLE_ADVANCED_OPTIONS);
     if (WindowsVersion >= WINDOWS_10)
         SetSettingForLvItemCheckRestartRequired(listViewHandle, PHP_OPTIONS_INDEX_PROCESS_MONITOR, SETTING_ENABLE_PROCESS_MONITOR);
-
-    if (PhGetIntegerSetting(SETTING_ENABLE_THEME_SUPPORT)) // PhGetIntegerSetting required (dmex)
-    {
-        PhSetIntegerSetting(SETTING_GRAPH_COLOR_MODE, 1); // HACK switch to dark theme. (dmex)
-    }
-    else if (themeSupportWasEnabled)
-    {
-        PhSetIntegerSetting(SETTING_GRAPH_COLOR_MODE, 0); // Undo the override above when theme support is turned off.
-    }
 
     WriteCurrentUserRun(
         ListView_GetCheckState(listViewHandle, PHP_OPTIONS_INDEX_START_ATLOGON) == BST_CHECKED,
