@@ -3359,6 +3359,22 @@ VOID PhTnpUpdateSystemMetrics(
         Context->SystemDragY = 2;
 }
 
+// TaskManagerPlus: comfortable density. Grow a height by 25% and snap it to the 8px grid
+// (scaled for DPI), rounding to the nearest step.
+static LONG PhTnpComfortableHeight(
+    _In_ LONG Height,
+    _In_ LONG WindowDpi
+    )
+{
+    LONG grid = PhScaleToDisplay(8, WindowDpi);
+    LONG grown = Height + Height / 4;
+
+    if (grid < 1)
+        return Height;
+
+    return max(Height, ((grown + grid / 2) / grid) * grid);
+}
+
 /**
  * Updates the text metrics and row height for the treenew control.
  *
@@ -3397,6 +3413,10 @@ VOID PhTnpUpdateTextMetrics(
 
             if (!(Context->Style & TN_STYLE_THIN_ROWS))
                 Context->RowHeight += Context->HeaderTextMargin; // HACK
+
+            // TaskManagerPlus: ~+25% row height on an 8px grid (thin rows stay compact).
+            if (!(Context->Style & TN_STYLE_THIN_ROWS))
+                Context->RowHeight = PhTnpComfortableHeight(Context->RowHeight, Context->WindowDpi);
         }
 
         ReleaseDC(Context->Handle, hdc);
@@ -3729,6 +3749,9 @@ VOID PhTnpLayoutHeader(
         outRect.top = windowPos.y;
         outRect.right = windowPos.cx;
         outRect.bottom = windowPos.cy + headerHeight;
+        // TaskManagerPlus: ~+25% header height on an 8px grid.
+        if (!Context->HeaderCustomDraw)
+            outRect.bottom = PhTnpComfortableHeight(outRect.bottom, Context->WindowDpi);
 
         if (!PhEqualRect(&outRect, &Context->FixedHeaderLastOutRect))
         {
@@ -3758,6 +3781,9 @@ VOID PhTnpLayoutHeader(
         outRect.top = windowPos.y;
         outRect.right = windowPos.cx;
         outRect.bottom = windowPos.cy + headerHeight;
+        // TaskManagerPlus: ~+25% header height on an 8px grid.
+        if (!Context->HeaderCustomDraw)
+            outRect.bottom = PhTnpComfortableHeight(outRect.bottom, Context->WindowDpi);
 
         if (!PhEqualRect(&outRect, &Context->NormalHeaderLastOutRect))
         {

@@ -4431,33 +4431,14 @@ VOID ThemeWindowRenderClippedGroupBoxControl(
             );
     }
 
-    {
-        RECT frameRect = *ClientRect;
-        HPEN framePen;
-        HPEN oldPen;
-        HBRUSH oldBrush;
-
-        frameRect.top += textSize.cy / 2;
-
-        framePen = CreatePen(PS_SOLID, 1, PhThemeWindowBackground2Color);
-        oldPen = framePen ? SelectPen(BufferDc, framePen) : NULL;
-        oldBrush = SelectBrush(BufferDc, PhpStockNullBrush);
-
-        if (framePen)
-            Rectangle(BufferDc, frameRect.left, frameRect.top, frameRect.right, frameRect.bottom);
-
-        if (oldBrush)
-            SelectBrush(BufferDc, oldBrush);
-        if (oldPen)
-            SelectPen(BufferDc, oldPen);
-        if (framePen)
-            DeletePen(framePen);
-    }
+    // TaskManagerPlus: flat look. The group box frame is not drawn; the caption alone
+    // (flush left on the content edge) labels the group.
+    UNREFERENCED_PARAMETER(dpiValue);
 
     if (returnLength)
     {
-        LONG textOffsetX = PhScaleToDisplay(9, dpiValue);
-        LONG textPadding = PhScaleToDisplay(3, dpiValue);
+        LONG textOffsetX = 0; // TaskManagerPlus: was PhScaleToDisplay(9, dpiValue)
+        LONG textPadding = 0; // TaskManagerPlus: was PhScaleToDisplay(3, dpiValue)
         RECT textRect = { textOffsetX, 0, textOffsetX + textSize.cx + textPadding * 2, textSize.cy };
 
         SetTextColor(BufferDc, PhThemeWindowTextColor);

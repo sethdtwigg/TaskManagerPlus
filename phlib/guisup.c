@@ -557,6 +557,39 @@ HFONT PhInitializeMonospaceFont(
     return NULL;
 }
 
+// TaskManagerPlus: default UI font is Segoe UI Variable Text 9pt where installed,
+// otherwise the system icon-title font (Segoe UI 9pt on current Windows).
+static HFONT PhpCreateDefaultUiFont(
+    _In_ LONG WindowDpi
+    )
+{
+    HFONT fontHandle;
+
+    if (fontHandle = PhCreateFontHandle(L"Segoe UI Variable Text", 9, FW_NORMAL, DEFAULT_PITCH, WindowDpi))
+    {
+        HDC hdc;
+        WCHAR faceName[LF_FACESIZE] = L"";
+
+        if (hdc = GetDC(NULL))
+        {
+            HGDIOBJ oldFont = SelectObject(hdc, fontHandle);
+            GetTextFace(hdc, RTL_NUMBER_OF(faceName), faceName);
+            SelectObject(hdc, oldFont);
+            ReleaseDC(NULL, hdc);
+        }
+
+        if (_wcsicmp(faceName, L"Segoe UI Variable Text") == 0)
+            return fontHandle;
+
+        DeleteFont(fontHandle);
+    }
+
+    if (fontHandle = PhCreateIconTitleFont(WindowDpi))
+        return fontHandle;
+
+    return PhInitializeFont(WindowDpi);
+}
+
 static HFONT PhpCreateFontFromSetting(
     _In_ PCWSTR SettingName,
     _In_ LONG WindowDpi,
@@ -595,14 +628,14 @@ HFONT PhCreateApplicationFont(
     _In_ LONG WindowDpi
     )
 {
-    return PhInitializeFont(WindowDpi);
+    return PhpCreateDefaultUiFont(WindowDpi); // TaskManagerPlus
 }
 
 HFONT PhCreateTreeWindowFont(
     _In_ LONG WindowDpi
     )
 {
-    return PhpCreateFontFromSetting(L"Font", WindowDpi, PhCreateIconTitleFont);
+    return PhpCreateFontFromSetting(L"Font", WindowDpi, PhpCreateDefaultUiFont); // TaskManagerPlus
 }
 
 HFONT PhCreateMonospaceFont(
