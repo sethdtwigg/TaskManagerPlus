@@ -373,8 +373,9 @@ VOID StatusBarUpdate(
             {
                 PH_FORMAT format[2];
 
-                PhInitFormatS(&format[0], L"Processes: ");
-                PhInitFormatI64UGroupDigits(&format[1], SystemStatistics.NumberOfProcesses);
+                // TaskManagerPlus: "394 processes"
+                PhInitFormatI64UGroupDigits(&format[0], SystemStatistics.NumberOfProcesses);
+                PhInitFormatS(&format[1], L" processes");
 
                 PhFormatToBuffer(format, RTL_NUMBER_OF(format), text[count], sizeof(text[count]), &textLength[count]);
             }
@@ -690,7 +691,7 @@ VOID StatusBarUpdate(
             widths[count] = 0;
 
         // TaskManagerPlus: text plus 8px-grid padding on both sides (the theme painter draws 8px at the left).
-        width = size.cx + 2 * MulDiv(8, PhGetWindowDpi(StatusBarHandle), 96);
+        width = size.cx + 2 * MulDiv(8, PhGetWindowDpi(StatusBarHandle), 96) + MulDiv(8, PhGetWindowDpi(StatusBarHandle), 96); // + one 8px unit: DrawText with DT_END_ELLIPSIS needs more than the advance width, otherwise the last glyph was clipped
 
         if (resetMaxWidths)
             StatusBarMaxWidths[count] = 0;

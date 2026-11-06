@@ -120,6 +120,7 @@ VOID PhInitializeProcessTreeList(
     TreeNew_SetTotalsRow(hwnd, TRUE); // TaskManagerPlus: totals row under the headers
     TreeNew_SetCellHeat(hwnd, TRUE); // TaskManagerPlus: heat-map tints and the process count pill
     PhHeatMapEnabled = !!PhGetIntegerSetting(SETTING_HEAT_MAP);
+    PhShowCountPill = !!PhGetIntegerSetting(SETTING_SHOW_COUNT_PILL); // TaskManagerPlus
     TreeNew_SetImageList(hwnd, PhProcessSmallImageList);
     TreeNew_SetMaxId(hwnd, PHPRTLC_MAXIMUM - 1);
 
@@ -782,6 +783,9 @@ VOID PhTickProcessNodes(
 
     {   // TaskManagerPlus: keep the "N Processes" pill current
         static ULONG lastPillCount = ULONG_MAX;
+
+        if (!PhShowCountPill) // TaskManagerPlus: pill is optional, the count is in the status bar
+            lastPillCount = ProcessNodeList->Count;
 
         if (lastPillCount != ProcessNodeList->Count)
         {
@@ -3290,6 +3294,9 @@ BOOLEAN NTAPI PhpProcessTreeNewCallback(
         {
             PPH_TREENEW_PAINT_OVERLAY overlay = Parameter1;
             RECT band;
+
+            if (!PhShowCountPill) // TaskManagerPlus
+                return TRUE;
 
             PhHeatGetCountPillBand(&overlay->ClientRect, &band);
 
@@ -6420,6 +6427,20 @@ VOID PhExpandAllProcessNodes(
 
     if (needsRestructure)
         TreeNew_NodesStructured(ProcessTreeListHandle);
+}
+
+// TaskManagerPlus: View > Count pill.
+BOOLEAN PhShowCountPill = FALSE;
+
+VOID PhToggleProcessCountPill(
+    VOID
+    )
+{
+    PhShowCountPill = !PhShowCountPill;
+    PhSetIntegerSetting(SETTING_SHOW_COUNT_PILL, PhShowCountPill);
+
+    if (ProcessTreeListHandle)
+        InvalidateRect(ProcessTreeListHandle, NULL, FALSE);
 }
 
 // TaskManagerPlus: View > Heat map.

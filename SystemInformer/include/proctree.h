@@ -454,6 +454,12 @@ PhExpandAllProcessNodes(
     );
 
 // TaskManagerPlus
+extern BOOLEAN PhShowCountPill;
+
+VOID PhToggleProcessCountPill(
+    VOID
+    );
+
 VOID PhToggleProcessHeatMap(
     VOID
     );
