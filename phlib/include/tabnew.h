@@ -119,7 +119,8 @@ typedef struct _PH_TABNEW_CONTEXT PH_TABNEW_CONTEXT, *PPH_TABNEW_CONTEXT;
 #define PHTNM_SETFLAGS           (PHTNM_FIRST + 33)  // wParam=PHTNF_*, returns old flags
 #define PHTNM_SELECTPAGE         (PHTNM_FIRST + 34)  // wParam=PPH_TABNEW_PAGE
 #define PHTNM_GETFLAGS           (PHTNM_FIRST + 35)  // returns PHTNF_*
-#define PHTNM_LAST               PHTNM_GETFLAGS
+#define PHTNM_SETITEMHIDDEN      (PHTNM_FIRST + 36)  // wParam=index, lParam=BOOLEAN (TaskManagerPlus)
+#define PHTNM_LAST               PHTNM_SETITEMHIDDEN
 
 // Page helper types (used by the message parameter structures below)
 
@@ -200,6 +201,8 @@ EXTERN_C LRESULT PhTabNewSendMessage(
     ((LPARAM)PhTabNewSendMessage((hwnd), PHTNM_GETITEMPARAM, (WPARAM)(idx), 0))
 #define PhTabNew_SetItemParam(hwnd, idx, param) \
     ((BOOL)PhTabNewSendMessage((hwnd), PHTNM_SETITEMPARAM, (WPARAM)(idx), (LPARAM)(param)))
+#define PhTabNew_SetItemHidden(hwnd, idx, hidden) \
+    ((BOOL)PhTabNewSendMessage((hwnd), PHTNM_SETITEMHIDDEN, (WPARAM)(idx), (LPARAM)(hidden)))
 #define PhTabNew_GetPageRect(hwnd, prect) \
     ((BOOL)PhTabNewSendMessage((hwnd), PHTNM_GETPAGERECT, 0, (LPARAM)(prect)))
 #define PhTabNew_SetSkin(hwnd, skin) \
@@ -265,6 +268,8 @@ EXTERN_C LRESULT PhTabNewSendMessage(
     ((LPARAM)SendMessage((hwnd), PHTNM_GETITEMPARAM, (WPARAM)(idx), 0))
 #define PhTabNew_SetItemParam(hwnd, idx, param) \
     ((BOOL)SendMessage((hwnd), PHTNM_SETITEMPARAM, (WPARAM)(idx), (LPARAM)(param)))
+#define PhTabNew_SetItemHidden(hwnd, idx, hidden) \
+    ((BOOL)SendMessage((hwnd), PHTNM_SETITEMHIDDEN, (WPARAM)(idx), (LPARAM)(hidden)))
 #define PhTabNew_GetPageRect(hwnd, prect) \
     ((BOOL)SendMessage((hwnd), PHTNM_GETPAGERECT, 0, (LPARAM)(prect)))
 #define PhTabNew_SetSkin(hwnd, skin) \

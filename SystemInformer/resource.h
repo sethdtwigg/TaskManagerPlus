@@ -934,6 +934,8 @@
 #define ID_VIEW_MINIMETERS              10362 // TaskManagerPlus
 #define ID_VIEW_COUNTPILL               10363 // TaskManagerPlus
 #define ID_VIEW_TOTALSROW               10370 // TaskManagerPlus
+#define ID_VIEW_TABS_FIRST              10380 // TaskManagerPlus: + page number (16 consecutive ids)
+#define ID_VIEW_TABS_LAST               10395 // TaskManagerPlus
 #define IDC_APPLYCALMLOOK               1574 // TaskManagerPlus
 #define IDC_APPLYDENSELOOK              1575 // TaskManagerPlus
 #define IDC_HIGHLIGHTMINIMAL            1576 // TaskManagerPlus

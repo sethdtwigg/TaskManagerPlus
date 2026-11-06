@@ -704,6 +704,14 @@ VOID PhTabNewComputeRows(
             item->Rect.bottom = cursor + itemExtent;
             cursor += itemExtent;
         }
+        else if (item->Hidden) // TaskManagerPlus: no width, no paint, no hit
+        {
+            item->Row = 0;
+            item->Rect.left = cursor;
+            item->Rect.right = cursor;
+            item->Rect.top = row * Context->RowHeight;
+            item->Rect.bottom = (row + 1) * Context->RowHeight;
+        }
         else
         {
             LONG itemWidth = fixedTabWidth ? fixedTabWidth : PhMeasureTabWidth(Context, NULL, item);
@@ -734,13 +742,25 @@ VOID PhTabNewComputeRows(
     if (!vertical && Context->Items->Count > 0 && cursor > stripExtent)
     {
         LONG count = (LONG)Context->Items->Count;
+        LONG visibleCount = 0;
         LONG excess = cursor - stripExtent;
         LONG minPadX = PhScaleToDisplay(3, Context->WindowDpi);
         LONG maxPadShrink = (Context->PaddingX > minPadX ? (LONG)Context->PaddingX - minPadX : 0) * 2;
         LONG floorWidth = PhScaleToDisplay(48, Context->WindowDpi);
-        LONG shrinkEach = excess / count + (excess % count ? 1 : 0);
+        LONG shrinkEach;
         LONG x = 0;
         LONG total;
+
+        for (i = 0; i < (ULONG)count; i++)
+        {
+            if (!((PPH_TABNEW_INTERNAL_ITEM)Context->Items->Items[i])->Hidden)
+                visibleCount++;
+        }
+
+        if (visibleCount == 0)
+            visibleCount = 1;
+
+        shrinkEach = excess / visibleCount + (excess % visibleCount ? 1 : 0);
 
         if (shrinkEach > maxPadShrink)
             shrinkEach = maxPadShrink;
@@ -750,6 +770,10 @@ VOID PhTabNewComputeRows(
         {
             PPH_TABNEW_INTERNAL_ITEM item = Context->Items->Items[i];
             LONG w = item->Rect.right - item->Rect.left;
+
+            if (item->Hidden)
+                continue;
+
             item->Rect.right = item->Rect.left + (w - shrinkEach);
         }
 
@@ -2018,6 +2042,9 @@ VOID PhTabNewDrawItemContent(
     RECT contentRect = *ItemRect;
     LONG iconCx = 0, iconCy = 0;
 
+    if (Item->Hidden) // TaskManagerPlus: collapsed tabs draw nothing
+        return;
+
     // Skip the icon/text draw for tabs outside the DC's update region.
     //if (!RectVisible(Hdc, ItemRect))
     //    return;
@@ -3044,6 +3071,24 @@ LRESULT PhTabNewOnUserMessage(
             return (LRESULT)item->Param;
         }
         break;
+    case PHTNM_SETITEMHIDDEN: // TaskManagerPlus
+        {
+            LONG idx = (LONG)WParam;
+            PPH_TABNEW_INTERNAL_ITEM item;
+
+            if (idx < 0 || (ULONG)idx >= Context->Items->Count)
+                return FALSE;
+
+            item = Context->Items->Items[idx];
+
+            if (item->Hidden != !!LParam)
+            {
+                item->Hidden = !!LParam;
+                Context->LayoutDirty = TRUE;
+                PhTabNewFlushLayout(Context, FALSE, TRUE);
+            }
+        }
+        return TRUE;
     case PHTNM_SETITEMPARAM:
         {
             LONG idx = (LONG)WParam;

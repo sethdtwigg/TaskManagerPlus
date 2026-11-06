@@ -167,6 +167,7 @@ VOID PhAddDefaultSettings(
     PhpAddIntegerSetting(SETTING_HIGHLIGHT_MODE, L"1"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_SEARCH_OPTIONS_MENU, L"1"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_CALM_LOOK_OFFERED, L"0"); // TaskManagerPlus
+    PhpAddStringSetting(SETTING_MAIN_WINDOW_HIDDEN_TABS, L""); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_SHOW_TOTALS_ROW, L"1"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_SHOW_COUNT_PILL, L"0"); // TaskManagerPlus: the count lives in the status bar
     PhpAddStringSetting(SETTING_DETACHED_GRAPHS, L""); // TaskManagerPlus

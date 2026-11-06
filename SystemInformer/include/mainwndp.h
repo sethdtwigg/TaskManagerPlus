@@ -318,6 +318,21 @@ VOID PhMwpRestoreTabLayout(
     VOID
     );
 
+// TaskManagerPlus: tabs kept under "More"
+#define PH_MWP_DEFAULT_HIDDEN_TABS L"Information,Disk,Firewall,Devices,History,Rules"
+
+VOID PhMwpApplyHiddenTabs(
+    VOID
+    );
+
+VOID PhMwpSetHiddenTabs(
+    _In_ PCWSTR List
+    );
+
+VOID PhMwpToggleTabHidden(
+    _In_ ULONG PageNumber
+    );
+
 VOID PhMwpUpdateLayoutPadding(
     VOID
     );

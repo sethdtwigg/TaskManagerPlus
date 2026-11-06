@@ -29,7 +29,8 @@ typedef struct _PH_TABNEW_INTERNAL_ITEM
         {
             ULONG Hot : 1;
             ULONG Disabled : 1;
-            ULONG Spare : 30;
+            ULONG Hidden : 1; // TaskManagerPlus: collapsed to an empty rect, the item keeps its index
+            ULONG Spare : 29;
         };
     };
 } PH_TABNEW_INTERNAL_ITEM, *PPH_TABNEW_INTERNAL_ITEM;

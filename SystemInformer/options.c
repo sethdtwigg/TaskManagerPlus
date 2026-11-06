@@ -82,6 +82,7 @@ VOID PhApplyLookPreset(
     PhSetStringSetting(L"ToolStatus.StatusbarConfig", L"");
     PhSetIntegerSetting(L"ToolStatus.ToolbarDisplayStyle", Calm ? 0 : 1);
     PhSetIntegerSetting(SETTING_SEARCH_OPTIONS_MENU, Calm ? 1 : 0);
+    PhMwpSetHiddenTabs(Calm ? PH_MWP_DEFAULT_HIDDEN_TABS : L""); // live: tabs move under More / come back
 
     {
         // ToolStatus.Config bit 6 = AutoHideMenu (Alt reveals the menu bar). Only hide it while the toolbar, and with
@@ -117,7 +118,11 @@ VOID PhOfferCalmLook(
     PhSetIntegerSetting(SETTING_CALM_LOOK_OFFERED, TRUE);
 
     if (!dense)
+    {
+        // Fresh install (calm defaults already in place): keep the secondary tabs under More.
+        PhMwpSetHiddenTabs(PH_MWP_DEFAULT_HIDDEN_TABS);
         return;
+    }
 
     if (PhShowMessage2(
         PhMainWndHandle,

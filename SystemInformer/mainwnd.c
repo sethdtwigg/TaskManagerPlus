@@ -77,6 +77,10 @@ static HWND TabControlHandle = NULL;
 static PPH_LIST PageList = NULL;
 static PPH_MAIN_TAB_PAGE CurrentPage = NULL;
 static LONG OldTabIndex = 0;
+static PPH_MAIN_TAB_PAGE PhMwpMorePage = NULL; // TaskManagerPlus: see PhMwpApplyHiddenTabs
+static PPH_MAIN_TAB_PAGE PhMwpRevealedPage = NULL;
+static BOOLEAN PhMwpTabNameInList(_In_ PPH_STRING List, _In_ PPH_STRINGREF Name);
+static BOOLEAN PhMwpIsFixedTab(_In_ PPH_MAIN_TAB_PAGE Page);
 
 static HMENU SubMenuHandles[5];
 static PPH_EMENU SubMenuObjects[5];
@@ -463,6 +467,8 @@ VOID PhMwpShowWindow(
     {
         PhMwpRestoreTabLayout();
     }
+
+    PhMwpApplyHiddenTabs(); // TaskManagerPlus: after the plugin tabs exist and the saved order is back
 
     if (PhStartupParameters.SelectTab)
     {
@@ -1450,6 +1456,26 @@ VOID PhMwpOnCommand(
     case ID_VIEW_HEATMAP: // TaskManagerPlus
         {
             PhToggleProcessHeatMap();
+        }
+        break;
+    case ID_VIEW_TABS_FIRST: // TaskManagerPlus: View > Tabs, one id per page
+    case ID_VIEW_TABS_FIRST + 1:
+    case ID_VIEW_TABS_FIRST + 2:
+    case ID_VIEW_TABS_FIRST + 3:
+    case ID_VIEW_TABS_FIRST + 4:
+    case ID_VIEW_TABS_FIRST + 5:
+    case ID_VIEW_TABS_FIRST + 6:
+    case ID_VIEW_TABS_FIRST + 7:
+    case ID_VIEW_TABS_FIRST + 8:
+    case ID_VIEW_TABS_FIRST + 9:
+    case ID_VIEW_TABS_FIRST + 10:
+    case ID_VIEW_TABS_FIRST + 11:
+    case ID_VIEW_TABS_FIRST + 12:
+    case ID_VIEW_TABS_FIRST + 13:
+    case ID_VIEW_TABS_FIRST + 14:
+    case ID_VIEW_TABS_FIRST + 15:
+        {
+            PhMwpToggleTabHidden(Id - ID_VIEW_TABS_FIRST);
         }
         break;
     case ID_VIEW_TOTALSROW: // TaskManagerPlus
@@ -4477,6 +4503,35 @@ VOID PhMwpInitializeSubMenu(
         if (AlwaysOnTop && (menuItem = PhFindEMenuItem(Menu, 0, NULL, ID_VIEW_ALWAYSONTOP)))
             menuItem->Flags |= PH_EMENU_CHECKED;
 
+        if (PageList && (menuItem = PhFindEMenuItemEx(Menu, 0, NULL, ID_VIEW_ALWAYSONTOP, NULL, &placeholderIndex))) // TaskManagerPlus: View > Tabs
+        {
+            PPH_EMENU_ITEM tabsMenu = PhCreateEMenuItem(0, 0, L"T&abs", NULL, NULL);
+            PPH_STRING hiddenList = PhGetStringSetting(SETTING_MAIN_WINDOW_HIDDEN_TABS);
+            ULONG number = 0;
+
+            for (ULONG pageIndex = 0; pageIndex < PageList->Count && number <= ID_VIEW_TABS_LAST - ID_VIEW_TABS_FIRST; pageIndex++)
+            {
+                PPH_MAIN_TAB_PAGE page = PageList->Items[pageIndex];
+                PPH_EMENU_ITEM tabItem;
+
+                if (page == PhMwpMorePage)
+                    continue;
+
+                tabItem = PhCreateEMenuItem(0, ID_VIEW_TABS_FIRST + number, PhaCreateStringEx(page->Name.Buffer, page->Name.Length)->Buffer, NULL, NULL);
+
+                if (PhMwpIsFixedTab(page))
+                    tabItem->Flags |= PH_EMENU_DISABLED | PH_EMENU_CHECKED;
+                else if (!PhMwpTabNameInList(hiddenList, &page->Name))
+                    tabItem->Flags |= PH_EMENU_CHECKED;
+
+                PhInsertEMenuItem(tabsMenu, tabItem, ULONG_MAX);
+                number++;
+            }
+
+            PhDereferenceObject(hiddenList);
+            PhInsertEMenuItem(Menu, tabsMenu, placeholderIndex);
+        }
+
         id = PH_OPACITY_TO_ID(PhGetIntegerSetting(SETTING_MAIN_WINDOW_OPACITY));
 
         if (menuItem = PhFindEMenuItem(Menu, PH_EMENU_FIND_DESCEND, NULL, id))
@@ -4712,6 +4767,197 @@ VOID PhMwpLayoutTabControl(
  * Handles notifications from a tab control.
  * \param Header Pointer to an NMHDR structure containing information about the notification.
  */
+// TaskManagerPlus: tabs under "More". Hidden items collapse to an empty rect in the strip and keep their index, so the
+// plugins' cached page indexes (ToolStatus search registration) stay valid.
+static BOOLEAN NTAPI PhMwpMorePageCallback(
+    _In_ PPH_MAIN_TAB_PAGE Page,
+    _In_ PH_MAIN_TAB_PAGE_MESSAGE Message,
+    _In_opt_ PVOID Parameter1,
+    _In_opt_ PVOID Parameter2
+    )
+{
+    return FALSE;
+}
+
+static BOOLEAN PhMwpTabNameInList(
+    _In_ PPH_STRING List,
+    _In_ PPH_STRINGREF Name
+    )
+{
+    PH_STRINGREF remaining;
+    PH_STRINGREF part;
+
+    if (PhIsNullOrEmptyString(List))
+        return FALSE;
+
+    remaining = List->sr;
+
+    while (remaining.Length != 0)
+    {
+        PhSplitStringRefAtChar(&remaining, L',', &part, &remaining);
+
+        if (PhEqualStringRef(&part, Name, TRUE))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+static BOOLEAN PhMwpIsFixedTab(
+    _In_ PPH_MAIN_TAB_PAGE Page
+    )
+{
+    return Page == PhMwpMorePage || Page == PageList->Items[0]; // More and Processes are never hidden
+}
+
+VOID PhMwpApplyHiddenTabs(
+    VOID
+    )
+{
+    PPH_STRING list;
+    ULONG hiddenCount = 0;
+    ULONG i;
+
+    if (!TabControlHandle || !PageList)
+        return;
+
+    if (!PhMwpMorePage)
+        PhMwpMorePage = PhMwpCreateInternalPage(L"More", 0, PhMwpMorePageCallback);
+
+    PhMwpSyncTabPageIndexes();
+    list = PhGetStringSetting(SETTING_MAIN_WINDOW_HIDDEN_TABS);
+
+    // A hidden page that is the current one (restored tab) is shown until the user leaves it.
+    if (CurrentPage && !PhMwpIsFixedTab(CurrentPage) && PhMwpTabNameInList(list, &CurrentPage->Name))
+        PhMwpRevealedPage = CurrentPage;
+
+    for (i = 0; i < PageList->Count; i++)
+    {
+        PPH_MAIN_TAB_PAGE page = PageList->Items[i];
+        BOOLEAN hidden;
+
+        if (PhMwpIsFixedTab(page))
+            continue;
+
+        hidden = PhMwpTabNameInList(list, &page->Name) && page != PhMwpRevealedPage;
+
+        if (hidden)
+            hiddenCount++;
+
+        PhTabNew_SetItemHidden(TabControlHandle, page->Index, hidden);
+    }
+
+    if (PhMwpMorePage)
+        PhTabNew_SetItemHidden(TabControlHandle, PhMwpMorePage->Index, hiddenCount == 0 && !PhMwpRevealedPage);
+
+    PhDereferenceObject(list);
+}
+
+VOID PhMwpSetHiddenTabs(
+    _In_ PCWSTR List
+    )
+{
+    PhSetStringSetting(SETTING_MAIN_WINDOW_HIDDEN_TABS, List);
+    PhMwpRevealedPage = NULL;
+    PhMwpApplyHiddenTabs();
+}
+
+VOID PhMwpToggleTabHidden(
+    _In_ ULONG PageNumber
+    )
+{
+    PPH_STRING list;
+    PH_STRING_BUILDER sb;
+    ULONG number = 0;
+    ULONG i;
+
+    if (!PageList)
+        return;
+
+    list = PhGetStringSetting(SETTING_MAIN_WINDOW_HIDDEN_TABS);
+    PhInitializeStringBuilder(&sb, 64);
+
+    for (i = 0; i < PageList->Count; i++)
+    {
+        PPH_MAIN_TAB_PAGE page = PageList->Items[i];
+        BOOLEAN hidden;
+
+        if (page == PhMwpMorePage)
+            continue;
+
+        hidden = PhMwpTabNameInList(list, &page->Name);
+
+        if (number == PageNumber && !PhMwpIsFixedTab(page))
+            hidden = !hidden;
+
+        number++;
+
+        if (hidden)
+        {
+            if (sb.String->Length != 0)
+                PhAppendCharStringBuilder(&sb, L',');
+
+            PhAppendStringBuilder(&sb, &page->Name);
+        }
+    }
+
+    PhMwpRevealedPage = NULL;
+    PhSetStringSetting2(SETTING_MAIN_WINDOW_HIDDEN_TABS, &sb.String->sr);
+    PhDeleteStringBuilder(&sb);
+    PhDereferenceObject(list);
+
+    PhMwpApplyHiddenTabs();
+}
+
+static VOID PhMwpShowMoreMenu(
+    _In_ LONG PreviousIndex
+    )
+{
+    PPH_EMENU menu;
+    PPH_EMENU_ITEM item;
+    PPH_STRING list;
+    POINT point;
+    ULONG i;
+
+    menu = PhCreateEMenu();
+    list = PhGetStringSetting(SETTING_MAIN_WINDOW_HIDDEN_TABS);
+
+    for (i = 0; i < PageList->Count; i++)
+    {
+        PPH_MAIN_TAB_PAGE page = PageList->Items[i];
+
+        if (PhMwpIsFixedTab(page) || !PhMwpTabNameInList(list, &page->Name))
+            continue;
+
+        PhInsertEMenuItem(menu, PhCreateEMenuItem(0, i + 1, PhaCreateStringEx(page->Name.Buffer, page->Name.Length)->Buffer, NULL, page), ULONG_MAX);
+    }
+
+    PhDereferenceObject(list);
+
+    if (!GetCursorPos(&point))
+    {
+        point.x = 0;
+        point.y = 0;
+    }
+
+    item = PhShowEMenu(menu, PhMainWndHandle, PH_EMENU_SHOW_LEFTRIGHT, PH_ALIGN_LEFT | PH_ALIGN_TOP, point.x, point.y);
+
+    if (item && item->Context)
+    {
+        PPH_MAIN_TAB_PAGE page = item->Context;
+
+        PhMwpRevealedPage = page;
+        PhMwpApplyHiddenTabs();
+        PhMwpSelectPage(page->Index);
+    }
+    else
+    {
+        PhMwpSelectPage(PreviousIndex);
+    }
+
+    PhDestroyEMenu(menu);
+}
+
 VOID PhMwpNotifyTabControl(
     _In_ NMHDR *Header
     )
@@ -4722,8 +4968,20 @@ VOID PhMwpNotifyTabControl(
     }
     else if (Header->code == PHTNN_SELCHANGED)
     {
+        if (PhMwpMorePage && PhTabNew_GetCurSel(TabControlHandle) == PhMwpMorePage->Index) // TaskManagerPlus: "More" is a menu, not a page
+        {
+            PhMwpShowMoreMenu(OldTabIndex);
+            return;
+        }
+
         PhMwpSelectionChangedTabControl(OldTabIndex);
         OldTabIndex = PhTabNew_GetCurSel(TabControlHandle);
+
+        if (PhMwpRevealedPage && PhMwpRevealedPage != CurrentPage) // TaskManagerPlus: the temporary tab goes back under More
+        {
+            PhMwpRevealedPage = NULL;
+            PhMwpApplyHiddenTabs();
+        }
     }
     else if (Header->code == PHTNN_REORDERED)
     {
