@@ -78,6 +78,7 @@ static PPH_LIST PageList = NULL;
 static PPH_MAIN_TAB_PAGE CurrentPage = NULL;
 static LONG OldTabIndex = 0;
 static PPH_MAIN_TAB_PAGE PhMwpMorePage = NULL; // TaskManagerPlus: see PhMwpApplyHiddenTabs
+static BOOLEAN PhMwpIsTabSkipped(_In_ PPH_MAIN_TAB_PAGE Page); // TaskManagerPlus: Ctrl+Tab skip test
 static PPH_MAIN_TAB_PAGE PhMwpRevealedPage = NULL;
 static BOOLEAN PhMwpTabNameInList(_In_ PPH_STRING List, _In_ PPH_STRINGREF Name);
 static BOOLEAN PhMwpIsFixedTab(_In_ PPH_MAIN_TAB_PAGE Page);
@@ -2802,11 +2803,16 @@ VOID PhMwpOnCommand(
     case ID_TAB_NEXT:
         {
             ULONG selectedIndex = PhTabNew_GetCurSel(TabControlHandle);
+            ULONG tries = PageList->Count;
 
-            if (selectedIndex != PageList->Count - 1)
-                selectedIndex++;
-            else
-                selectedIndex = 0;
+            // TaskManagerPlus: skip tabs hidden under More (and More itself).
+            do
+            {
+                if (selectedIndex != PageList->Count - 1)
+                    selectedIndex++;
+                else
+                    selectedIndex = 0;
+            } while (tries-- && PhMwpIsTabSkipped(PageList->Items[selectedIndex]));
 
             PhMwpSelectPage(selectedIndex);
         }
@@ -2814,11 +2820,16 @@ VOID PhMwpOnCommand(
     case ID_TAB_PREV:
         {
             ULONG selectedIndex = PhTabNew_GetCurSel(TabControlHandle);
+            ULONG tries = PageList->Count;
 
-            if (selectedIndex != 0)
-                selectedIndex--;
-            else
-                selectedIndex = PageList->Count - 1;
+            // TaskManagerPlus: skip tabs hidden under More (and More itself).
+            do
+            {
+                if (selectedIndex != 0)
+                    selectedIndex--;
+                else
+                    selectedIndex = PageList->Count - 1;
+            } while (tries-- && PhMwpIsTabSkipped(PageList->Items[selectedIndex]));
 
             PhMwpSelectPage(selectedIndex);
         }
@@ -4813,6 +4824,26 @@ static BOOLEAN PhMwpIsFixedTab(
     )
 {
     return Page == PhMwpMorePage || Page == PageList->Items[0]; // More and Processes are never hidden
+}
+
+static BOOLEAN PhMwpIsTabSkipped(
+    _In_ PPH_MAIN_TAB_PAGE Page
+    )
+{
+    PPH_STRING list;
+    BOOLEAN skipped;
+
+    if (Page == PhMwpMorePage)
+        return TRUE;
+
+    if (PhMwpIsFixedTab(Page) || Page == PhMwpRevealedPage)
+        return FALSE;
+
+    list = PhGetStringSetting(SETTING_MAIN_WINDOW_HIDDEN_TABS);
+    skipped = PhMwpTabNameInList(list, &Page->Name);
+    PhDereferenceObject(list);
+
+    return skipped;
 }
 
 VOID PhMwpApplyHiddenTabs(
