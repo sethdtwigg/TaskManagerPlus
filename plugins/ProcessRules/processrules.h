@@ -89,6 +89,7 @@ typedef struct _TMP_RULE
     ULONG Id;
     BOOLEAN Enabled;
     BOOLEAN AutoDisabled; // disabled by the runaway guard
+    BOOLEAN Muted; // per-rule: no tray balloons (events are still counted and logged)
     PPH_STRING ProgramName; // image base name, e.g. chrome.exe
     PPH_STRING MatchPath; // optional: full path must contain this text
 

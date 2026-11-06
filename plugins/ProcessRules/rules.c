@@ -75,6 +75,7 @@ VOID TmpCopyRule(
     )
 {
     Destination->Enabled = Source->Enabled;
+    Destination->Muted = Source->Muted;
     PhSwapReference(&Destination->ProgramName, Source->ProgramName);
     PhSwapReference(&Destination->MatchPath, Source->MatchPath);
     PhSwapReference(&Destination->Command, Source->Command);
@@ -248,6 +249,7 @@ static PVOID TmpRuleToJson(
     object = PhCreateJsonObject();
     PhAddJsonObjectUInt64(object, "id", Rule->Id);
     PhAddJsonObjectBoolean(object, "enabled", Rule->Enabled);
+    PhAddJsonObjectBoolean(object, "muted", Rule->Muted);
     TmpAddJsonString(object, "program", Rule->ProgramName);
     TmpAddJsonString(object, "path", Rule->MatchPath);
     PhAddJsonObjectUInt64(object, "startPriority", Rule->StartPriority);
@@ -299,6 +301,7 @@ static PTMP_RULE TmpRuleFromJson(
 
     rule = TmpCreateRule();
     rule->Enabled = PhGetJsonObjectBool(Object, "enabled");
+    rule->Muted = PhGetJsonObjectBool(Object, "muted"); // absent in older files = FALSE
     PhMoveReference(&rule->ProgramName, TmpGetJsonString(Object, "program"));
     PhMoveReference(&rule->MatchPath, TmpGetJsonString(Object, "path"));
     PhMoveReference(&rule->Command, TmpGetJsonString(Object, "command"));

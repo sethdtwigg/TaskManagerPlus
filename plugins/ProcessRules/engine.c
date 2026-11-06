@@ -125,7 +125,7 @@ static VOID TmpReportEvent(
         PhDereferenceObject(logText);
     }
 
-    if (Important && PhGetIntegerSetting(SETTING_NAME_NOTIFY) && !TmpIsMuted())
+    if (Important && !Rule->Muted && PhGetIntegerSetting(SETTING_NAME_NOTIFY) && !TmpIsMuted())
     {
         PhShowIconNotification(L"Process rule", PhGetString(text));
     }

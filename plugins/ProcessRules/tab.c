@@ -24,6 +24,7 @@ typedef enum _TMP_COMMAND
     TMP_COMMAND_TOGGLE,
     TMP_COMMAND_PAUSE,
     TMP_COMMAND_MUTE,
+    TMP_COMMAND_MUTE_RULE,
     TMP_COMMAND_EXPORT,
     TMP_COMMAND_IMPORT,
     TMP_COMMAND_COPY
@@ -113,7 +114,12 @@ static PCWSTR TmpGetEnabledText(
     )
 {
     if (Rule->Enabled)
-        return TmpIsEnginePaused() ? L"Paused" : L"Enabled";
+    {
+        if (TmpIsEnginePaused())
+            return Rule->Muted ? L"Paused (muted)" : L"Paused";
+
+        return Rule->Muted ? L"Enabled (muted)" : L"Enabled";
+    }
 
     return Rule->AutoDisabled ? L"Disabled (guard)" : L"Disabled";
 }
@@ -405,6 +411,30 @@ static VOID TmpHandleCommand(
     case TMP_COMMAND_PAUSE:
         TmpSetEnginePaused(!TmpIsEnginePaused());
         break;
+    case TMP_COMMAND_MUTE_RULE:
+        {
+            // Mixed selection: if every selected rule is muted, unmute them; otherwise mute all.
+            BOOLEAN allMuted = numberOfRules != 0;
+
+            for (ULONG i = 0; i < numberOfRules; i++)
+            {
+                if (!rules[i]->Muted)
+                    allMuted = FALSE;
+            }
+
+            for (ULONG i = 0; i < numberOfRules; i++)
+            {
+                rules[i]->Muted = !allMuted;
+                PhClearReference(&rules[i]->DisplayEvents);
+            }
+
+            if (numberOfRules != 0)
+            {
+                TmpSaveRules();
+                TmpRefreshRulesTab(); // no version bump: muting must not restore or re-apply rules
+            }
+        }
+        break;
     case TMP_COMMAND_MUTE:
         {
             if (TmpIsMuted())
@@ -447,6 +477,7 @@ static VOID TmpShowContextMenu(
     PPH_EMENU_ITEM deleteItem;
     PPH_EMENU_ITEM toggleItem;
     PPH_EMENU_ITEM muteItem;
+    PPH_EMENU_ITEM muteRuleItem;
 
     TmpGetSelectedRules(&rules, &numberOfRules);
 
@@ -455,6 +486,7 @@ static VOID TmpShowContextMenu(
     PhInsertEMenuItem(menu, editItem = PhCreateEMenuItem(0, TMP_COMMAND_EDIT, L"&Edit rule...\bEnter", NULL, NULL), ULONG_MAX);
     PhInsertEMenuItem(menu, deleteItem = PhCreateEMenuItem(0, TMP_COMMAND_DELETE, L"&Delete\bDel", NULL, NULL), ULONG_MAX);
     PhInsertEMenuItem(menu, toggleItem = PhCreateEMenuItem(0, TMP_COMMAND_TOGGLE, L"Ena&ble/disable", NULL, NULL), ULONG_MAX);
+    PhInsertEMenuItem(menu, muteRuleItem = PhCreateEMenuItem(0, TMP_COMMAND_MUTE_RULE, L"Mute this rule's &notifications", NULL, NULL), ULONG_MAX);
     PhInsertEMenuItem(menu, PhCreateEMenuSeparator(), ULONG_MAX);
     PhInsertEMenuItem(menu, PhCreateEMenuItem(0, TMP_COMMAND_PAUSE, TmpIsEnginePaused() ? L"&Resume all rules" : L"&Pause all rules", NULL, NULL), ULONG_MAX);
     PhInsertEMenuItem(menu, muteItem = PhCreateEMenuItem(0, TMP_COMMAND_MUTE, L"&Mute notifications for 1 hour", NULL, NULL), ULONG_MAX);
@@ -472,6 +504,20 @@ static VOID TmpShowContextMenu(
     {
         PhSetDisabledEMenuItem(deleteItem);
         PhSetDisabledEMenuItem(toggleItem);
+        PhSetDisabledEMenuItem(muteRuleItem);
+    }
+    if (numberOfRules != 0)
+    {
+        BOOLEAN allMuted = TRUE;
+
+        for (ULONG i = 0; i < numberOfRules; i++)
+        {
+            if (!rules[i]->Muted)
+                allMuted = FALSE;
+        }
+
+        if (allMuted)
+            muteRuleItem->Flags |= PH_EMENU_CHECKED;
     }
     if (TmpIsMuted())
         muteItem->Flags |= PH_EMENU_CHECKED;
