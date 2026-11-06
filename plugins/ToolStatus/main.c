@@ -528,6 +528,15 @@ VOID NTAPI LayoutPaddingCallback(
 
         if (PhGetClientRect(StatusBarHandle, &statusBarRect))
         {
+            // TaskManagerPlus: re-fit the parts when the width changed (resize).
+            static LONG lastStatusBarWidth = 0;
+
+            if (lastStatusBarWidth != statusBarRect.right)
+            {
+                lastStatusBarWidth = statusBarRect.right;
+                StatusBarUpdate(TRUE);
+            }
+
             // Adjust the PH client area and exclude the StatusBar width.
             layoutPadding->Padding.bottom += statusBarRect.bottom;
         }

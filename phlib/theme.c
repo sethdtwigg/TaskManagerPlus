@@ -169,6 +169,14 @@ LRESULT CALLBACK PhpThemeWindowListBoxControlSubclassProc(
     _In_ LPARAM lParam
     );
 
+// TaskManagerPlus: themed status bar.
+LRESULT CALLBACK PhpThemeWindowStatusbarSubclassProc(
+    _In_ HWND WindowHandle,
+    _In_ UINT uMsg,
+    _In_ WPARAM wParam,
+    _In_ LPARAM lParam
+    );
+
 LRESULT CALLBACK PhpThemeWindowComboBoxControlSubclassProc(
     _In_ HWND WindowHandle,
     _In_ UINT uMsg,
@@ -2586,6 +2594,195 @@ BOOLEAN PhThemeWindowUahWndProc(
     }
 
     return FALSE;
+}
+
+// TaskManagerPlus: the main window status bar is painted by us so that it uses the theme palette,
+// with 8px-grid text padding, a 1px top separator and subtle dividers between parts.
+#define PH_STATUSBAR_MAX_PARTS 32
+#define PH_STATUSBAR_PADDING 8
+
+LRESULT CALLBACK PhpThemeWindowStatusbarSubclassProc(
+    _In_ HWND WindowHandle,
+    _In_ UINT uMsg,
+    _In_ WPARAM wParam,
+    _In_ LPARAM lParam
+    )
+{
+    PPHP_THEME_WINDOW_STATUSBAR_CONTEXT context;
+    WNDPROC oldWndProc;
+
+    if (!(context = PhGetWindowContext(WindowHandle, LONG_MAX)))
+        return FALSE;
+
+    oldWndProc = context->DefaultWindowProc;
+
+    switch (uMsg)
+    {
+    case WM_NCDESTROY:
+        {
+            PhpThemeRestoreSubclassWindowProcedure(WindowHandle, oldWndProc, LONG_MAX);
+            PhFree(context);
+        }
+        break;
+    case WM_DPICHANGED_AFTERPARENT:
+        {
+            context->WindowDpi = PhGetWindowDpi(WindowHandle);
+        }
+        break;
+    case WM_ERASEBKGND:
+        return TRUE;
+    case WM_PAINT:
+    case WM_PRINTCLIENT:
+        {
+            PAINTSTRUCT ps;
+            HDC hdc;
+            HDC bufferDc;
+            HBITMAP bufferBitmap;
+            HBITMAP oldBitmap;
+            HFONT oldFont;
+            RECT clientRect;
+            RECT rect;
+            INT parts[PH_STATUSBAR_MAX_PARTS];
+            INT count;
+            INT i;
+            LONG dpi = context->WindowDpi ? context->WindowDpi : 96;
+            LONG padding = MulDiv(PH_STATUSBAR_PADDING, dpi, 96);
+            LONG dividerInset = MulDiv(PH_STATUSBAR_PADDING / 2, dpi, 96);
+            COLORREF backColor;
+            COLORREF textColor;
+            COLORREF lineColor;
+
+            if (uMsg == WM_PAINT)
+                hdc = BeginPaint(WindowHandle, &ps);
+            else
+                hdc = (HDC)wParam;
+
+            if (!hdc)
+                break;
+
+            GetClientRect(WindowHandle, &clientRect);
+
+            if (PhEnableThemeSupport)
+            {
+                backColor = PhThemeWindowBackground2Color;
+                textColor = PhThemeWindowTextColor;
+                lineColor = PhThemeWindowBorderColor;
+            }
+            else
+            {
+                backColor = GetSysColor(COLOR_BTNFACE);
+                textColor = GetSysColor(COLOR_WINDOWTEXT);
+                lineColor = GetSysColor(COLOR_BTNSHADOW);
+            }
+
+            bufferDc = CreateCompatibleDC(hdc);
+            bufferBitmap = CreateCompatibleBitmap(hdc, clientRect.right, clientRect.bottom);
+            oldBitmap = SelectBitmap(bufferDc, bufferBitmap);
+
+            PhpThemeFillRect(bufferDc, &clientRect, backColor);
+
+            // 1px top separator.
+            rect = clientRect;
+            rect.bottom = rect.top + 1;
+            PhpThemeFillRect(bufferDc, &rect, lineColor);
+
+            oldFont = SelectFont(bufferDc, (HFONT)SendMessage(WindowHandle, WM_GETFONT, 0, 0));
+            SetBkMode(bufferDc, TRANSPARENT);
+            SetTextColor(bufferDc, textColor);
+
+            count = (INT)SendMessage(WindowHandle, SB_GETPARTS, PH_STATUSBAR_MAX_PARTS, (LPARAM)parts);
+
+            for (i = 0; i < count; i++)
+            {
+                WCHAR text[0x100];
+                ULONG length;
+                RECT textRect;
+
+                rect.left = i ? parts[i - 1] : 0;
+                rect.right = (parts[i] < 0 || parts[i] > clientRect.right) ? clientRect.right : parts[i];
+                rect.top = clientRect.top + 1;
+                rect.bottom = clientRect.bottom;
+
+                length = LOWORD(SendMessage(WindowHandle, SB_GETTEXTLENGTH, i, 0));
+
+                if (length >= RTL_NUMBER_OF(text))
+                    length = RTL_NUMBER_OF(text) - 1;
+
+                text[0] = UNICODE_NULL;
+
+                if (length)
+                {
+                    SendMessage(WindowHandle, SB_GETTEXT, i, (LPARAM)text);
+                    text[length] = UNICODE_NULL;
+                }
+
+                textRect = rect;
+                textRect.left += padding;
+                textRect.right -= padding;
+
+                if (length && textRect.right > textRect.left)
+                {
+                    DrawText(
+                        bufferDc,
+                        text,
+                        length,
+                        &textRect,
+                        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS
+                        );
+                }
+
+                // Subtle divider after every part but the last.
+                if (i + 1 < count && rect.right < clientRect.right)
+                {
+                    RECT divider;
+
+                    divider.left = rect.right - 1;
+                    divider.right = rect.right;
+                    divider.top = rect.top + dividerInset;
+                    divider.bottom = rect.bottom - dividerInset;
+
+                    if (divider.bottom > divider.top)
+                        PhpThemeFillRect(bufferDc, &divider, lineColor);
+                }
+            }
+
+            BitBlt(hdc, 0, 0, clientRect.right, clientRect.bottom, bufferDc, 0, 0, SRCCOPY);
+
+            SelectFont(bufferDc, oldFont);
+            SelectBitmap(bufferDc, oldBitmap);
+            DeleteBitmap(bufferBitmap);
+            DeleteDC(bufferDc);
+
+            if (uMsg == WM_PAINT)
+                EndPaint(WindowHandle, &ps);
+
+            return 0;
+        }
+        break;
+    }
+
+    return CallWindowProc(oldWndProc, WindowHandle, uMsg, wParam, lParam);
+}
+
+VOID PhInitializeWindowThemeStatusbarControl(
+    _In_ HWND StatusbarControl
+    )
+{
+    PPHP_THEME_WINDOW_STATUSBAR_CONTEXT context;
+
+    if (PhGetWindowContext(StatusbarControl, LONG_MAX))
+        return;
+
+    context = PhAllocateZero(sizeof(PHP_THEME_WINDOW_STATUSBAR_CONTEXT));
+    context->DefaultWindowProc = (WNDPROC)GetWindowLongPtr(StatusbarControl, GWLP_WNDPROC);
+    context->WindowDpi = PhGetWindowDpi(StatusbarControl);
+    context->CursorPos.x = LONG_MIN;
+    context->CursorPos.y = LONG_MIN;
+
+    PhSetWindowContext(StatusbarControl, LONG_MAX, context);
+    SetWindowLongPtr(StatusbarControl, GWLP_WNDPROC, (LONG_PTR)PhpThemeWindowStatusbarSubclassProc);
+
+    InvalidateRect(StatusbarControl, NULL, TRUE);
 }
 
 VOID PhInitializeWindowThemeListboxControl(

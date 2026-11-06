@@ -125,6 +125,7 @@ EXPORTS
     PhInitializeTreeNewColumnMenuEx
     PhInitializeTreeNewFilterSupport
     PhInitializeWindowThemeEditControl
+    PhInitializeWindowThemeStatusbarControl
     PhInitializeWindowThemeMainMenu
     PhInsertCopyCellEMenuItem
     PhInsertCopyListViewEMenuItem

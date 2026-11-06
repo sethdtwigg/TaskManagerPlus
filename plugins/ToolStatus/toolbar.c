@@ -495,7 +495,7 @@ VOID StatusBarCreate(
     StatusBarHandle = PhCreateWindow(
         STATUSCLASSNAME,
         NULL,
-        WS_CHILD | CCS_BOTTOM | SBARS_SIZEGRIP,
+        WS_CHILD | CCS_BOTTOM, // TaskManagerPlus: no size grip (the themed painter draws a flat bar)
         statusBarRect.left,
         statusBarRect.top,
         statusBarRect.right - statusBarRect.left,
@@ -505,6 +505,9 @@ VOID StatusBarCreate(
         NULL,
         NULL
         );
+
+    // TaskManagerPlus: themed (palette) painting of the status bar.
+    PhInitializeWindowThemeStatusbarControl(StatusBarHandle);
 
     if (ToolbarWindowFont)
     {

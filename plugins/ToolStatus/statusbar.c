@@ -295,8 +295,9 @@ VOID StatusBarUpdate(
                 FLOAT cpuUsage = SystemStatistics.CpuKernelUsage + SystemStatistics.CpuUserUsage;
                 PH_FORMAT format[3];
 
-                PhInitFormatS(&format[0], L"CPU usage: ");
-                PhInitFormatF(&format[1], cpuUsage * 100, 2);
+                // TaskManagerPlus: short text, one decimal.
+                PhInitFormatS(&format[0], L"CPU ");
+                PhInitFormatF(&format[1], cpuUsage * 100, 1);
                 PhInitFormatS(&format[2], L"%");
 
                 PhFormatToBuffer(format, RTL_NUMBER_OF(format), text[count], sizeof(text[count]), &textLength[count]);
@@ -335,10 +336,11 @@ VOID StatusBarUpdate(
                 physicalUsage = PhSystemBasicInformation.NumberOfPhysicalPages - SystemStatistics.Performance->AvailablePages;
                 physicalFraction = (FLOAT)physicalUsage / PhSystemBasicInformation.NumberOfPhysicalPages * 100;
 
-                PhInitFormatS(&format[0], L"Physical memory: ");
+                // TaskManagerPlus: short text.
+                PhInitFormatS(&format[0], L"Memory ");
                 PhInitFormatSize(&format[1], UInt32x32To64(physicalUsage, PAGE_SIZE));
                 PhInitFormatS(&format[2], L" (");
-                PhInitFormatF(&format[3], physicalFraction, 2);
+                PhInitFormatF(&format[3], physicalFraction, 0);
                 PhInitFormatS(&format[4], L"%)");
 
                 PhFormatToBuffer(format, RTL_NUMBER_OF(format), text[count], sizeof(text[count]), &textLength[count]);
@@ -356,10 +358,11 @@ VOID StatusBarUpdate(
                 physicalFree = SystemStatistics.Performance->AvailablePages;
                 physicalFreeFraction = (FLOAT)physicalFree / PhSystemBasicInformation.NumberOfPhysicalPages * 100;
 
-                PhInitFormatS(&format[0], L"Free memory: ");
+                // TaskManagerPlus: short text.
+                PhInitFormatS(&format[0], L"Free ");
                 PhInitFormatSize(&format[1], UInt32x32To64(physicalFree, PAGE_SIZE));
                 PhInitFormatS(&format[2], L" (");
-                PhInitFormatF(&format[3], physicalFreeFraction, 2);
+                PhInitFormatF(&format[3], physicalFreeFraction, 0);
                 PhInitFormatS(&format[4], L"%)");
 
                 PhFormatToBuffer(format, RTL_NUMBER_OF(format), text[count], sizeof(text[count]), &textLength[count]);
@@ -685,7 +688,8 @@ VOID StatusBarUpdate(
         else
             widths[count] = 0;
 
-        width = size.cx + 10;
+        // TaskManagerPlus: text plus 8px-grid padding on both sides (the theme painter draws 8px at the left).
+        width = size.cx + 2 * MulDiv(8, PhGetWindowDpi(StatusBarHandle), 96);
 
         if (resetMaxWidths)
             StatusBarMaxWidths[count] = 0;
@@ -704,6 +708,20 @@ VOID StatusBarUpdate(
 
     // Note: Suspend redrawing until after updating the statusbar text
     // otherwise SB_SETTEXT repaints multiple times during our loop. (dmex)
+    // TaskManagerPlus: drop trailing parts that cannot fit instead of clipping them; the last part gets the
+    // remaining space.
+    {
+        RECT statusRect;
+
+        if (PhGetClientRect(StatusBarHandle, &statusRect) && statusRect.right > 0)
+        {
+            while (count > 1 && widths[count - 1] > (ULONG)statusRect.right)
+                count--;
+        }
+
+        widths[count - 1] = ULONG_MAX; // -1: extends to the right edge
+    }
+
     SendMessage(StatusBarHandle, WM_SETREDRAW, FALSE, 0);
     SendMessage(StatusBarHandle, SB_SETPARTS, count, (LPARAM)widths);
 

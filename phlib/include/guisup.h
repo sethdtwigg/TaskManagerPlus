@@ -4749,6 +4749,14 @@ PhInitializeWindowThemeEditControl(
     _In_ HWND EditControl
     );
 
+// TaskManagerPlus: themed status bar (flat surface, dividers, padding).
+PHLIBAPI
+VOID
+NTAPI
+PhInitializeWindowThemeStatusbarControl(
+    _In_ HWND StatusbarControl
+    );
+
 PHLIBAPI
 LRESULT
 CALLBACK
