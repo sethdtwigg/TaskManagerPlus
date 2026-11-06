@@ -29,6 +29,10 @@
 #define HIST_RECORD_SNAPSHOT 2
 #define HIST_MAX_FILE_SIZE (512ULL * 1024 * 1024)
 #define HIST_COMPACT_MIN_SIZE (64ULL * 1024)
+#define HIST_THIN_TIER1_AGE_SECONDS (60 * 60)
+#define HIST_THIN_TIER1_SPACING_SECONDS 60
+#define HIST_THIN_TIER2_AGE_SECONDS (6 * 60 * 60)
+#define HIST_THIN_TIER2_SPACING_SECONDS (5 * 60)
 #define HIST_READ_CHUNK (16 * 1024 * 1024)
 
 #include <pshpack4.h>
@@ -414,6 +418,62 @@ static LONGLONG HistGetRetentionCutoff(
 }
 
 /**
+ * Thins old snapshots so memory and tmp-history.bin stay small: snapshots
+ * older than HIST_THIN_TIER1_AGE keep one per HIST_THIN_TIER1_SPACING, older
+ * than HIST_THIN_TIER2_AGE one per HIST_THIN_TIER2_SPACING (first of each
+ * time bucket wins, so repeated runs are stable). The on-disk format is
+ * unchanged; removed records simply become stale bytes for the compactor.
+ * Returns the number of file bytes made stale.
+ */
+static ULONG64 HistThinSnapshots(
+    _In_ LARGE_INTEGER Now
+    )
+{
+    ULONG64 staleBytes = 0;
+    ULONG write = 0;
+    LONGLONG lastBucket = -1;
+    LONGLONG lastSpacing = 0;
+
+    for (ULONG read = 0; read < HistSnapshotList->Count; read++)
+    {
+        PHIST_SNAPSHOT snapshot = HistSnapshotList->Items[read];
+        LONGLONG age = Now.QuadPart - snapshot->Time.QuadPart;
+        LONGLONG spacing = 0;
+
+        if (age >= (LONGLONG)HIST_THIN_TIER2_AGE_SECONDS * PH_TICKS_PER_SEC)
+            spacing = (LONGLONG)HIST_THIN_TIER2_SPACING_SECONDS * PH_TICKS_PER_SEC;
+        else if (age >= (LONGLONG)HIST_THIN_TIER1_AGE_SECONDS * PH_TICKS_PER_SEC)
+            spacing = (LONGLONG)HIST_THIN_TIER1_SPACING_SECONDS * PH_TICKS_PER_SEC;
+
+        if (spacing != 0)
+        {
+            LONGLONG bucket = snapshot->Time.QuadPart / spacing;
+
+            if (spacing == lastSpacing && bucket == lastBucket)
+            {
+                staleBytes += snapshot->FileBytes;
+                PhFree(snapshot);
+                continue;
+            }
+
+            lastBucket = bucket;
+        }
+        else
+        {
+            lastBucket = -1;
+        }
+
+        lastSpacing = spacing;
+        HistSnapshotList->Items[write++] = snapshot;
+    }
+
+    if (write != HistSnapshotList->Count)
+        HistSnapshotList->Count = write;
+
+    return staleBytes;
+}
+
+/**
  * Drops in-memory snapshots that are older than the retention period.
  */
 static VOID HistPrune(
@@ -437,6 +497,8 @@ static VOID HistPrune(
 
     if (remove)
         PhRemoveItemsList(HistSnapshotList, 0, remove);
+
+    HistStaleBytes += HistThinSnapshots(Now);
 }
 
 ULONG HistGetIntervalSeconds(
@@ -662,6 +724,7 @@ VOID HistStoreLoad(
         PhFree(buffer);
 
     HistStringsWritten = HistStringList->Count;
+    staleBytes += HistThinSnapshots(now);
 
     if (!headerValid || position != size || (staleBytes * 2 > size && size >= HIST_COMPACT_MIN_SIZE))
     {
