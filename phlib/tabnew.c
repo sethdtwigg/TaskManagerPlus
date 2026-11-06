@@ -1868,8 +1868,9 @@ VOID PhTabNewUpdateCachedResources(
 
     backgroundColor = PhTabNewBackgroundColor(Context);
     activeColor = PhTabNewActiveColor(Context);
-    accentColor = Context->ThemeDark ? PhThemeWindowHighlightColor : GetSysColor(COLOR_HIGHLIGHT);
-    hotColor = Context->ThemeDark ? PhThemeWindowHighlightColor : PH_TABNEW_LIGHT_HOT_COLOR;
+    // TaskManagerPlus: accent underline and hover come from the theme palette (light and dark).
+    accentColor = PhEnableThemeSupport ? PhThemeWindowFocusBorderColor : GetSysColor(COLOR_HIGHLIGHT);
+    hotColor = PhEnableThemeSupport ? PhThemeWindowBackground2Color : PH_TABNEW_LIGHT_HOT_COLOR;
     outlineColor = Context->ThemeDark ? PH_TABNEW_DARK_OUTLINE_COLOR : PH_TABNEW_LIGHT_OUTLINE_COLOR;
 
     Context->BackgroundBrush = CreateSolidBrush(backgroundColor);

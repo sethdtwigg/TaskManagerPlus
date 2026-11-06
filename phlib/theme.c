@@ -2134,6 +2134,8 @@ VOID PhInitializeThemeWindowTabControl(
     context->CursorPos.y = LONG_MIN;
 
     SetWindowFont(TabControlWindow, PhApplicationFont, FALSE);
+    // TaskManagerPlus: 16px horizontal / 8px vertical tab padding (8px grid).
+    TabCtrl_SetPadding(TabControlWindow, PhScaleToDisplay(16, context->WindowDpi), PhScaleToDisplay(8, context->WindowDpi));
 
     PhSetWindowContext(TabControlWindow, LONG_MAX, context);
     PhSetWindowProcedure(TabControlWindow, PhpThemeWindowTabControlWndSubclassProc);
@@ -4791,6 +4793,8 @@ VOID ThemeWindowRenderTabControl(
     LONG cyPad;
     WCHAR tabHeaderText[MAX_PATH] = L"";
     RECT clipRect;
+    RECT dividerRect;
+    LONG underlineThickness;
 
     // The paint DC only covers the invalid region (a rcPaint-sized buffer or the
     // BeginPaint DC), so fill just that and skip tabs outside of it. (dmex)
@@ -4817,11 +4821,12 @@ VOID ThemeWindowRenderTabControl(
     contentRect.bottom = clientRect->bottom;
     contentRect.top -= cyEdge;
 
-    SetDCBrushColor(bufferDc, PhThemeWindowBackground2Color);
-    FrameRect(bufferDc, &contentRect, PhpStockDCBrush);
-    PhInflateRect(&contentRect, -1, -1);
-    SetDCBrushColor(bufferDc, PhThemeWindowBackgroundColor);
-    FillRect(bufferDc, &contentRect, PhpStockDCBrush);
+    // TaskManagerPlus: flat strip. No frame around the page; a single 1px divider under
+    // the tabs, and the active tab gets a palette accent underline.
+    dividerRect = contentRect;
+    dividerRect.bottom = dividerRect.top + 1;
+    PhpThemeFillRect(bufferDc, &dividerRect, PhThemeWindowBorderColor);
+    underlineThickness = max(cyEdge, PhScaleToDisplay(2, Context->WindowDpi));
 
     currentSelection = TabCtrl_GetCurSel(WindowHandle);
     count = TabCtrl_GetItemCount(WindowHandle);
@@ -4850,43 +4855,25 @@ VOID ThemeWindowRenderTabControl(
             hot = PhPtInRect(&itemRect, &Context->CursorPos);
             textRect = itemRect;
 
-            if (selected)
-            {
-                PhInflateRect(&itemRect, cxEdge, cyEdge);
-            }
-
             if (!RectVisible(bufferDc, &itemRect))
                 continue;
 
-            PhpThemeFillRect(
-                bufferDc,
-                &itemRect,
-                hot ? PhThemeWindowBackground2Color : PhThemeWindowBackgroundColor
-                );
+            // TaskManagerPlus: hover from the palette, flat (no frame), accent underline on the selected tab.
+            if (hot && !selected)
+                PhpThemeFillRect(bufferDc, &itemRect, PhThemeWindowBackground2Color);
 
             if (selected)
             {
-                PhpThemeFrameRect(bufferDc, &itemRect, PhThemeWindowBackground2Color);
-            }
+                RECT underlineRect = itemRect;
 
-            if (selected)
-            {
-                RECT selectedGap = itemRect;
-
-                selectedGap.top = itemRect.bottom - cyEdge;
-                PhpThemeFillRect(
-                    bufferDc,
-                    &selectedGap,
-                    hot ? PhThemeWindowBackground2Color : PhThemeWindowBackgroundColor
-                    );
+                underlineRect.bottom = dividerRect.bottom;
+                underlineRect.top = underlineRect.bottom - underlineThickness;
+                PhpThemeFillRect(bufferDc, &underlineRect, PhThemeWindowFocusBorderColor);
             }
 
             if (TabCtrl_GetItem(WindowHandle, i, &tabItem))
             {
                 PhInflateRect(&textRect, -cxPad, -cyPad);
-
-                if (selected)
-                    PhOffsetRect(&textRect, 0, -cyEdge);
 
                 SetTextColor(bufferDc, PhThemeWindowTextColor);
                 DrawText(
