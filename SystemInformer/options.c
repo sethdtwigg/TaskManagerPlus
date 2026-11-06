@@ -851,6 +851,7 @@ INT_PTR CALLBACK PhOptionsDialogProc(
 
                 section = PhOptionsCreateSection(L"General", PhInstanceHandle, MAKEINTRESOURCE(IDD_OPTGENERAL), PhpOptionsGeneralDlgProc, NULL);
                 PhOptionsCreateSectionAdvanced(L"Advanced", PhInstanceHandle, MAKEINTRESOURCE(IDD_OPTADVANCED), PhpOptionsAdvancedDlgProc, NULL);
+                PhOptionsCreateSection(L"Themes", PhInstanceHandle, MAKEINTRESOURCE(IDD_OPTTHEMES), PhpOptionsThemesDlgProc, NULL); // TaskManagerPlus: the Themes page was never registered
                 PhOptionsCreateSection(L"Highlighting", PhInstanceHandle, MAKEINTRESOURCE(IDD_OPTHIGHLIGHTING), PhpOptionsHighlightingDlgProc, NULL);
                 PhOptionsCreateSection(L"Tray Icon", PhInstanceHandle, MAKEINTRESOURCE(IDD_OPTTRAYICON), PhpOptionsTrayIconDlgProc, NULL);
                 PhOptionsCreateSection(L"Graphs", PhInstanceHandle, MAKEINTRESOURCE(IDD_OPTGRAPHS), PhpOptionsGraphsDlgProc, NULL);
