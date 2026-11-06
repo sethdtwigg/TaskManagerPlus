@@ -975,10 +975,11 @@ static VOID HistLayout(
 
     PhGetClientRect(HistTabWindowHandle, &clientRect);
     dpiValue = PhGetWindowDpi(HistTabWindowHandle);
-    padding = PhScaleToDisplay(4, dpiValue);
-    trackbarHeight = PhScaleToDisplay(24, dpiValue);
-    rowHeight = PhScaleToDisplay(18, dpiValue);
-    liveWidth = PhScaleToDisplay(52, dpiValue);
+    // TaskManagerPlus: 8px grid padding, comfortable control heights
+    padding = PhScaleToDisplay(8, dpiValue);
+    trackbarHeight = PhScaleToDisplay(32, dpiValue);
+    rowHeight = PhScaleToDisplay(24, dpiValue);
+    liveWidth = PhScaleToDisplay(64, dpiValue);
     width = clientRect.right - clientRect.left;
 
     deferHandle = BeginDeferWindowPos(4);
@@ -1013,6 +1014,20 @@ static LRESULT CALLBACK HistTabWndProc(
         {
             HistLayout();
         }
+        break;
+    case WM_ERASEBKGND:
+        {
+            // TaskManagerPlus: background and child-control colours follow the theme palette
+            RECT rect;
+
+            GetClientRect(WindowHandle, &rect);
+            FillRect((HDC)wParam, &rect, PhGetIntegerSetting(L"EnableThemeSupport") ? PhWindowThemeControlColor(WindowHandle, (HDC)wParam, WindowHandle, CTLCOLOR_DLG) : GetSysColorBrush(COLOR_WINDOW));
+        }
+        return TRUE;
+    case WM_CTLCOLORSTATIC:
+    case WM_CTLCOLORBTN:
+        if (PhGetIntegerSetting(L"EnableThemeSupport"))
+            return (LRESULT)PhWindowThemeControlColor(WindowHandle, (HDC)wParam, (HWND)lParam, WindowMessage == WM_CTLCOLORBTN ? CTLCOLOR_BTN : CTLCOLOR_STATIC);
         break;
     case WM_SETFOCUS:
         {
@@ -1078,7 +1093,7 @@ static BOOLEAN HistRegisterTabClass(
         wcex.lpfnWndProc = HistTabWndProc;
         wcex.hInstance = PluginInstance->DllBase;
         wcex.hCursor = PhLoadCursor(NULL, IDC_ARROW);
-        wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+        wcex.hbrBackground = NULL; // TaskManagerPlus: painted in WM_ERASEBKGND from the theme palette
         wcex.lpszClassName = HIST_TAB_CLASS;
 
         classAtom = RegisterClassEx(&wcex);
