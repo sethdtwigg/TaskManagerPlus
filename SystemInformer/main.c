@@ -1598,6 +1598,11 @@ VOID PhInitializeAppSettings(
     PhThemeWindowHighlight2Color = PhGetIntegerSetting(SETTING_THEME_WINDOW_HIGHLIGHT2_COLOR);
     PhThemeWindowTextColor = PhGetIntegerSetting(SETTING_THEME_WINDOW_TEXT_COLOR);
 
+    // TaskManagerPlus: apply the saved theme mode at startup. Nothing did, so every launch (including the
+    // elevated restart) fell back to the default Dark palette whatever Options > Themes had saved.
+    if (PhEnableThemeSupport)
+        PhApplyThemeModeWithColors((ULONG)PhGetIntegerSetting(SETTING_THEME_MODE), NULL);
+
     PhEnableThemeAcrylicSupport = WindowsVersion >= WINDOWS_11 && !!PhGetIntegerSetting(SETTING_ENABLE_THEME_ACRYLIC_SUPPORT);
     PhEnableThemeAcrylicWindowSupport = WindowsVersion >= WINDOWS_11 && !!PhGetIntegerSetting(SETTING_ENABLE_THEME_ACRYLIC_WINDOW_SUPPORT);
     PhEnableThemeNativeButtons = !!PhGetIntegerSetting(SETTING_ENABLE_THEME_NATIVE_BUTTONS);
