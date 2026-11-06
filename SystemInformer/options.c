@@ -328,6 +328,27 @@ static VOID PhReloadGeneralSection(
     GeneralListViewStateInitializing = FALSE;
 }
 
+// TaskManagerPlus: the theme combo lists Automatic/Light/Dark/Custom/OLED but stores the
+// PH_THEME_MODE value as item data (the Explorer mode has no entry), so select by data.
+static VOID PhpSelectThemeModeCombo(
+    _In_ HWND ComboHandle,
+    _In_ ULONG Mode
+    )
+{
+    INT count = ComboBox_GetCount(ComboHandle);
+
+    for (INT i = 0; i < count; i++)
+    {
+        if ((ULONG)ComboBox_GetItemData(ComboHandle, i) == Mode)
+        {
+            ComboBox_SetCurSel(ComboHandle, i);
+            return;
+        }
+    }
+
+    ComboBox_SetCurSel(ComboHandle, 0);
+}
+
 static VOID PhReloadThemesSection(
     VOID
     )
@@ -341,7 +362,7 @@ static VOID PhReloadThemesSection(
 
     ThemeListViewStateInitializing = TRUE;
     Button_SetCheck(GetDlgItem(section->DialogHandle, IDC_ENABLETHEME), PhGetIntegerSetting(SETTING_ENABLE_THEME_SUPPORT) ? BST_CHECKED : BST_UNCHECKED);
-    ComboBox_SetCurSel(GetDlgItem(section->DialogHandle, IDC_THEMEMODE), PhGetIntegerSetting(SETTING_THEME_MODE));
+    PhpSelectThemeModeCombo(GetDlgItem(section->DialogHandle, IDC_THEMEMODE), PhGetIntegerSetting(SETTING_THEME_MODE));
     EnableWindow(GetDlgItem(section->DialogHandle, IDC_THEMEMODE), PhGetIntegerSetting(SETTING_ENABLE_THEME_SUPPORT) != 0);
     ThemeListViewStateInitializing = FALSE;
 }
@@ -385,6 +406,8 @@ static VOID PhpApplyThemeModeSetting(
 
     if (mode == CB_ERR)
         return;
+
+    mode = (INT)ComboBox_GetItemData(GetDlgItem(hwndDlg, IDC_THEMEMODE), mode); // TaskManagerPlus: index -> PH_THEME_MODE
 
     PhSetIntegerSetting(SETTING_THEME_MODE, mode);
 
@@ -4886,7 +4909,13 @@ INT_PTR CALLBACK PhpOptionsThemesDlgProc(
             ComboBox_AddString(comboHandle, L"Light");
             ComboBox_AddString(comboHandle, L"Dark");
             ComboBox_AddString(comboHandle, L"Custom");
-            ComboBox_SetCurSel(comboHandle, PhGetIntegerSetting(SETTING_THEME_MODE));
+            ComboBox_AddString(comboHandle, L"OLED black"); // TaskManagerPlus: item data = PH_THEME_MODE value
+            ComboBox_SetItemData(comboHandle, 0, PhThemeModeAutomatic);
+            ComboBox_SetItemData(comboHandle, 1, PhThemeModeLight);
+            ComboBox_SetItemData(comboHandle, 2, PhThemeModeDark);
+            ComboBox_SetItemData(comboHandle, 3, PhThemeModeCustom);
+            ComboBox_SetItemData(comboHandle, 4, PhThemeModeOled);
+            PhpSelectThemeModeCombo(comboHandle, PhGetIntegerSetting(SETTING_THEME_MODE));
             EnableWindow(comboHandle, PhGetIntegerSetting(SETTING_ENABLE_THEME_SUPPORT) != 0);
         }
         break;

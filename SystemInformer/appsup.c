@@ -65,6 +65,7 @@ BOOLEAN PhIsThemeModeDark(
     {
     case PhThemeModeDark:
     case PhThemeModeCustom:
+    case PhThemeModeOled: // TaskManagerPlus
         return TRUE;
     case PhThemeModeExplorer: // follows the Windows light/dark preference
     case PhThemeModeAutomatic:

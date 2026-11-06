@@ -4349,7 +4349,8 @@ typedef enum _PH_WINDOW_THEME_ID
     PhWindowThemeCustom1,
     PhWindowThemeCustom2,
     PhWindowThemeSystem,
-    PhWindowThemeExplorer // Windows 11 File Explorer colors, resolved at runtime
+    PhWindowThemeExplorer, // Windows 11 File Explorer colors, resolved at runtime
+    PhWindowThemeOled // TaskManagerPlus: pure-black surfaces
 } PH_WINDOW_THEME_ID;
 
 // User-facing theme mode (Options > Themes combo). Only consulted when
@@ -4360,7 +4361,8 @@ typedef enum _PH_THEME_MODE
     PhThemeModeLight = 1,     // force the light palette
     PhThemeModeDark = 2,      // force the dark palette
     PhThemeModeCustom = 3,    // force the custom palette (Custom1)
-    PhThemeModeExplorer = 4   // Explorer palette (accent colored, follows the system light/dark preference)
+    PhThemeModeExplorer = 4,  // Explorer palette (accent colored, follows the system light/dark preference)
+    PhThemeModeOled = 5       // TaskManagerPlus: dark palette with pure-black (OLED) surfaces
 } PH_THEME_MODE;
 
 // Note: these values are persisted in the ThemeMode setting and are used as

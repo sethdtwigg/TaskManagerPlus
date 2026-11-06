@@ -438,6 +438,36 @@ static CONST PH_WINDOW_THEME_PALETTE PhpWindowThemeDarkPalette =
     RGB(134, 144, 156)  // MenuDisabledTextColor
 };
 
+// TaskManagerPlus: OLED palette. Same blue accent as the dark palette, but every surface
+// (window, panels, edits, scrollbars) is pure black; only hover/pressed states and
+// borders are lifted off black so controls stay legible.
+static CONST PH_WINDOW_THEME_PALETTE PhpWindowThemeOledPalette =
+{
+    RGB(0, 0, 0), // ForegroundColor
+    RGB(0, 0, 0), // BackgroundColor
+    RGB(14, 16, 20), // Background2Color
+    RGB(16, 56, 92), // HighlightColor
+    RGB(24, 78, 122), // Highlight2Color
+    RGB(234, 238, 243), // TextColor
+    RGB(128, 138, 150), // DisabledTextColor
+    RGB(48, 54, 62), // BorderColor
+    RGB(30, 35, 42), // PressedColor
+    RGB(0, 0, 0), // EditColor
+    RGB(0, 0, 0), // ScrollbarColor
+    RGB(214, 220, 228), // DropdownGlyphColor
+    RGB(58, 150, 221), // WindowActiveBorderColor
+    RGB(48, 54, 62), // WindowInactiveBorderColor
+    RGB(255, 0, 0), // FilteredBorderColor
+    RGB(255, 128, 0), // ProtectedBorderColor
+    RGB(58, 150, 221), // FocusBorderColor
+    RGB(48, 54, 62), // GroupBoxFrameColor
+    RGB(48, 54, 62), // WindowFrameColor
+    RGB(90, 140, 190), // EditHotBorderColor
+    RGB(48, 54, 62), // EditNormalBorderColor
+    RGB(255, 255, 255), // MenuSelectedTextColor
+    RGB(128, 138, 150)  // MenuDisabledTextColor
+};
+
 // Windows 11 File Explorer colors. The Highlight/Focus/border entries are
 // placeholders replaced with accent-derived colors by PhpResolveExplorerPalette
 // when the user's accent color is available.
@@ -767,6 +797,9 @@ BOOLEAN PhSetWindowThemePalette(
         break;
     case PhWindowThemeDark:
         selectedPalette = &PhpWindowThemeDarkPalette;
+        break;
+    case PhWindowThemeOled: // TaskManagerPlus
+        selectedPalette = &PhpWindowThemeOledPalette;
         break;
     case PhWindowThemeCustom1:
         if (Palette)
@@ -1641,6 +1674,9 @@ VOID PhApplyThemeMode(
         break;
     case PhThemeModeExplorer:
         themeId = PhWindowThemeExplorer;
+        break;
+    case PhThemeModeOled: // TaskManagerPlus
+        themeId = PhWindowThemeOled;
         break;
     case PhThemeModeAutomatic:
     default:
