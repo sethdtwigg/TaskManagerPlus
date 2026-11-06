@@ -19,6 +19,7 @@ ULONG ToolbarSearchRebarIndex = ULONG_MAX;
 TBBUTTON ToolbarButtons[MAX_TOOLBAR_ITEMS] =
 {
     // Default toolbar buttons (displayed)
+    { I_IMAGECALLBACK, TIDC_MAINMENUDROPDOWN, TBSTATE_ENABLED, BTNS_WHOLEDROPDOWN | BTNS_BUTTON | BTNS_AUTOSIZE | BTNS_SHOWTEXT, { 0 }, 0, 0 }, // TaskManagerPlus
     // TaskManagerPlus: calm look = 4 buttons; the find-window and shield buttons are available (hidden)
     { I_IMAGECALLBACK, PHAPP_ID_VIEW_REFRESH, TBSTATE_ENABLED, BTNS_BUTTON | BTNS_AUTOSIZE | BTNS_SHOWTEXT, { 0 }, 0, 0 },
     { I_IMAGECALLBACK, PHAPP_ID_HACKER_FINDHANDLESORDLLS, TBSTATE_ENABLED, BTNS_BUTTON | BTNS_AUTOSIZE | BTNS_SHOWTEXT, { 0 }, 0, 0 },
@@ -785,6 +786,7 @@ VOID ToolBarApplySettings(
             }
             break;
         case TIDC_POWERMENUDROPDOWN:
+        case TIDC_MAINMENUDROPDOWN:
             {
                 SetFlag(buttonInfo.fsStyle, BTNS_WHOLEDROPDOWN);
             }
@@ -1132,6 +1134,8 @@ PCWSTR ToolbarGetText(
         return L"Always on top";
     case TIDC_POWERMENUDROPDOWN:
         return L"Computer";
+    case TIDC_MAINMENUDROPDOWN:
+        return L"Menu";
     case PHAPP_ID_HACKER_SHOWDETAILSFORALLPROCESSES:
         return L"Show details for all processes";
     case TIDC_FINDDIALOG:
@@ -1282,6 +1286,11 @@ HBITMAP ToolbarGetImage(
             {
                 id = IDI_APPLICATION_GET;
             }
+        }
+        break;
+    case TIDC_MAINMENUDROPDOWN:
+        {
+            id = ToolbarIsDarkTheme() ? IDB_TMS_MENU_ONDARK : IDB_TMS_MENU_ONLIGHT;
         }
         break;
     case TIDC_POWERMENUDROPDOWN:

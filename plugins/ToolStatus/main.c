@@ -1408,6 +1408,42 @@ LRESULT CALLBACK MainWindowCallbackProc(
                         PPH_EMENU_ITEM selectedItem;
                         ULONG buttonState;
 
+                        if (toolbar->iItem == TIDC_MAINMENUDROPDOWN) // TaskManagerPlus: the hidden menu bar as one dropdown
+                        {
+                            HMENU popup;
+                            ULONG count;
+
+                            if (!MainMenu || !(popup = CreatePopupMenu()))
+                                break;
+
+                            count = GetMenuItemCount(MainMenu);
+
+                            for (ULONG i = 0; i < count; i++)
+                            {
+                                WCHAR text[64];
+                                HMENU subMenu = GetSubMenu(MainMenu, i);
+
+                                if (!subMenu)
+                                    continue;
+
+                                text[0] = UNICODE_NULL;
+                                GetMenuString(MainMenu, i, text, RTL_NUMBER_OF(text), MF_BYPOSITION);
+                                AppendMenu(popup, MF_STRING | MF_POPUP, (UINT_PTR)subMenu, text);
+                            }
+
+                            MapWindowRect(ToolBarHandle, HWND_DESKTOP, &toolbar->rcButton);
+                            SetForegroundWindow(WindowHandle);
+                            TrackPopupMenu(popup, TPM_LEFTALIGN | TPM_TOPALIGN, toolbar->rcButton.left, toolbar->rcButton.bottom, 0, WindowHandle, NULL);
+                            PostMessage(WindowHandle, WM_NULL, 0, 0);
+
+                            // The sub menus belong to the main menu: detach them before destroying the popup.
+                            while (GetMenuItemCount(popup) > 0)
+                                RemoveMenu(popup, 0, MF_BYPOSITION);
+
+                            DestroyMenu(popup);
+                            break;
+                        }
+
                         if (toolbar->iItem != TIDC_POWERMENUDROPDOWN)
                             break;
 
@@ -2150,7 +2186,7 @@ LOGICAL DllMain(
             PPH_PLUGIN_INFORMATION info;
             PH_SETTING_CREATE settings[] =
             {
-                { IntegerSettingType, SETTING_NAME_TOOLSTATUS_CONFIG, L"3F" },
+                { IntegerSettingType, SETTING_NAME_TOOLSTATUS_CONFIG, L"7F" },
                 { IntegerSettingType, SETTING_NAME_TOOLBARDISPLAYSTYLE, L"0" },
                 { IntegerSettingType, SETTING_NAME_SEARCHBOXDISPLAYMODE, L"0" },
                 { IntegerSettingType, SETTING_NAME_TASKBARDISPLAYSTYLE, L"0" },

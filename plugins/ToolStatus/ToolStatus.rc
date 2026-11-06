@@ -220,6 +220,8 @@ IDB_TMS_ALWAYSONTOP_ONLIGHT PNG "resources\\tms_alwaysontop_onlight.png"
 IDB_TMS_ALWAYSONTOP_ONDARK PNG "resources\\tms_alwaysontop_ondark.png"
 IDB_TMS_POWER_ONLIGHT PNG "resources\\tms_power_onlight.png"
 IDB_TMS_POWER_ONDARK PNG "resources\\tms_power_ondark.png"
+IDB_TMS_MENU_ONLIGHT PNG "resources\\tms_menu_onlight.png"
+IDB_TMS_MENU_ONDARK PNG "resources\\tms_menu_ondark.png"
 
 
 /////////////////////////////////////////////////////////////////////////////

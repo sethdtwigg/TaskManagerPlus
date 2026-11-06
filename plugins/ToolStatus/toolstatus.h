@@ -41,10 +41,10 @@
 #define SETTING_NAME_SHOWSYSINFOGRAPH (PLUGIN_NAME L".ToolbarShowSystemInfoGraph")
 #define SETTING_NAME_RESTOREROWAFTERSEARCH (PLUGIN_NAME L".RestoreSelectionAfterSearch")
 
-#define MAX_DEFAULT_TOOLBAR_ITEMS 4 // TaskManagerPlus
+#define MAX_DEFAULT_TOOLBAR_ITEMS 5 // TaskManagerPlus
 #define MAX_DEFAULT_STATUSBAR_ITEMS 3 // TaskManagerPlus
 #define MAX_DEFAULT_IMAGELIST_ITEMS 1
-#define MAX_TOOLBAR_ITEMS 11 // TaskManagerPlus
+#define MAX_TOOLBAR_ITEMS 12 // TaskManagerPlus
 #define MAX_STATUSBAR_ITEMS 17
 
 #define TIDC_FINDWINDOW (WM_APP + 1)
@@ -53,6 +53,7 @@
 #define TIDC_POWERMENUDROPDOWN (WM_APP + 4)
 #define TIDC_SEARCHBOX_CASE_SENSITIVE (WM_APP + 5)
 #define TIDC_FINDDIALOG (WM_APP + 6)
+#define TIDC_MAINMENUDROPDOWN (WM_APP + 7) // TaskManagerPlus: the menu button that stands in for the hidden menu bar
 
 // Stable, plugin-owned toolbar IDs used ONLY for persistence (settings serialization).
 // Never tied to PHAPP_ID_* (which may change between builds). Never reuse/renumber a value.
