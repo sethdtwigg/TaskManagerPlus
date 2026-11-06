@@ -309,6 +309,113 @@ static FLOAT EtpGetGpuAdapterValue(
     return value;
 }
 
+// TaskManagerPlus: heat-map and totals-row answers for the process list. The core owns the colours
+// and the layout; this plugin only reports what it measured (see PH_TREENEW_GET_CELL_HEAT).
+
+static ULONG64 EtpAggregateNetworkDelta(
+    _In_ PPH_PROCESS_NODE ProcessNode,
+    _In_ PET_PROCESS_BLOCK Block,
+    _In_ ULONG SubId
+    )
+{
+    ULONG64 number = 0;
+
+    if (SubId != ETPRTNC_NETWORKSENDRATE)
+        PhpAggregateFieldIfNeeded(ProcessNode, AggregateTypeInt64, Block, FIELD_OFFSET(ET_PROCESS_BLOCK, NetworkReceiveRawDelta.Delta), &number);
+    if (SubId != ETPRTNC_NETWORKRECEIVERATE)
+        PhpAggregateFieldIfNeeded(ProcessNode, AggregateTypeInt64, Block, FIELD_OFFSET(ET_PROCESS_BLOCK, NetworkSendRawDelta.Delta), &number);
+
+    return number;
+}
+
+static VOID EtpProcessTreeGetCellHeat(
+    _In_ PPH_PLUGIN_TREENEW_MESSAGE Message
+    )
+{
+    PPH_TREENEW_GET_CELL_HEAT heat = Message->Parameter1;
+    PPH_PROCESS_NODE processNode = (PPH_PROCESS_NODE)heat->Node;
+    PET_PROCESS_BLOCK block = EtGetProcessBlock(processNode->ProcessItem);
+
+    switch (Message->SubId)
+    {
+    case ETPRTNC_GPU:
+        {
+            FLOAT gpuUsage = 0;
+
+            PhpAggregateFieldIfNeeded(processNode, AggregateTypeFloat, block, FIELD_OFFSET(ET_PROCESS_BLOCK, GpuNodeUtilization), &gpuUsage);
+
+            heat->Kind = PH_HEAT_KIND_GPU;
+            heat->Value = gpuUsage * 100.0;
+        }
+        break;
+    case ETPRTNC_NETWORKRECEIVERATE:
+    case ETPRTNC_NETWORKSENDRATE:
+    case ETPRTNC_NETWORKTOTALRATE:
+        heat->Kind = PH_HEAT_KIND_NETWORK;
+        heat->Value = (DOUBLE)EtCalculateRate(EtpAggregateNetworkDelta(processNode, block, Message->SubId));
+        break;
+    case ETPRTNC_DISKTOTALRATE:
+        {
+            ULONG64 number = 0;
+
+            PhpAggregateFieldIfNeeded(processNode, AggregateTypeInt64, block, FIELD_OFFSET(ET_PROCESS_BLOCK, DiskReadRawDelta.Delta), &number);
+            PhpAggregateFieldIfNeeded(processNode, AggregateTypeInt64, block, FIELD_OFFSET(ET_PROCESS_BLOCK, DiskWriteRawDelta.Delta), &number);
+
+            heat->Kind = PH_HEAT_KIND_DISK;
+            heat->Value = (DOUBLE)EtCalculateRate(number);
+        }
+        break;
+    }
+}
+
+static VOID EtpProcessTreeGetTotalsText(
+    _In_ PPH_PLUGIN_TREENEW_MESSAGE Message
+    )
+{
+    static WCHAR buffer[48];
+    PPH_TREENEW_GET_TOTALS_TEXT totals = Message->Parameter1;
+    PH_FORMAT format[2];
+    SIZE_T returnLength;
+
+    switch (Message->SubId)
+    {
+    case ETPRTNC_GPU:
+        {
+            FLOAT usage = EtGpuNodeUsage * 100;
+
+            if (usage > 100)
+                usage = 100;
+
+            PhInitFormatF(&format[0], usage, 0);
+            PhInitFormatC(&format[1], L'%');
+        }
+        break;
+    case ETPRTNC_NETWORKRECEIVERATE:
+    case ETPRTNC_NETWORKSENDRATE:
+    case ETPRTNC_NETWORKTOTALRATE:
+        {
+            ULONG64 number = 0;
+
+            if (Message->SubId != ETPRTNC_NETWORKSENDRATE)
+                number += EtNetworkReceiveDelta.Delta;
+            if (Message->SubId != ETPRTNC_NETWORKRECEIVERATE)
+                number += EtNetworkSendDelta.Delta;
+
+            PhInitFormatSize(&format[0], EtCalculateRate(number));
+            PhInitFormatS(&format[1], L"/s");
+        }
+        break;
+    default:
+        return;
+    }
+
+    if (PhFormatToBuffer(format, 2, buffer, sizeof(buffer), &returnLength))
+    {
+        totals->Text.Buffer = buffer;
+        totals->Text.Length = returnLength - sizeof(UNICODE_NULL);
+    }
+}
+
 VOID EtProcessTreeNewMessage(
     _In_ PVOID Parameter
     )
@@ -316,6 +423,17 @@ VOID EtProcessTreeNewMessage(
     PPH_PLUGIN_TREENEW_MESSAGE message = Parameter;
     PPH_PROCESS_NODE processNode;
     PET_PROCESS_BLOCK block;
+
+    if (message->Message == TreeNewGetCellHeat) // TaskManagerPlus
+    {
+        EtpProcessTreeGetCellHeat(message);
+        return;
+    }
+    else if (message->Message == TreeNewGetTotalsText) // TaskManagerPlus
+    {
+        EtpProcessTreeGetTotalsText(message);
+        return;
+    }
 
     if (message->Message == TreeNewGetCellText)
     {
