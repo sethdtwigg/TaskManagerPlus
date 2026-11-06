@@ -2530,79 +2530,8 @@ NTSTATUS PhGetThreadSocketState(
 
     if (NT_SUCCESS(status) && winsockHandleAddress)
     {
-#if defined(PHLIB_SOCKET_STATE_WINSOCK)
-        static LONG (WINAPI* LPFN_WSASTARTUP)(
-            _In_ WORD wVersionRequested,
-            _Out_ PVOID* lpWSAData
-            );
-        static LONG (WINAPI* LPFN_GETSOCKOPT)(
-            _In_ UINT_PTR s,
-            _In_ LONG level,
-            _In_ LONG optname,
-            _Out_writes_bytes_(*optlen) char FAR* optval,
-            _Inout_ LONG FAR* optlen
-            );
-        static LONG (WINAPI* LPFN_CLOSESOCKET)(
-            _In_ ULONG_PTR s
-            );
-        static LONG (WINAPI* LPFN_WSACLEANUP)(
-            void
-            );
-        static PH_INITONCE initOnce = PH_INITONCE_INIT;
-        #ifndef WINSOCK_VERSION
-        #define WINSOCK_VERSION MAKEWORD(2,2)
-        #endif
-        #ifndef SOCKET_ERROR
-        #define SOCKET_ERROR (-1)
-        #endif
-        #ifndef SOL_SOCKET
-        #define SOL_SOCKET 0xffff
-        #endif
-        #ifndef SO_BSP_STATE
-        #define SO_BSP_STATE 0x1009
-        #endif
-        typedef struct _SOCKET_ADDRESS
-        {
-            _Field_size_bytes_(iSockaddrLength) PVOID lpSockaddr;
-            // _When_(lpSockaddr->sa_family == AF_INET, _Field_range_(>=, sizeof(SOCKADDR_IN)))
-            // _When_(lpSockaddr->sa_family == AF_INET6, _Field_range_(>=, sizeof(SOCKADDR_IN6)))
-            LONG iSockaddrLength;
-        } SOCKET_ADDRESS, *PSOCKET_ADDRESS, *LPSOCKET_ADDRESS;
-        typedef struct _CSADDR_INFO
-        {
-            SOCKET_ADDRESS LocalAddr;
-            SOCKET_ADDRESS RemoteAddr;
-            LONG iSocketType;
-            LONG iProtocol;
-        } CSADDR_INFO, *PCSADDR_INFO, FAR* LPCSADDR_INFO;
-        PVOID wsaStartupData;
-#endif
         HANDLE winsockTargetHandle;
 
-#if defined(PHLIB_SOCKET_STATE_WINSOCK)
-        if (PhBeginInitOnce(&initOnce))
-        {
-            PVOID baseAddress;
-
-            if (baseAddress = PhLoadLibrary(L"ws2_32.dll"))
-            {
-                LPFN_WSASTARTUP = PhGetDllBaseProcedureAddress(baseAddress, "WSAStartup", 0);
-                LPFN_GETSOCKOPT = PhGetDllBaseProcedureAddress(baseAddress, "getsockopt", 0);
-                //LPFN_GETSOCKNAME = PhGetDllBaseProcedureAddress(baseAddress, "getsockname", 0);
-                //LPFN_GETPEERNAME = PhGetDllBaseProcedureAddress(baseAddress, "getpeername", 0);
-                LPFN_CLOSESOCKET = PhGetDllBaseProcedureAddress(baseAddress, "closesocket", 0);
-                LPFN_WSACLEANUP = PhGetDllBaseProcedureAddress(baseAddress, "WSACleanup", 0);
-            }
-
-            PhEndInitOnce(&initOnce);
-        }
-
-        if (LPFN_WSASTARTUP(WINSOCK_VERSION, &wsaStartupData) != 0)
-        {
-            status = STATUS_UNSUCCESSFUL;
-            goto CleanupExit;
-        }
-#endif
         status = NtDuplicateObject(
             ProcessHandle,
             winsockHandleAddress,
@@ -2652,33 +2581,9 @@ NTSTATUS PhGetThreadSocketState(
                     }
                 }
 
-#if defined(PHLIB_SOCKET_STATE_WINSOCK)
-                if (LPFN_GETSOCKOPT((UINT_PTR)winsockTargetHandle, SOL_SOCKET, SO_BSP_STATE, (PCHAR)&winsockAddressInfo, &winsockAddressInfoLength) != SOCKET_ERROR)
-                {
-                    if (winsockAddressInfo.iProtocol == 6)
-                    {
-                        if (winsockAddressInfo.LocalAddr.lpSockaddr && winsockAddressInfo.RemoteAddr.lpSockaddr)
-                            *ThreadSocketState = PH_THREAD_SOCKET_STATE_SHARED;
-                        else
-                            *ThreadSocketState = PH_THREAD_SOCKET_STATE_DISCONNECTED;
-                    }
-                    else
-                        *ThreadSocketState = PH_THREAD_SOCKET_STATE_NOT_TCPIP;
-                }
-                else
-                {
-                    status = STATUS_UNSUCCESSFUL; // WSAGetLastError();
-                }
-#endif
             }
-#if defined(PHLIB_SOCKET_STATE_WINSOCK)
-            LPFN_CLOSESOCKET((UINT_PTR)winsockTargetHandle);
-#endif
             NtClose(winsockTargetHandle);
         }
-#if defined(PHLIB_SOCKET_STATE_WINSOCK)
-        LPFN_WSACLEANUP();
-#endif
     }
     else
     {

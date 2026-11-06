@@ -173,10 +173,6 @@ MIB_IPNET_TYPE PhpNeighborStateToMibState(
     _In_ NL_NEIGHBOR_STATE State
     );
 
-VOID PhIcmpDestroyEchoRequestContext(
-    _Inout_ ICMP_ECHO_REQUEST_CONTEXT* Context
-    );
-
 VOID PhPrintTcpTableStatus(
     _In_ ULONG Status,
     _In_ PCWSTR Action
