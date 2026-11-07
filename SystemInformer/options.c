@@ -1677,6 +1677,158 @@ BOOLEAN PhpIsDefaultTaskManager(
     return alreadyReplaced;
 }
 
+/**
+ * TaskManagerPlus: the Task Manager replacement stores an absolute path. If this program was the default but was
+ * moved or deleted (portable folder), Ctrl+Shift+Esc would fail. When the stored path names a TaskManagerPlus exe
+ * (same file name as this one) that no longer exists, offer to repoint it here or restore the stock Task Manager.
+ * Declining is remembered per stale path so the prompt is not repeated.
+ */
+VOID PhOfferRepairDefaultTaskManager(
+    VOID
+    )
+{
+    static CONST PH_STRINGREF valueName = PH_STRINGREF_INIT(L"Debugger");
+    HANDLE keyHandle;
+    PPH_STRING debugger;
+    PPH_STRING fileName;
+    PPH_STRING stalePath;
+    PPH_STRING ownName;
+    PPH_STRING storedName;
+    PPH_STRING declined;
+    BOOLEAN skip;
+    INT result = IDCANCEL;
+
+    if (!NT_SUCCESS(PhOpenKey(&keyHandle, KEY_READ, PH_KEY_LOCAL_MACHINE, &TaskMgrImageOptionsKeyName, 0)))
+        return;
+
+    debugger = PhQueryRegistryStringZ(keyHandle, L"Debugger");
+    NtClose(keyHandle);
+
+    if (PhIsNullOrEmptyString(debugger))
+    {
+        PhClearReference(&debugger);
+        return;
+    }
+
+    // Strip the quotes the Make default button writes.
+    if (debugger->Length >= 2 * sizeof(WCHAR) &&
+        debugger->Buffer[0] == L'"' &&
+        debugger->Buffer[debugger->Length / sizeof(WCHAR) - 1] == L'"')
+    {
+        stalePath = PhSubstring(debugger, 1, debugger->Length / sizeof(WCHAR) - 2);
+    }
+    else
+    {
+        stalePath = PhReferenceObject(debugger);
+    }
+
+    PhDereferenceObject(debugger);
+
+    if (!(fileName = PhGetApplicationFileNameWin32()))
+    {
+        PhDereferenceObject(stalePath);
+        return;
+    }
+
+    ownName = PhGetBaseName(fileName);
+    storedName = PhGetBaseName(stalePath);
+    declined = PhGetStringSetting(SETTING_TASKMGR_REPAIR_DECLINED);
+
+    skip = PhEqualString(stalePath, fileName, TRUE) ||        // already correct
+        !PhEqualString(ownName, storedName, TRUE) ||          // someone else's debugger: not ours to touch
+        PhDoesFileExistWin32(PhGetString(stalePath)) ||       // another working copy: leave it alone
+        PhEqualString(declined, stalePath, TRUE);             // the user already said not now for this path
+
+    PhDereferenceObject(declined);
+    PhDereferenceObject(storedName);
+    PhDereferenceObject(ownName);
+
+    if (skip)
+    {
+        PhDereferenceObject(fileName);
+        PhDereferenceObject(stalePath);
+        return;
+    }
+
+    {
+        PPH_STRING message = PH_AUTO(PhFormatString(
+            L"TaskManagerPlus is set as the Windows Task Manager, but the saved location no longer exists:\r\n\r\n%s\r\n\r\n"
+            L"Ctrl+Shift+Esc will not open anything until this is fixed.\r\n\r\n"
+            L"This copy: %s",
+            PhGetString(stalePath),
+            PhGetString(fileName)
+            ));
+        TASKDIALOGCONFIG config = { sizeof(config) };
+        TASKDIALOG_BUTTON buttons[] =
+        {
+            { IDYES, L"Use this copy" },
+            { IDNO, L"Restore default" },
+            { IDCANCEL, L"Not now" },
+        };
+
+        config.hwndParent = PhMainWndHandle;
+        config.dwFlags = TDF_ALLOW_DIALOG_CANCELLATION | TDF_POSITION_RELATIVE_TO_WINDOW;
+        config.pszMainIcon = TD_WARNING_ICON;
+        config.pszWindowTitle = L"TaskManagerPlus";
+        config.pszMainInstruction = L"The Task Manager replacement points at a missing file";
+        config.pszContent = message->Buffer;
+        config.pButtons = buttons;
+        config.cButtons = RTL_NUMBER_OF(buttons);
+        config.nDefaultButton = IDYES;
+
+        if (FAILED(TaskDialogIndirect(&config, &result, NULL, NULL)))
+            result = IDCANCEL;
+    }
+
+    if (result == IDYES || result == IDNO)
+    {
+        HANDLE writeHandle;
+        NTSTATUS status;
+
+        status = PhOpenKey(&writeHandle, KEY_READ | KEY_WRITE, PH_KEY_LOCAL_MACHINE, &TaskMgrImageOptionsKeyName, 0);
+
+        if (NT_SUCCESS(status))
+        {
+            if (result == IDNO)
+            {
+                status = PhDeleteValueKey(writeHandle, &valueName);
+            }
+            else
+            {
+                PPH_STRING quoted = PH_AUTO(PhFormatString(L"\"%s\"", PhGetString(fileName)));
+
+                status = PhSetValueKey(
+                    writeHandle,
+                    &valueName,
+                    REG_SZ,
+                    quoted->Buffer,
+                    (ULONG)quoted->Length + sizeof(UNICODE_NULL)
+                    );
+            }
+
+            NtClose(writeHandle);
+        }
+
+        if (!NT_SUCCESS(status))
+        {
+            PhShowStatus(
+                PhMainWndHandle,
+                L"Unable to update the Task Manager replacement. Run TaskManagerPlus as administrator and use Options > Advanced",
+                status,
+                0
+                );
+            PhSetStringSetting2(SETTING_TASKMGR_REPAIR_DECLINED, &stalePath->sr);
+        }
+    }
+    else
+    {
+        PhSetStringSetting2(SETTING_TASKMGR_REPAIR_DECLINED, &stalePath->sr);
+    }
+
+    PhDereferenceObject(fileName);
+    PhDereferenceObject(stalePath);
+}
+
 VOID PhpSetDefaultTaskManager(
     _In_ HWND ParentWindowHandle
     )

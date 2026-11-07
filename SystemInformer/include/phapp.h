@@ -877,6 +877,10 @@ VOID PhOfferCalmLook(
     VOID
     );
 
+VOID PhOfferRepairDefaultTaskManager(
+    VOID
+    );
+
 VOID PhShowOptionsDialog(
     _In_ HWND ParentWindowHandle,
     _In_opt_ PCWSTR SectionName

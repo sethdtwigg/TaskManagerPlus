@@ -144,6 +144,7 @@ BOOLEAN PhMainWndInitialization(
     PhMwpShowWindow(PhMainWndHandle, SW_SHOWDEFAULT);
 
     PhOfferCalmLook(); // TaskManagerPlus: one-time "Switch to the calm look?" for installs that predate the calm defaults
+    PhOfferRepairDefaultTaskManager(); // TaskManagerPlus: offer to fix a Task Manager replacement that points at a moved/deleted copy
 
     return TRUE;
 }
