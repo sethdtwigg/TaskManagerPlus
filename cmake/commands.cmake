@@ -152,7 +152,6 @@ function(_si_set_target_defaults target)
         else()
             target_compile_definitions(${target} PRIVATE SI_NO_WPP)
         endif()
-        si_kphsign(${target})
     elseif(arg_TYPE STREQUAL "KM_LIB")
         if(SI_WITH_WPP_KERNEL)
             si_target_tracewpp(${target} WPP_KERNEL_MODE

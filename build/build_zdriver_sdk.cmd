@@ -38,12 +38,6 @@ if "%~3"=="" goto usage
 call :CheckCustomBuildTool
 if errorlevel 1 exit /b %errorlevel%
 
-call :RunCustomBuildTool "-kphsign" "%~1"
-if errorlevel 1 (
-    echo [CustomBuildTool] Failed to sign %~1
-    exit /b !errorlevel!
-)
-
 call :RunCustomBuildTool "-sdk" "-verbose" "%~2" "%~3"
 if errorlevel 1 (
     echo [CustomBuildTool] SDK Failed %~2 %~3

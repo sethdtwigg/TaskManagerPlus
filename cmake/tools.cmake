@@ -28,13 +28,3 @@ function(si_sdkbuild target)
         VERBATIM
     )
 endfunction()
-
-function(si_kphsign target)
-    add_custom_command(
-        TARGET ${target}
-        POST_BUILD
-        COMMAND "${SI_CUSTOM_BUILD_TOOL}" -kphsign "$<SHELL_PATH:$<TARGET_FILE:${target}>>"
-        WORKING_DIRECTORY "${SI_ROOT}"
-        VERBATIM
-    )
-endfunction()
