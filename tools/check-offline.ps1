@@ -22,7 +22,7 @@ Set-Location $root
 
 $exclude = @(':(exclude)packages', ':(exclude)phnt', ':(exclude)tools/thirdparty',
              ':(exclude)tools/CustomBuildTool', ':(exclude)tools/check-offline.ps1',
-             ':(exclude)CHANGELOG.txt', ':(exclude)*.mmdb', ':(exclude)*.png', ':(exclude)*.ico',
+             ':(exclude)*.mmdb', ':(exclude)*.png', ':(exclude)*.ico',
              ':(exclude)*.bin', ':(exclude)*.zip', ':(exclude)*.lib', ':(exclude)*.dll')
 
 # Network APIs / libraries (anywhere in tracked text files).
@@ -79,6 +79,14 @@ function Scan($pattern, [bool]$skipComments) {
 Scan ('(' + ($apiRules -join '|') + ')') $false
 Scan ('(' + ($hostRules -join '|') + ')') $true
 Scan $urlRule $true
+
+# Top-level docs must not name or point at the upstream project except for the plain-text credit
+# (README.md, NOTICE.txt). "Process Hacker" / author handles are never allowed there.
+$docFiles = @('README.md', 'README.txt', 'NOTICE.txt', 'CHANGELOG.txt', 'HACKING.md')
+$docLines = git grep -n -I -i -E 'process ?hacker|processhacker|wj32|dmex' -- @docFiles 2>$null
+foreach ($l in $docLines) { $hits.Add('doc: ' + $l) }
+$docLines = git grep -n -I -i -E 'system ?informer' -- README.txt 2>$null
+foreach ($l in $docLines) { if ($l -notmatch 'SystemInformer\.exe') { $hits.Add('doc: ' + $l) } }
 
 if ($Binaries) {
     $dumpbin = Get-ChildItem "${env:ProgramFiles}\Microsoft Visual Studio\*\*\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" -ErrorAction SilentlyContinue |

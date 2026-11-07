@@ -1,0 +1,14 @@
+TaskManagerPlus
+
+TaskManagerPlus is based on System Informer, which is licensed under the MIT
+License and is copyright Winsider Seminars & Solutions, Inc. and its
+contributors. This version has been modified: the user interface was reworked,
+new plugins (Process Rules, Startup Manager, Process History) were added, and
+all network functionality was removed.
+
+The original licence text and copyright notices are reproduced unchanged in
+LICENSE.txt and COPYRIGHT.txt and apply to the original portions of this work.
+Third-party components keep their own licence files in their directories.
+
+This project is not affiliated with or endorsed by the authors of the
+original software.

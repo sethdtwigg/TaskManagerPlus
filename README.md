@@ -1,49 +1,92 @@
 # TaskManagerPlus
 
-TaskManagerPlus is a fork of [System Informer](LICENSE.txt) that runs fully
-locally: it makes no network connections to any other machine and carries no
-update checks, online lookups, telemetry or links to upstream services.
+TaskManagerPlus is a free, open-source Windows process viewer and task manager
+replacement with a calmer interface, per-program rules, a startup manager and
+a rolling process history. It runs fully offline: it makes no outbound network
+connections of any kind, with no update checks, telemetry, online lookups or
+account features. The repository ships a guard script that enforces this
+(see "Offline guarantee").
 
-Based on System Informer by Winsider Seminars & Solutions, Inc. and its
-contributors. The original copyright and licence notices are kept in
-`LICENSE.txt` and `COPYRIGHT.txt`.
+It is a modified fork of System Informer (MIT licence); see "License" below.
 
 ## System requirements
 
-Windows 10 or higher, 32-bit or 64-bit.
+Windows 10 or later, 64-bit. Runs without installation and without the kernel
+driver (some driver-only features, such as kernel handle and memory access and
+some protected-process details, are therefore unavailable). Administrator
+rights are needed for some information (for example disk and firewall
+monitoring) but not to start.
 
 ## Features
 
-* A detailed overview of system activity with highlighting.
-* Graphs and statistics to track down resource hogs and runaway processes.
-* Find which processes are using a file.
-* See which programs have active network connections (local views only, no
-  address resolution) and close them if necessary.
-* Real-time information on disk access.
-* Detailed stack traces with kernel-mode, WOW64 and .NET support.
-* Create, edit and control services.
-* Small, portable and no installation required.
+* Process, service, network, disk and performance views with a simplified,
+  calmer default layout, light, dark and OLED themes.
+* **Rules** tab: per-program rules (priority, CPU affinity including P/E-core
+  presets, efficiency mode, end on start, run a command) and watchdogs
+  (CPU, memory, I/O, handles or threads above a threshold for N seconds, then
+  notify, lower priority, suspend, end, write a dump), with a runaway guard.
+* **Startup** tab: Run/RunOnce keys, Startup folders, logon and boot scheduled
+  tasks and Store startup entries in one list, with enable, disable and delete.
+* **History** tab: rolling per-process snapshots with a time slider, kept on
+  disk, to answer "what was using the CPU or memory a while ago".
+* Replace Windows Task Manager (Options, "Make default...") with the
+  `taskmgr.exe` Image File Execution Options debugger value; restorable.
+* Detailed process properties, stack traces, handle and module views, service
+  control, and file-in-use search, all local.
 
-## What was removed
+## Offline guarantee
 
-The Updater, OnlineChecks (VirusTotal and similar), NetworkTools (whois, ping,
-traceroute, GeoIP download) and AgentTools plugins, "Search online", reverse
-DNS of connections, signature revocation checks over the network, the default
-Microsoft symbol server, Source Link URLs and all upstream hyperlinks. See
-`docs/offline-audit.md` in the parent workspace for the audit.
+Updater, online file checks, whois/ping/traceroute tools, GeoIP download,
+"search online", reverse-DNS of connections, certificate revocation lookups
+and the default symbol server were removed. Symbols resolve from local paths
+only (default `C:\Symbols`). `tools\check-offline.ps1` scans the tracked
+source for network APIs and remote hosts, and with `-Binaries` it checks the
+built exe and DLLs for network imports and remote strings; run it before any
+release:
 
-Symbols resolve from local paths only (default `C:\Symbols`). A symbol server
-can still be added by hand in the DbgHelp search path option, but
-nothing is configured by default.
+```
+powershell -File tools\check-offline.ps1
+powershell -File tools\check-offline.ps1 -Binaries
+```
 
-## Building the project
+## Data and settings
 
-Requires Visual Studio (2022 or later). Run `build\build_init.cmd` once, then
-build `SystemInformer.sln` followed by `plugins\Plugins.sln` (x64, Release) with
-MSBuild or Visual Studio. See `build/README.md` for more information.
+Settings and plugin data live in `%APPDATA%\TaskManagerPlus\`. On first start,
+if that folder does not exist but `%APPDATA%\SystemInformer\settings.json`
+does, settings, plugin data (`tmp-*.json`, `tmp-*.bin`) and user notes are
+copied over once; the old folder is never changed. The program uses its own
+single-instance and object names, so it can run beside a stock System
+Informer. To keep everything next to the executable (portable mode), create
+`settings.json` beside `SystemInformer.exe`.
 
-## Settings
+## Building
 
-To keep settings next to the executable (for example on a USB drive), create a
-blank file named `SystemInformer.exe.settings.xml` in the same directory as
-`SystemInformer.exe`.
+Requires Visual Studio 2026 (Desktop development with C++, plus the MSVC
+x64/x86 Spectre-mitigated libraries), the .NET 10 SDK and Git. From a
+PowerShell prompt in the repository root:
+
+```
+cmd /c build\build_init.cmd INIT
+$msb = "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\amd64\MSBuild.exe"
+& $msb SystemInformer.sln -p:Configuration=Release -p:Platform=x64 -m -t:Build -nologo -v:m
+& $msb plugins\Plugins.sln -p:Configuration=Release -p:Platform=x64 -m -nologo -v:m
+```
+
+Do not use `build\build_release.cmd`: its `/graph` build crashes MSBuild on
+current Visual Studio. Output is `bin\Release64\SystemInformer.exe` and
+`bin\Release64\plugins\*.dll`. If `build_init` fails with "PrivateSdkAssemblies
+ItemGroup is required", run
+`dotnet restore tools\CustomBuildTool\CustomBuildTool.csproj -r win-x64 -p:Platform=x64 -p:PublishAot=true`
+first.
+
+## Distribution
+
+Releases are a portable zip: `SystemInformer.exe`, the `plugins` folder and
+`Resources`. Extract anywhere and run; there is no installer. Binaries are
+self-signed, so Windows SmartScreen may warn on first run.
+
+## License
+
+MIT. TaskManagerPlus is based on System Informer, copyright Winsider Seminars
+& Solutions, Inc., and modified. The original notices are in `LICENSE.txt`
+and `COPYRIGHT.txt`; credits are in `NOTICE.txt`.
