@@ -163,9 +163,5 @@ build-*/
 cmake-build-*/
 **/node_modules/
 
-!KSystemInformer/bin-signed/*/ksi.dll
-!KSystemInformer/bin-signed/*/ksi.pdb
-!KSystemInformer/bin-signed/*/systeminformer.sys
-!KSystemInformer/bin-signed/*/systeminformer.pdb
 !tools/CustomSignTool/bin/Release*/CustomSignTool.exe
 !tools/fixlib/bin/Release/fixlib.exe
