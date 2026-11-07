@@ -11,8 +11,7 @@
 
     Provenance in code comments is ignored for the URL rule (lines whose first
     non-blank characters are //, /*, * or #). Vendored code (packages, phnt,
-    tools/thirdparty) and the release-publishing tool (tools/CustomBuildTool) are
-    not scanned. Intentional exceptions live in $Allow below, each with a reason.
+    tools/thirdparty) is not scanned. Intentional exceptions live in $Allow below, each with a reason.
 #>
 param([switch]$Binaries)
 
@@ -21,7 +20,7 @@ $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
 $exclude = @(':(exclude)packages', ':(exclude)phnt', ':(exclude)tools/thirdparty',
-             ':(exclude)tools/CustomBuildTool', ':(exclude)tools/check-offline.ps1',
+             ':(exclude)tools/check-offline.ps1',
              ':(exclude)*.mmdb', ':(exclude)*.png', ':(exclude)*.ico',
              ':(exclude)*.bin', ':(exclude)*.zip', ':(exclude)*.lib', ':(exclude)*.dll')
 
@@ -50,6 +49,7 @@ $Allow = @(
     @{ Path = '^tools/peview/hashprp\.c$'; Line = 'ws2_32\.dll'; Why = 'file name of a system DLL parsed for export ordinals, not loaded' },
     @{ Path = '^tools/tests/phlib-test/t_util\.c$'; Line = 'python\.org'; Why = 'namespace string hashed into a test GUID, not contacted' },
     @{ Path = '\.manifest$|\.rc$|\.natvis$|\.vcxproj|\.props$|\.targets$|\.sln|\.xml$|\.csproj$'; Line = 'schemas\.microsoft\.com|schemas\.openxmlformats|www\.w3\.org|msbuild/2003|aka\.ms/'; Why = 'XML namespaces / schema identifiers, never fetched' },
+    @{ Path = '^tools/CustomBuildTool/NativeMethods\.json$'; Line = 'aka\.ms/'; Why = 'CsWin32 schema identifier, never fetched' },
     @{ Path = '^SystemInformer/resources/settings\.schema\.json$'; Line = 'json-schema\.org'; Why = 'JSON Schema meta-schema identifier, never fetched' },
     @{ Path = '^plugins/ExtendedTools/Efi/'; Line = 'opensource\.org'; Why = 'licence header text' },
     @{ Path = '^(LICENSE|COPYRIGHT)\.txt$'; Line = '.'; Why = 'licence text' },

@@ -102,27 +102,6 @@ namespace CustomBuildTool
                 }
             }
 
-            if (Win32.HasEnvironmentVariable("TF_BUILD")) // Console.IsOutputRedirected
-            {
-                var buildResult = await BuildDevOps.BuildQueryQueueTime();
-
-                if (!buildResult.Success)
-                    return false;
-
-                Build.TimeStart = buildResult.QueueTime;
-                Build.BuildIntegration = true;
-            }
-            else if (Win32.HasEnvironmentVariable("GITHUB_ACTIONS")) // Console.IsOutputRedirected
-            {
-                var buildResult = await BuildGithub.BuildQueryQueueTime();
-
-                if (!buildResult.Success)
-                    return false;
-
-                Build.TimeStart = buildResult.QueueTime;
-                Build.BuildIntegration = true;
-            }
-            else
             {
                 Build.TimeStart = DateTime.UtcNow;
             }
@@ -248,16 +227,7 @@ namespace CustomBuildTool
                 {
                     Program.PrintColorMessage(" (", ConsoleColor.DarkGray, false);
 
-                    if (Build.BuildIntegration)
-                    {
-                        Program.PrintColorMessage(Build.BuildCommitHash[..8], ConsoleColor.Blue, false);
-                    }
-                    else
-                    {
-                        Program.PrintColorMessage(Program.CreateConsoleHyperlink(
-                            $"https://github.com/winsiderss/systeminformer/commit/{Build.BuildCommitHash}",
-                            Build.BuildCommitHash[..8]), ConsoleColor.Blue, false);
-                    }
+                    Program.PrintColorMessage(Build.BuildCommitHash[..8], ConsoleColor.Blue, false);
 
                     Program.PrintColorMessage(")", ConsoleColor.DarkGray, false);
                 }
@@ -1321,37 +1291,6 @@ namespace CustomBuildTool
                     Program.PrintColorMessage("...", ConsoleColor.Gray, false);
                     Program.PrintColorMessage($" {Win32.GetFileSize(sevenZipFilePath).ToPrettySize()}", ConsoleColor.Yellow);
                 }
-            }
-            catch (Exception exception)
-            {
-                Program.PrintErrorMessage(exception);
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Builds the security catalog file for the build directory.
-        /// </summary>
-        /// <param name="Flags">Build flags indicating which configurations to process.</param>
-        /// <returns>True if the catalog file is built successfully; otherwise, false.</returns>
-        public static bool BuildCatalogFile(BuildFlags Flags)
-        {
-            string buildDirectory = GetBuildBaseDirectory(Flags);
-
-            Program.PrintColorMessage(BuildTimeSpan(), ConsoleColor.DarkGray, false);
-            Program.PrintColorMessage("Building build.cat...", ConsoleColor.Cyan);
-
-            try
-            {
-                Utils.CreateOutputDirectory();
-
-                string buildCatalogPath = Path.Join([BuildOutputFolder, "build.cat"]);
-
-                Win32.DeleteFile(buildCatalogPath, Flags);
-
-                Zip.CreateBuildCatalog(buildDirectory, buildCatalogPath);
             }
             catch (Exception exception)
             {
@@ -2627,39 +2566,6 @@ namespace CustomBuildTool
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// Copies or deletes the source link file for the build, depending on the parameter.
-        /// </summary>
-        /// <param name="CreateSourceLink">If true, creates the source link file; if false, deletes it.</param>
-        public static void CopySourceLink(bool CreateSourceLink)
-        {
-            if (CreateSourceLink)
-            {
-                if (!string.IsNullOrWhiteSpace(Build.BuildCommitHash))
-                {
-                    Build.BuildSourceLink = $"{Build.BuildWorkingFolder}\\sourcelink.json";
-
-                    SourceLink sourceLink = new SourceLink
-                    {
-                        Documents = new Dictionary<string, string>
-                        {
-                            ["*"] = $"https://raw.githubusercontent.com/winsiderss/systeminformer/{Build.BuildCommitHash}/*",
-                            [$"{Path.Join([Build.BuildWorkingFolder, "\\"])}*"] = $"https://raw.githubusercontent.com/winsiderss/systeminformer/{Build.BuildCommitHash}/*"
-                        }
-                    };
-
-                    using (var stream = File.Create(Build.BuildSourceLink))
-                    {
-                        JsonSerializer.Serialize(stream, sourceLink, GithubResponseContext.Default.SourceLink);
-                    }
-                }
-            }
-            else
-            {
-                Win32.DeleteFile(Build.BuildSourceLink);
-            }
         }
 
         /// <summary>

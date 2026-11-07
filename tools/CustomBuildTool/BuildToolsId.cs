@@ -89,7 +89,6 @@ namespace CustomBuildTool
             string[] directories =
             [
                 "tools\\CustomBuildTool",
-                "tools\\CustomBuildTool\\AzureSignTool",
             ];
 
             return GetToolsId(directories);
