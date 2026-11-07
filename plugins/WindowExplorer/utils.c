@@ -15,7 +15,7 @@
 #include <propsys.h>
 #include <shellapi.h>
 
-#define WE_HIGHLIGHT_OVERLAY_CLASS L"SystemInformerWindowExplorerHighlightOverlay"
+#define WE_HIGHLIGHT_OVERLAY_CLASS L"TaskManagerPlusWindowExplorerHighlightOverlay"
 #define WE_HIGHLIGHT_OVERLAY_COLOR RGB(0xff, 0x00, 0xff)
 
 /**

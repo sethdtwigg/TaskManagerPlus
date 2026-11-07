@@ -84,9 +84,9 @@ PhShowKsiNotConnected(
         TD_INFORMATION_ICON,
         L"Kernel driver not connected",
         L"%s\r\n\r\n"
-        L"System Informer is not connected to the kernel driver or lacks the required state "
+        L"TaskManagerPlus is not connected to the kernel driver or lacks the required state "
         L"necessary for this feature. Make sure that the \"Enable kernel-mode driver\" option is "
-        L"enabled and that System Informer is running with administrator privileges.",
+        L"enabled and that TaskManagerPlus is running with administrator privileges.",
         Message
         );
 }
@@ -102,9 +102,9 @@ PhGetKsiNotConnectedString(
         FALSE,
         L"%s\r\n\r\n%s\r\n\r\n%s",
         L"Kernel driver not connected",
-        L"System Informer is not connected to the kernel driver or lacks the required state "
+        L"TaskManagerPlus is not connected to the kernel driver or lacks the required state "
         L"necessary for this feature. Make sure that the \"Enable kernel-mode driver\" option is "
-        L"enabled and that System Informer is running with administrator privileges.",
+        L"enabled and that TaskManagerPlus is running with administrator privileges.",
         Message
         );
 }

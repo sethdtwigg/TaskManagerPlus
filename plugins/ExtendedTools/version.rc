@@ -67,13 +67,13 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "CompanyName", "Winsider Seminars & Solutions, Inc."
-            VALUE "FileDescription", "System Informer"
+            VALUE "CompanyName", "TaskManagerPlus"
+            VALUE "FileDescription", "Extended Tools"
             VALUE "FileVersion", PHAPP_VERSION_STRING
-            VALUE "InternalName", "System Informer"
-            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc.  All rights reserved."
+            VALUE "InternalName", "ExtendedTools"
+            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc. MIT License. Modified as TaskManagerPlus."
             VALUE "OriginalFilename", "ExtendedTools.dll"
-            VALUE "ProductName", "System Informer"
+            VALUE "ProductName", "TaskManagerPlus"
             VALUE "ProductVersion", PHAPP_VERSION_STRING
             VALUE "Comments", PHAPP_VERSION_COMMIT
         END

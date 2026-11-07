@@ -148,7 +148,7 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CLIPCHILDREN | WS
 CAPTION "Options"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    LTEXT           "Changes to settings will require a restart of System Informer.",IDC_STATIC,7,6,211,8
+    LTEXT           "Changes to settings will require a restart of TaskManagerPlus.",IDC_STATIC,7,6,211,8
     CONTROL         "Enable Disk and Network monitoring",IDC_ENABLEETWMONITOR,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,20,130,10
     CONTROL         "Enable Disk and Network graphs",IDC_ENABLESYSINFOGRAPHS,

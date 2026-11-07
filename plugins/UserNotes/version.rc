@@ -67,11 +67,11 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "CompanyName", "Winsider Seminars & Solutions, Inc."
+            VALUE "CompanyName", "TaskManagerPlus"
             VALUE "FileDescription", "UserNotes"
             VALUE "FileVersion", PHAPP_VERSION_STRING
             VALUE "InternalName", "UserNotes"
-            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc.  All rights reserved."
+            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc. MIT License. Modified as TaskManagerPlus."
             VALUE "OriginalFilename", "UserNotes.dll"
             VALUE "ProductName", "UserNotes"
             VALUE "ProductVersion", PHAPP_VERSION_STRING

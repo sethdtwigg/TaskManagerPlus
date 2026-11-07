@@ -21,7 +21,7 @@ static ULONG DiskTreeNewSortColumn = 0;
 static PH_SORT_ORDER DiskTreeNewSortOrder = NoSortOrder;
 static CONST PH_STRINGREF DiskPageText = PH_STRINGREF_INIT(L"Disk");
 static CONST PH_STRINGREF DiskBannerText = PH_STRINGREF_INIT(L"Search Disk");
-static CONST PH_STRINGREF DiskTreeEmptyText = PH_STRINGREF_INIT(L"Disk monitoring requires System Informer to be restarted with administrative privileges.");
+static CONST PH_STRINGREF DiskTreeEmptyText = PH_STRINGREF_INIT(L"Disk monitoring requires TaskManagerPlus to be restarted with administrative privileges.");
 static PPH_STRING DiskTreeErrorText = NULL;
 
 static PPH_HASHTABLE DiskNodeHashtable = NULL; // hashtable of all nodes
