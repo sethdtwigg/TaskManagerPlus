@@ -5479,7 +5479,7 @@ PPH_STRING PhGetLocalAppDataDirectory(
     PPH_STRING localAppDataFileName = NULL;
     PPH_STRING localAppDataDirectory;
 
-    if (localAppDataDirectory = PhGetKnownLocationZ(PH_FOLDERID_LocalAppData, L"\\SystemInformer\\", NativeFileName))
+    if (localAppDataDirectory = PhGetKnownLocationZ(PH_FOLDERID_LocalAppData, L"\\TaskManagerPlus\\", NativeFileName))
     {
         if (!FileName) return localAppDataDirectory;
         localAppDataFileName = PhConcatStringRef2(&localAppDataDirectory->sr, FileName);
@@ -5637,7 +5637,7 @@ PPH_STRING PhGetRoamingAppDataDirectory(
 
     if (shadowAdminAppDataDirectory = PhpGetShadowAdminRoamingAppDataDirectory())
     {
-        static CONST PH_STRINGREF directoryName = PH_STRINGREF_INIT(L"\\SystemInformer\\");
+        static CONST PH_STRINGREF directoryName = PH_STRINGREF_INIT(L"\\TaskManagerPlus\\");
 
         roamingAppDataDirectory = PhConcatStringRef2(&shadowAdminAppDataDirectory->sr, &directoryName);
 
@@ -5649,7 +5649,7 @@ PPH_STRING PhGetRoamingAppDataDirectory(
     else
 #endif
     {
-        roamingAppDataDirectory = PhGetKnownLocationZ(PH_FOLDERID_RoamingAppData, L"\\SystemInformer\\", NativeFileName);
+        roamingAppDataDirectory = PhGetKnownLocationZ(PH_FOLDERID_RoamingAppData, L"\\TaskManagerPlus\\", NativeFileName);
     }
 
     if (roamingAppDataDirectory)
@@ -10817,7 +10817,7 @@ HANDLE PhGetNamespaceHandle(
         if (!NT_SUCCESS(status = PhSetDaclSecurityDescriptor(securityDescriptor, TRUE, dacl, FALSE)))
             goto CleanupExit;
 
-        RtlInitUnicodeString(&objectName, L"\\BaseNamedObjects\\SystemInformer");
+        RtlInitUnicodeString(&objectName, L"\\BaseNamedObjects\\TaskManagerPlus");
         InitializeObjectAttributes(
             &objectAttributes,
             &objectName,
@@ -10852,7 +10852,7 @@ HANDLE PhGetNamespaceHandle2(
 
     if (PhBeginInitOnce(&initOnce))
     {
-        CONST PH_STRINGREF namespaceName = PH_STRINGREF_INIT(L"\\SystemInformer");
+        CONST PH_STRINGREF namespaceName = PH_STRINGREF_INIT(L"\\TaskManagerPlus");
         POBJECT_BOUNDARY_DESCRIPTOR boundaryDescriptor;
         NTSTATUS status;
 

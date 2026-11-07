@@ -620,7 +620,7 @@ NTSTATUS NTAPI PhpPreviousInstancesCallback(
     MUTANT_OWNER_INFORMATION objectInfo;
     HANDLE objectHandle;
 
-    if (!PhStartsWithStringRef2(Name, L"SiMutant_", FALSE))
+    if (!PhStartsWithStringRef2(Name, L"TmpMutant_", FALSE))
         return STATUS_SUCCESS;
 
     if (NT_SUCCESS(PhOpenMutant(
@@ -821,8 +821,8 @@ VOID PhpCreateUnhandledExceptionCrashDump(
     WCHAR alphastring[16] = L"";
 
     PhGenerateRandomAlphaString(alphastring, RTL_NUMBER_OF(alphastring));
-    directory = PhExpandEnvironmentStringsZ(L"\\??\\%PROGRAMDATA%\\SystemInformer\\CrashDumps\\");
-    fileName = PhConcatStrings(5, PhGetString(directory), L"SystemInformer", L"_DumpFile_", alphastring, L".dmp");
+    directory = PhExpandEnvironmentStringsZ(L"\\??\\%PROGRAMDATA%\\TaskManagerPlus\\CrashDumps\\");
+    fileName = PhConcatStrings(5, PhGetString(directory), L"TaskManagerPlus", L"_DumpFile_", alphastring, L".dmp");
     PhCreateDirectoryFullPath(&fileName->sr);
 
     if (NT_SUCCESS(PhCreateFile(
@@ -999,7 +999,7 @@ LONG CALLBACK PhpUnhandledExceptionCallback(
                 NULL,
                 MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2,
                 L"TaskManagerPlus has crashed :(\r\n\r\n%s",
-                L"Do you want to create a minidump in ProgramData\\SystemInformer\\CrashDumps?"
+                L"Do you want to create a minidump in ProgramData\\TaskManagerPlus\\CrashDumps?"
                 ) == IDYES)
             {
                 PhpCreateUnhandledExceptionCrashDump(ExceptionInfo, PhTriageDumpTypeMinimal);
@@ -1105,7 +1105,7 @@ NTSTATUS PhInitializeNamespacePolicy(
     PH_STRINGREF objectName;
     PH_FORMAT format[2];
 
-    PhInitFormatS(&format[0], L"SiMutant_");
+    PhInitFormatS(&format[0], L"TmpMutant_");
     PhInitFormatU(&format[1], HandleToUlong(NtCurrentProcessId()));
 
     if (!PhFormatToBuffer(
@@ -1472,6 +1472,105 @@ NTSTATUS PhInitializeAppSystem(
     return STATUS_SUCCESS;
 }
 
+// TaskManagerPlus: one-time migration of per-user data from a stock System Informer install.
+// The old folder is only ever read; nothing in it is modified or deleted.
+static VOID PhpMigrateLegacyAppData(
+    VOID
+    )
+{
+    static CONST PH_STRINGREF newName = PH_STRINGREF_INIT(L"TaskManagerPlus\\");
+    static CONST PH_STRINGREF oldName = PH_STRINGREF_INIT(L"SystemInformer\\");
+    static CONST PWSTR knownFiles[] = { L"settings.json", L"usernotesdb.xml" };
+    static CONST PWSTR patterns[] = { L"tmp-*.json", L"tmp-*.bin" };
+    PPH_STRING newDirectory;
+    PPH_STRING oldDirectory;
+    PPH_STRING portableFile;
+    ULONG i;
+
+    // Portable mode (settings next to the exe) never touches AppData.
+    if (portableFile = PhGetApplicationDirectoryFileNameZ(L"settings.json", FALSE))
+    {
+        BOOLEAN portable = PhDoesFileExistWin32(PhGetString(portableFile));
+        PhDereferenceObject(portableFile);
+        if (portable)
+            return;
+    }
+
+    if (!(newDirectory = PhGetRoamingAppDataDirectoryZ(L"", FALSE)))
+        return;
+
+    if (PhDoesDirectoryExistWin32(PhGetString(newDirectory)))
+    {
+        PhDereferenceObject(newDirectory);
+        return;
+    }
+
+    if (newDirectory->Length <= newName.Length ||
+        !PhEndsWithStringRef(&newDirectory->sr, &newName, TRUE))
+    {
+        PhDereferenceObject(newDirectory);
+        return;
+    }
+
+    {
+        PH_STRINGREF parent;
+
+        parent.Buffer = newDirectory->Buffer;
+        parent.Length = newDirectory->Length - newName.Length;
+        oldDirectory = PhConcatStringRef2(&parent, &oldName);
+    }
+
+    if (!PhDoesFileExistWin32(PhaConcatStrings2(oldDirectory->Buffer, L"settings.json")->Buffer))
+    {
+        PhDereferenceObject(oldDirectory);
+        PhDereferenceObject(newDirectory);
+        return;
+    }
+
+    if (CreateDirectoryW(newDirectory->Buffer, NULL))
+    {
+        for (i = 0; i < RTL_NUMBER_OF(knownFiles); i++)
+        {
+            PPH_STRING from = PhConcatStrings2(oldDirectory->Buffer, knownFiles[i]);
+            PPH_STRING to = PhConcatStrings2(newDirectory->Buffer, knownFiles[i]);
+
+            CopyFileW(from->Buffer, to->Buffer, TRUE);
+            PhDereferenceObject(from);
+            PhDereferenceObject(to);
+        }
+
+        for (i = 0; i < RTL_NUMBER_OF(patterns); i++)
+        {
+            WIN32_FIND_DATAW findData;
+            PPH_STRING search = PhConcatStrings2(oldDirectory->Buffer, patterns[i]);
+            HANDLE findHandle = FindFirstFileW(search->Buffer, &findData);
+
+            PhDereferenceObject(search);
+
+            if (findHandle == INVALID_HANDLE_VALUE)
+                continue;
+
+            do
+            {
+                if (!(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+                {
+                    PPH_STRING from = PhConcatStrings2(oldDirectory->Buffer, findData.cFileName);
+                    PPH_STRING to = PhConcatStrings2(newDirectory->Buffer, findData.cFileName);
+
+                    CopyFileW(from->Buffer, to->Buffer, TRUE);
+                    PhDereferenceObject(from);
+                    PhDereferenceObject(to);
+                }
+            } while (FindNextFileW(findHandle, &findData));
+
+            FindClose(findHandle);
+        }
+    }
+
+    PhDereferenceObject(oldDirectory);
+    PhDereferenceObject(newDirectory);
+}
+
 /**
  * Initializes the application settings.
  *
@@ -1488,6 +1587,9 @@ VOID PhInitializeAppSettings(
 
     if (!PhStartupParameters.NoSettings)
     {
+        if (!PhStartupParameters.SettingsFileName)
+            PhpMigrateLegacyAppData(); // TaskManagerPlus
+
         // There are three possible locations for the settings file:
         // 1. The file name given in the command line.
         // 2. A file named SystemInformer.exe.settings.json in the program directory. (This changes

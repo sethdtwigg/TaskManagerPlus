@@ -1312,7 +1312,7 @@ NTSTATUS PhLoadSettingsKey(
     VOID
     )
 {
-    static CONST PH_STRINGREF keyName = PH_STRINGREF_INIT(L"Software\\SystemInformer");
+    static CONST PH_STRINGREF keyName = PH_STRINGREF_INIT(L"Software\\TaskManagerPlus");
     NTSTATUS status;
     HANDLE keyHandle;
 
@@ -1347,7 +1347,7 @@ NTSTATUS PhSaveSettingsKey(
     VOID
     )
 {
-    static CONST PH_STRINGREF keyName = PH_STRINGREF_INIT(L"Software\\SystemInformer");
+    static CONST PH_STRINGREF keyName = PH_STRINGREF_INIT(L"Software\\TaskManagerPlus");
     NTSTATUS status;
     HANDLE keyHandle;
 
@@ -2221,7 +2221,7 @@ static ULONG PhpDiscoverSettingsStores(
             if (BasePath)
                 continue;
 
-            static CONST PH_STRINGREF keyName = PH_STRINGREF_INIT(L"Software\\SystemInformer");
+            static CONST PH_STRINGREF keyName = PH_STRINGREF_INIT(L"Software\\TaskManagerPlus");
             HANDLE keyHandle;
 
             if (NT_SUCCESS(PhOpenKey(

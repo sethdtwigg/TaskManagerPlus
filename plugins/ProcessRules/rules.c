@@ -17,7 +17,7 @@ static KAFFINITY TmpECoreMask = 0;
 static KAFFINITY TmpAllCoreMask = 0;
 
 static CONST PH_STRINGREF TmpRulesFileNameSr = PH_STRINGREF_INIT(TMP_RULES_FILE_NAME);
-static CONST PH_STRINGREF TmpRulesRoamingPathSr = PH_STRINGREF_INIT(L"\\SystemInformer\\" TMP_RULES_FILE_NAME);
+static CONST PH_STRINGREF TmpRulesRoamingPathSr = PH_STRINGREF_INIT(TMP_RULES_FILE_NAME);
 
 PTMP_RULE TmpCreateRule(
     VOID
@@ -204,7 +204,7 @@ VOID TmpRulesChanged(
 
 /**
  * Returns the rules file path: a tmp-rules.json beside the executable wins
- * (portable mode), otherwise %APPDATA%\SystemInformer\tmp-rules.json.
+ * (portable mode), otherwise %APPDATA%\TaskManagerPlus\tmp-rules.json.
  */
 PPH_STRING TmpGetRulesFileName(
     VOID

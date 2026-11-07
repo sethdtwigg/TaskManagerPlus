@@ -2732,8 +2732,8 @@ BOOLEAN PhShellOpenKey2(
     if (!NT_SUCCESS(PhRegeditOpenUserFavoritesKey(regeditWindow, &favoritesKeyHandle)))
         goto CleanupExit;
 
-    memcpy(favoriteName, L"A_SystemInformer", 16 * sizeof(WCHAR));
-    PhGenerateRandomAlphaString(&favoriteName[16], ARRAYSIZE(favoriteName) - 16);
+    memcpy(favoriteName, L"A_TaskManagerPlus", 17 * sizeof(WCHAR));
+    PhGenerateRandomAlphaString(&favoriteName[17], ARRAYSIZE(favoriteName) - 17);
     valueName.Buffer = favoriteName;
     valueName.Length = sizeof(favoriteName) - sizeof(UNICODE_NULL);
 

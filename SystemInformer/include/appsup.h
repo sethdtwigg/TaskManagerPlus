@@ -590,7 +590,7 @@ PhDeleteStaticWindowIcon(
     );
 // end_phapppub
 
-#define SI_RUNAS_ADMIN_TASK_NAME ((PH_STRINGREF)PH_STRINGREF_INIT(L"SystemInformerTaskAdmin"))
+#define SI_RUNAS_ADMIN_TASK_NAME ((PH_STRINGREF)PH_STRINGREF_INIT(L"TaskManagerPlusTaskAdmin"))
 
 HRESULT PhRunAsAdminTask(
     _In_ PPH_STRINGREF TaskName

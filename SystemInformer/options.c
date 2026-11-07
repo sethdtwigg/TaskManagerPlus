@@ -1577,7 +1577,7 @@ static VOID WriteCurrentUserRun(
         0
         )))
     {
-        static CONST PH_STRINGREF valueName = PH_STRINGREF_INIT(L"System Informer");
+        static CONST PH_STRINGREF valueName = PH_STRINGREF_INIT(L"TaskManagerPlus");
         static CONST PH_STRINGREF separator = PH_STRINGREF_INIT(L"\"");
 
         if (Present)

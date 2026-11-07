@@ -13,8 +13,8 @@
 #ifndef PH_PHSVCAPI_H
 #define PH_PHSVCAPI_H
 
-#define PHSVC_PORT_NAME (L"\\BaseNamedObjects\\SiSvcApiPort")
-#define PHSVC_WOW64_PORT_NAME (L"\\BaseNamedObjects\\SiSvcWow64ApiPort")
+#define PHSVC_PORT_NAME (L"\\BaseNamedObjects\\TmpSvcApiPort")
+#define PHSVC_WOW64_PORT_NAME (L"\\BaseNamedObjects\\TmpSvcWow64ApiPort")
 
 typedef enum _PHSVC_API_NUMBER
 {
