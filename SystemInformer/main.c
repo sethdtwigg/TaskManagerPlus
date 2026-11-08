@@ -1520,13 +1520,24 @@ static VOID PhpMigrateLegacyAppData(
         oldDirectory = PhConcatStringRef2(&parent, &oldName);
     }
 
-    if (!PhDoesFileExistWin32(PhaConcatStrings2(oldDirectory->Buffer, L"settings.json")->Buffer))
+    // No auto-dereference pool exists this early in startup, so do not use the Pha* helpers here.
+    {
+        PPH_STRING oldSettings = PhConcatStrings2(oldDirectory->Buffer, L"settings.json");
+        BOOLEAN oldExists = PhDoesFileExistWin32(PhGetString(oldSettings));
+
+        PhDereferenceObject(oldSettings);
+
+        if (oldExists)
+            goto CopyFiles;
+    }
+
     {
         PhDereferenceObject(oldDirectory);
         PhDereferenceObject(newDirectory);
         return;
     }
 
+CopyFiles:
     if (CreateDirectoryW(newDirectory->Buffer, NULL))
     {
         for (i = 0; i < RTL_NUMBER_OF(knownFiles); i++)
