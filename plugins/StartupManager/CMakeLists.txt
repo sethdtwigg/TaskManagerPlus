@@ -5,6 +5,7 @@
 set(HEADERS
     "resource.h"
     "startupmanager.h"
+    "bootparse.h"
 )
 source_group("Header Files" FILES ${HEADERS})
 
@@ -18,6 +19,8 @@ set(SOURCES
     "main.c"
     "startupenum.c"
     "startuptab.c"
+    "boot.c"
+    "bootparse.c"
 )
 source_group("Source Files" FILES ${SOURCES})
 
@@ -31,5 +34,6 @@ si_add_plugin(StartupManager ${ALL_FILES})
 
 target_link_libraries(StartupManager PRIVATE
     user32
+    wevtapi
     oleaut32
 )

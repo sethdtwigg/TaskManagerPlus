@@ -11,13 +11,40 @@ static PH_CALLBACK_REGISTRATION PluginLoadCallbackRegistration;
 static PH_CALLBACK_REGISTRATION PluginUnloadCallbackRegistration;
 static PH_CALLBACK_REGISTRATION MainWindowShowingCallbackRegistration;
 
+// TaskManagerPlus: test seam. The registered message posts to the main window: wParam 1 = select the Startup tab,
+// 2 = open the Boot timing window, 3 = re-read the boot log.
+static PPH_MESSAGE_LOOP_FILTER_ENTRY SmFilterEntry = NULL;
+static UINT SmCommandMessage = 0;
+
+_Function_class_(PH_MESSAGE_LOOP_FILTER)
+static BOOLEAN NTAPI SmMessageLoopFilter(
+    _In_ PMSG Message,
+    _In_ PVOID Context
+    )
+{
+    if (SmCommandMessage && Message->message == SmCommandMessage)
+    {
+        if (Message->wParam == 1)
+            SmSelectTab();
+        else if (Message->wParam == 2)
+            SmShowBootTiming(SystemInformer_GetWindowHandle());
+        else if (Message->wParam == 3)
+            SmBootRefresh(TRUE);
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 _Function_class_(PH_CALLBACK_FUNCTION)
 static VOID NTAPI LoadCallback(
     _In_opt_ PVOID Parameter,
     _In_opt_ PVOID Context
     )
 {
-    NOTHING;
+    SmCommandMessage = RegisterWindowMessage(SM_COMMAND_MESSAGE_NAME);
+    SmFilterEntry = PhRegisterMessageLoopFilter(SmMessageLoopFilter, NULL);
 }
 
 _Function_class_(PH_CALLBACK_FUNCTION)
@@ -26,7 +53,13 @@ static VOID NTAPI UnloadCallback(
     _In_opt_ PVOID Context
     )
 {
-    NOTHING;
+    if (SmFilterEntry)
+    {
+        PhUnregisterMessageLoopFilter(SmFilterEntry);
+        SmFilterEntry = NULL;
+    }
+
+    SmBootShutdown(); // TaskManagerPlus
 }
 
 _Function_class_(PH_CALLBACK_FUNCTION)
@@ -64,6 +97,7 @@ static PPH_LIST NTAPI SmIntfEnumerate(
         entry->CanToggle = item->CanToggle;
         entry->Source = item->Source;
         entry->Impact = SmGetImpactString(item->Impact)->Buffer;
+        entry->BootDelayMs = item->BootDelayMs;
         PhSetReference(&entry->ObjectPath, item->ObjectPath);
         PhSetReference(&entry->ApprovedValueName, item->ApprovedValueName);
         PhAddItemList(entries, entry);
@@ -159,6 +193,7 @@ LOGICAL DllMain(
         {
             { StringSettingType, SETTING_NAME_TREE_LIST_COLUMNS, L"" },
             { IntegerPairSettingType, SETTING_NAME_TREE_LIST_SORT, L"0,1" },
+            { StringSettingType, SETTING_NAME_BOOT_SAMPLE_FILE, L"" },
         };
 
         PluginInstance = PhRegisterPlugin(PLUGIN_NAME, Instance, &info);

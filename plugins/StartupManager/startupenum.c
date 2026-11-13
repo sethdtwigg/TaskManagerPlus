@@ -154,6 +154,8 @@ VOID SmFreeStartupItem(
     PhClearReference(&Item->Publisher);
     PhClearReference(&Item->ObjectPath);
     PhClearReference(&Item->ApprovedValueName);
+    PhClearReference(&Item->ImpactText);
+    PhClearReference(&Item->BootDelayText);
     PhFree(Item);
 }
 
@@ -1198,6 +1200,8 @@ VOID SmEnumerateStartupItems(
     _Inout_ PPH_LIST List
     )
 {
+    SmBootRefresh(FALSE); // TaskManagerPlus: boot timing data (cached for a minute)
+
     for (ULONG i = 0; i < RTL_NUMBER_OF(SmRegistrySources); i++)
     {
         SmEnumerateRegistrySource(List, &SmRegistrySources[i]);
@@ -1214,6 +1218,7 @@ VOID SmEnumerateStartupItems(
         PSM_STARTUP_ITEM item = List->Items[i];
 
         item->Index = i;
+        SmBootApplyToItem(item); // TaskManagerPlus: measured delay and impact where the log has data
     }
 }
 

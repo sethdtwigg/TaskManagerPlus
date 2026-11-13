@@ -33,7 +33,7 @@ foreach ($name in $suites.Keys) {
     $exe = Join-Path $out "$name.exe"
     $obj = Join-Path $out "obj-$name"
     New-Item -ItemType Directory -Force -Path $obj | Out-Null
-    $cmd = "`"$($vcvars.FullName)`" >nul && cl /nologo /W4 /WX /std:c11 /utf-8 /Fe$exe /Fo$obj\ $src && $exe"
+    $cmd = "`"$($vcvars.FullName)`" >nul && cl /nologo /W4 /WX /std:c11 /utf-8 /D_CRT_SECURE_NO_WARNINGS /Fe$exe /Fo$obj\ $src && $exe"
     cmd /c $cmd
     if ($LASTEXITCODE -ne 0) { "$name FAILED"; $failed++ }
 }

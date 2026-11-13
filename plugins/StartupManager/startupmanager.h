@@ -15,10 +15,13 @@
 #include "resource.h"
 #include <toolstatusintf.h>
 #include <startupmanagerintf.h>
+#include "bootparse.h"
 
 #define PLUGIN_NAME L"TaskManagerPlus.StartupManager"
 #define SETTING_NAME_TREE_LIST_COLUMNS (PLUGIN_NAME L".TreeListColumns")
 #define SETTING_NAME_TREE_LIST_SORT (PLUGIN_NAME L".TreeListSort")
+#define SM_COMMAND_MESSAGE_NAME L"TaskManagerPlus.StartupManager.Command" // registered window message used by tests
+#define SETTING_NAME_BOOT_SAMPLE_FILE (PLUGIN_NAME L".BootSampleFile") // TaskManagerPlus: tests read sample events from this file instead of the event log
 
 extern PPH_PLUGIN PluginInstance;
 
@@ -52,6 +55,7 @@ typedef enum _SM_COLUMN
     SM_COLUMN_COMMAND,
     SM_COLUMN_LOCATION,
     SM_COLUMN_IMPACT,
+    SM_COLUMN_BOOT_DELAY, // measured start-up time from the Diagnostics-Performance log
     SM_COLUMN_MAXIMUM
 } SM_COLUMN;
 
@@ -68,6 +72,11 @@ typedef struct _SM_STARTUP_ITEM
     BOOLEAN RunOnce;
     SM_IMPACT Impact;
     ULONG64 FileSize;
+    BOOLEAN ImpactMeasured; // Impact comes from the boot log, not from the file size
+    ULONG BootDelayMs;
+    ULONG BootDegradationMs;
+    PPH_STRING ImpactText; // "High (measured)" when measured, else NULL
+    PPH_STRING BootDelayText; // "2.3 s" or NULL
 
     PPH_STRING Name; // registry value name, shortcut base name or task name
     PPH_STRING Command; // full command line or resolved target with arguments
@@ -113,9 +122,39 @@ PCPH_STRINGREF SmGetImpactString(
     _In_ SM_IMPACT Impact
     );
 
+// boot.c (boot timing from the Diagnostics-Performance event log)
+
+VOID SmBootRefresh(
+    _In_ BOOLEAN Force
+    );
+
+VOID SmBootApplyToItem(
+    _Inout_ PSM_STARTUP_ITEM Item
+    );
+
+PPH_STRING SmBootFormatSummary(
+    VOID
+    );
+
+PPH_STRING SmBootGetStatusText(
+    VOID
+    );
+
+VOID SmShowBootTiming(
+    _In_ HWND ParentWindowHandle
+    );
+
+VOID SmBootShutdown(
+    VOID
+    );
+
 // startuptab.c
 
 VOID SmInitializeStartupTab(
+    VOID
+    );
+
+VOID SmSelectTab(
     VOID
     );
 

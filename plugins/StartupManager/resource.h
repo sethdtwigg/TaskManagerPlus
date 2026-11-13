@@ -2,6 +2,9 @@
 // Microsoft Visual C++ generated include file.
 // Used by StartupManager.rc
 
+#define IDD_BOOT_TIMING                 101
+#define IDC_BOOT_TEXT                   1001
+
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED

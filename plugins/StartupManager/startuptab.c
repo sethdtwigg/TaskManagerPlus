@@ -18,6 +18,7 @@ typedef enum _SM_COMMAND_ID
     SM_COMMAND_ID_COPY,
     SM_COMMAND_ID_REFRESH,
     SM_COMMAND_ID_OPEN_SETTINGS, // TaskManagerPlus
+    SM_COMMAND_ID_BOOT_TIMING, // TaskManagerPlus
 } SM_COMMAND_ID;
 
 static CONST PH_STRINGREF SmTabPageName = PH_STRINGREF_INIT(L"Startup");
@@ -301,7 +302,15 @@ END_SORT_FUNCTION
 
 BEGIN_SORT_FUNCTION(Impact)
 {
-    sortResult = uint64cmp(node1->FileSize, node2->FileSize);
+    sortResult = intcmp(node1->Impact, node2->Impact); // TaskManagerPlus: measured ratings sort with the estimated ones
+    if (sortResult == 0)
+        sortResult = uint64cmp(node1->FileSize, node2->FileSize);
+}
+END_SORT_FUNCTION
+
+BEGIN_SORT_FUNCTION(BootDelay)
+{
+    sortResult = uintcmp(node1->BootDelayMs, node2->BootDelayMs);
 }
 END_SORT_FUNCTION
 
@@ -391,6 +400,7 @@ static BOOLEAN NTAPI SmTreeNewCallback(
                     SORT_FUNCTION(Command),
                     SORT_FUNCTION(Location),
                     SORT_FUNCTION(Impact),
+                    SORT_FUNCTION(BootDelay),
                 };
 
                 static_assert(RTL_NUMBER_OF(sortFunctions) == SM_COLUMN_MAXIMUM, "SortFunctions must equal maximum.");
@@ -438,7 +448,10 @@ static BOOLEAN NTAPI SmTreeNewCallback(
                 getCellText->Text = PhGetStringRef(node->Location);
                 break;
             case SM_COLUMN_IMPACT:
-                getCellText->Text = *SmGetImpactString(node->Impact);
+                getCellText->Text = node->ImpactText ? node->ImpactText->sr : *SmGetImpactString(node->Impact);
+                break;
+            case SM_COLUMN_BOOT_DELAY:
+                getCellText->Text = PhGetStringRef(node->BootDelayText);
                 break;
             default:
                 return FALSE;
@@ -588,6 +601,7 @@ static BOOLEAN NTAPI SmTreeNewCallback(
             PhInsertEMenuItem(menu, PhCreateEMenuSeparator(), ULONG_MAX);
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, SM_COMMAND_ID_COPY, L"&Copy\bCtrl+C", NULL, NULL), ULONG_MAX);
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, SM_COMMAND_ID_REFRESH, L"&Refresh\bF5", NULL, NULL), ULONG_MAX);
+            PhInsertEMenuItem(menu, PhCreateEMenuItem(0, SM_COMMAND_ID_BOOT_TIMING, L"&Boot timing...", NULL, NULL), ULONG_MAX); // TaskManagerPlus
             // TaskManagerPlus: Store app startup tasks are changed in Windows Settings (a local ms-settings shell URI, not a web link).
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, SM_COMMAND_ID_OPEN_SETTINGS, L"Open Startup &apps settings", NULL, NULL), ULONG_MAX);
             PhInsertCopyCellEMenuItem(menu, SM_COMMAND_ID_COPY, WindowHandle, contextMenuEvent->Column);
@@ -826,6 +840,9 @@ static VOID SmHandleCommand(
     case SM_COMMAND_ID_REFRESH:
         SmRefreshStartupList();
         break;
+    case SM_COMMAND_ID_BOOT_TIMING: // TaskManagerPlus: boot breakdown from the Diagnostics-Performance log
+        SmShowBootTiming(TreeWindowHandle);
+        break;
     case SM_COMMAND_ID_OPEN_SETTINGS: // TaskManagerPlus: opens Settings > Apps > Startup (local shell protocol, no network)
         PhShellExecute(TreeWindowHandle, L"ms-settings:startupapps", NULL);
         break;
@@ -859,7 +876,8 @@ static VOID SmInitializeTreeList(
     PhAddTreeNewColumn(TreeNewHandle, SM_COLUMN_PUBLISHER, TRUE, L"Publisher", 140, PH_ALIGN_LEFT, SM_COLUMN_PUBLISHER, 0);
     PhAddTreeNewColumn(TreeNewHandle, SM_COLUMN_COMMAND, TRUE, L"Command", 300, PH_ALIGN_LEFT, SM_COLUMN_COMMAND, DT_PATH_ELLIPSIS);
     PhAddTreeNewColumn(TreeNewHandle, SM_COLUMN_LOCATION, TRUE, L"Location", 240, PH_ALIGN_LEFT, SM_COLUMN_LOCATION, DT_PATH_ELLIPSIS);
-    PhAddTreeNewColumn(TreeNewHandle, SM_COLUMN_IMPACT, TRUE, L"Impact (est.)", 90, PH_ALIGN_LEFT, SM_COLUMN_IMPACT, 0);
+    PhAddTreeNewColumn(TreeNewHandle, SM_COLUMN_IMPACT, TRUE, L"Impact", 110, PH_ALIGN_LEFT, SM_COLUMN_IMPACT, 0);
+    PhAddTreeNewColumn(TreeNewHandle, SM_COLUMN_BOOT_DELAY, TRUE, L"Boot delay", 80, PH_ALIGN_RIGHT, SM_COLUMN_BOOT_DELAY, 0); // TaskManagerPlus
 
     if (PhGetIntegerSetting(L"TreeListCustomRowSize"))
     {
@@ -1004,6 +1022,14 @@ static BOOLEAN NTAPI SmTabPageCallback(
     }
 
     return FALSE;
+}
+
+VOID SmSelectTab(
+    VOID
+    )
+{
+    if (SmAddedTabPage)
+        SystemInformer_SelectTabPage(SmAddedTabPage->Index);
 }
 
 VOID SmInitializeStartupTab(

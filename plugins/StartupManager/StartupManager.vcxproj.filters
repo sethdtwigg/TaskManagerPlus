@@ -9,10 +9,13 @@
     <ClCompile Include="main.c"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="startupenum.c"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="startuptab.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="boot.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="bootparse.c"><Filter>Source Files</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="startupmanager.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="bootparse.h"><Filter>Header Files</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="StartupManager.rc"><Filter>Resource Files</Filter></ResourceCompile>
