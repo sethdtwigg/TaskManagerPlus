@@ -133,11 +133,12 @@ typedef struct _PH_TREENEW_NODE
 #define TN_STYLE_ALWAYS_SHOW_SELECTION 0x200
 #define TN_STYLE_CUSTOM_HEADERDRAW 0x400
 #define TN_STYLE_DRAG_REORDER_ROWS 0x800
+#define TN_STYLE_AIRY_ROWS 0x1000 // TaskManagerPlus: rows of about 28 px (at 100% DPI) and wider cell padding; THIN_ROWS wins
 
 // Flags supported by the explicit runtime setter. Header implementation,
 // reordering, and custom-color changes remain creation-time choices.
 #define TN_STYLE_RUNTIME_MASK (TN_STYLE_ICONS | TN_STYLE_DOUBLE_BUFFERED | \
-    TN_STYLE_ANIMATE_DIVIDER | TN_STYLE_THIN_ROWS | TN_STYLE_ALWAYS_SHOW_SELECTION)
+    TN_STYLE_ANIMATE_DIVIDER | TN_STYLE_THIN_ROWS | TN_STYLE_ALWAYS_SHOW_SELECTION | TN_STYLE_AIRY_ROWS)
 
 // Extended flags
 #define TN_FLAG_ITEM_DRAG_SELECT 0x1

@@ -565,7 +565,8 @@ static HFONT PhpCreateDefaultUiFont(
 {
     HFONT fontHandle;
 
-    if (fontHandle = PhCreateFontHandle(L"Segoe UI Variable Text", 9, FW_NORMAL, DEFAULT_PITCH, WindowDpi))
+    // TaskManagerPlus: 10 pt with the airy look (setting AiryLook), 9 pt otherwise.
+    if (fontHandle = PhCreateFontHandle(L"Segoe UI Variable Text", PhGetIntegerSetting(L"AiryLook") ? 10 : 9, FW_NORMAL, DEFAULT_PITCH, WindowDpi))
     {
         HDC hdc;
         WCHAR faceName[LF_FACESIZE] = L"";

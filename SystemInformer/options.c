@@ -123,6 +123,9 @@ VOID PhResolveLookDefaults(
     if (PhGetIntegerSetting(SETTING_METRIC_UNITS) == 0xff)
         PhSetIntegerSetting(SETTING_METRIC_UNITS, PhSettingsLoadedFromFile ? 0 : 1);
 
+    if (PhGetIntegerSetting(SETTING_AIRY_LOOK) == 0xff)
+        PhSetIntegerSetting(SETTING_AIRY_LOOK, PhSettingsLoadedFromFile ? 0 : 1);
+
     // Fresh installs sort by CPU, busiest first. A saved sort (an existing settings file) is never touched.
     if (!PhSettingsLoadedFromFile)
         PhSetStringSetting(SETTING_PROCESS_TREE_LIST_SORT, L"2,2"); // PHPRTLC_CPU, DescendingSortOrder

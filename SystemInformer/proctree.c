@@ -136,6 +136,7 @@ VOID PhInitializeProcessTreeList(
     PhGroupInitialization(hwnd); // TaskManagerPlus
     TreeNew_SetTotalsRow(hwnd, !!PhGetIntegerSetting(SETTING_SHOW_TOTALS_ROW)); // TaskManagerPlus: totals row under the headers (View > Totals row)
     TreeNew_SetHeaderTotals(hwnd, !!PhGetIntegerSetting(SETTING_HEADER_TOTALS)); // TaskManagerPlus: live totals in two-line column headers
+    TreeNew_SetStyleFlags(hwnd, TN_STYLE_AIRY_ROWS, PhGetIntegerSetting(SETTING_AIRY_LOOK) ? TN_STYLE_AIRY_ROWS : 0); // TaskManagerPlus: airy rows (Compact rows win)
     TreeNew_SetCellHeat(hwnd, TRUE); // TaskManagerPlus: heat-map tints and the process count pill
     PhHeatMapEnabled = !!PhGetIntegerSetting(SETTING_HEAT_MAP);
     PhHeatStyle = PhGetIntegerSetting(SETTING_HEAT_STYLE); // TaskManagerPlus
@@ -147,13 +148,13 @@ VOID PhInitializeProcessTreeList(
     TreeNew_SetMaxId(hwnd, PHPRTLC_MAXIMUM - 1);
 
     // Default columns
-    PhAddTreeNewColumn(hwnd, PHPRTLC_NAME, TRUE, L"Name", 200, PH_ALIGN_LEFT, (PhGetIntegerSetting(SETTING_PROCESS_TREE_LIST_NAME_DEFAULT) ? TN_COLUMN_FIXED : 0), 0); // HACK (dmex)
+    PhAddTreeNewColumn(hwnd, PHPRTLC_NAME, TRUE, L"Name", 240, PH_ALIGN_LEFT, (PhGetIntegerSetting(SETTING_PROCESS_TREE_LIST_NAME_DEFAULT) ? TN_COLUMN_FIXED : 0), 0); // HACK (dmex)
     PhAddTreeNewColumn(hwnd, PHPRTLC_PID, FALSE, L"PID", 56, PH_ALIGN_RIGHT, ULONG_MAX, DT_RIGHT); // TaskManagerPlus: off by default
-    PhAddTreeNewColumnEx(hwnd, PHPRTLC_CPU, TRUE, L"CPU", 56, PH_ALIGN_RIGHT, 1, DT_RIGHT, TRUE);
+    PhAddTreeNewColumnEx(hwnd, PHPRTLC_CPU, TRUE, L"CPU", 72, PH_ALIGN_RIGHT, 1, DT_RIGHT, TRUE);
     // TaskManagerPlus: default order Name, PID, CPU, Memory, Disk, [Network, GPU from ExtendedTools at 4 and 5],
     // Power usage, User name, Description. PID, Power usage, User name and Description are off by default (calm look). Short titles; saved column sets are not affected.
-    PhAddTreeNewColumnEx(hwnd, PHPRTLC_PRIVATEBYTES, TRUE, L"Memory", 72, PH_ALIGN_RIGHT, 2, DT_RIGHT, TRUE);
-    PhAddTreeNewColumnEx(hwnd, PHPRTLC_IOTOTALRATE, TRUE, L"Disk", 72, PH_ALIGN_RIGHT, 3, DT_RIGHT, TRUE);
+    PhAddTreeNewColumnEx(hwnd, PHPRTLC_PRIVATEBYTES, TRUE, L"Memory", 104, PH_ALIGN_RIGHT, 2, DT_RIGHT, TRUE);
+    PhAddTreeNewColumnEx(hwnd, PHPRTLC_IOTOTALRATE, TRUE, L"Disk", 112, PH_ALIGN_RIGHT, 3, DT_RIGHT, TRUE);
     PhAddTreeNewColumnEx(hwnd, PHPRTLC_POWERUSAGE, FALSE, L"Power usage", 100, PH_ALIGN_LEFT, ULONG_MAX, 0, TRUE);
     PhAddTreeNewColumn(hwnd, PHPRTLC_USERNAME, FALSE, L"User name", 140, PH_ALIGN_LEFT, ULONG_MAX, DT_PATH_ELLIPSIS);
     PhAddTreeNewColumn(hwnd, PHPRTLC_DESCRIPTION, FALSE, L"Description", 180, PH_ALIGN_LEFT, ULONG_MAX, 0);

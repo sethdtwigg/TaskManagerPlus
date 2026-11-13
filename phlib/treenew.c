@@ -2711,6 +2711,7 @@ LRESULT PhTnpOnUserMessage(
                 KillTimer(Context->Handle, TNP_TIMER_ANIMATE_DIVIDER);
             }
 
+            PhTnpUpdateSystemMetrics(Context); // TaskManagerPlus: airy rows change the cell padding
             PhTnpUpdateTextMetrics(Context);
             PhTnpInvalidateLayoutCache(Context);
             PhTnpLayout(Context);
@@ -3452,6 +3453,12 @@ VOID PhTnpUpdateSystemMetrics(
     Context->HeaderTextMargin = PhScaleToDisplay(2, Context->WindowDpi);
     Context->HeaderRowMargin = PhScaleToDisplay(1, Context->WindowDpi);
 
+    if ((Context->Style & TN_STYLE_AIRY_ROWS) && !(Context->Style & TN_STYLE_THIN_ROWS)) // TaskManagerPlus: 10 px right padding
+    {
+        Context->CellMarginRight = PhScaleToDisplay(10, Context->WindowDpi);
+        Context->TextMarginPadding = PhScaleToDisplay(6 + 10, Context->WindowDpi);
+    }
+
     if (Context->SystemDragX < 2)
         Context->SystemDragX = 2;
     if (Context->SystemDragY < 2)
@@ -3516,6 +3523,10 @@ VOID PhTnpUpdateTextMetrics(
             // TaskManagerPlus: ~+25% row height on an 8px grid (thin rows stay compact).
             if (!(Context->Style & TN_STYLE_THIN_ROWS))
                 Context->RowHeight = PhTnpComfortableHeight(Context->RowHeight, Context->WindowDpi);
+
+            // TaskManagerPlus: airy rows, 28 px at 100% DPI (compact rows win).
+            if ((Context->Style & TN_STYLE_AIRY_ROWS) && !(Context->Style & TN_STYLE_THIN_ROWS))
+                Context->RowHeight = max(Context->RowHeight, PhScaleToDisplay(28, Context->WindowDpi));
         }
 
         ReleaseDC(Context->Handle, hdc);
@@ -9770,6 +9781,16 @@ BOOLEAN TnHeaderCustomPaint(
                 totalsRect.bottom = CustomDraw->rc.bottom;
                 SetTextColor(CustomDraw->hdc, Context->ThemeSupport ? PhThemeWindowTextColor : RGB(0, 0, 0));
                 oldFont = SelectFont(CustomDraw->hdc, Context->HeaderTotalsFontHandle);
+
+                {
+                    SIZE totalSize;
+
+                    // A column too narrow for the large total falls back to the list font instead of clipping it.
+                    if (GetTextExtentPoint32(CustomDraw->hdc, totals.Text.Buffer, (LONG)totals.Text.Length / (LONG)sizeof(WCHAR), &totalSize) &&
+                        totalSize.cx > totalsRect.right - totalsRect.left)
+                        SelectFont(CustomDraw->hdc, Context->Font);
+                }
+
                 DrawText(
                     CustomDraw->hdc, totals.Text.Buffer, (LONG)totals.Text.Length / (LONG)sizeof(WCHAR), &totalsRect,
                     DT_SINGLELINE | DT_NOPREFIX | DT_TOP | (FlagOn(fmt, HDF_RIGHT) ? DT_RIGHT : DT_LEFT));
