@@ -42,6 +42,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SessionReports", "SessionRe
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Profiles", "Profiles\Profiles.vcxproj", "{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EfficiencyAdvisor", "EfficiencyAdvisor\EfficiencyAdvisor.vcxproj", "{A3C7E158-6B02-4D94-8F1E-52D9B07C4A63}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -244,6 +246,18 @@ Global
 		{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}.Release|Win32.Build.0 = Release|Win32
 		{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}.Release|x64.ActiveCfg = Release|x64
 		{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}.Release|x64.Build.0 = Release|x64
+		{A3C7E158-6B02-4D94-8F1E-52D9B07C4A63}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{A3C7E158-6B02-4D94-8F1E-52D9B07C4A63}.Debug|ARM64.Build.0 = Debug|ARM64
+		{A3C7E158-6B02-4D94-8F1E-52D9B07C4A63}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A3C7E158-6B02-4D94-8F1E-52D9B07C4A63}.Debug|Win32.Build.0 = Debug|Win32
+		{A3C7E158-6B02-4D94-8F1E-52D9B07C4A63}.Debug|x64.ActiveCfg = Debug|x64
+		{A3C7E158-6B02-4D94-8F1E-52D9B07C4A63}.Debug|x64.Build.0 = Debug|x64
+		{A3C7E158-6B02-4D94-8F1E-52D9B07C4A63}.Release|ARM64.ActiveCfg = Release|ARM64
+		{A3C7E158-6B02-4D94-8F1E-52D9B07C4A63}.Release|ARM64.Build.0 = Release|ARM64
+		{A3C7E158-6B02-4D94-8F1E-52D9B07C4A63}.Release|Win32.ActiveCfg = Release|Win32
+		{A3C7E158-6B02-4D94-8F1E-52D9B07C4A63}.Release|Win32.Build.0 = Release|Win32
+		{A3C7E158-6B02-4D94-8F1E-52D9B07C4A63}.Release|x64.ActiveCfg = Release|x64
+		{A3C7E158-6B02-4D94-8F1E-52D9B07C4A63}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
