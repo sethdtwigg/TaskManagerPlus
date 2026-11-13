@@ -121,6 +121,7 @@ BOOLEAN PhMwpProcessesPageCallback(
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_EXPANDALL, L"&Expand all", NULL, NULL), ULONG_MAX);
             PhInsertEMenuItem(menu, PhCreateEMenuSeparator(), ULONG_MAX);
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_GROUPPROCESSES, L"&Group processes", NULL, NULL), ULONG_MAX); // TaskManagerPlus
+            PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_GROUPBYAPP, L"Group by &app", NULL, NULL), ULONG_MAX); // TaskManagerPlus
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_HEATMAP, L"Hea&t map", NULL, NULL), ULONG_MAX); // TaskManagerPlus
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_MINIMETERS, L"&Mini meters", NULL, NULL), ULONG_MAX); // TaskManagerPlus
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_COUNTPILL, L"Count &pill", NULL, NULL), ULONG_MAX); // TaskManagerPlus
@@ -161,6 +162,8 @@ BOOLEAN PhMwpProcessesPageCallback(
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_SHOWCPUBELOW001, L"Show CPU &below 0.01", NULL, NULL), ULONG_MAX);
 
             if (PhGetIntegerSetting(SETTING_GROUP_PROCESSES) && (menuItem = PhFindEMenuItem(menu, 0, NULL, ID_VIEW_GROUPPROCESSES))) // TaskManagerPlus
+                menuItem->Flags |= PH_EMENU_CHECKED;
+            if (PhGetIntegerSetting(SETTING_GROUP_BY_APP) && (menuItem = PhFindEMenuItem(menu, 0, NULL, ID_VIEW_GROUPBYAPP))) // TaskManagerPlus
                 menuItem->Flags |= PH_EMENU_CHECKED;
             if (PhGetIntegerSetting(SETTING_HEAT_MAP) && (menuItem = PhFindEMenuItem(menu, 0, NULL, ID_VIEW_HEATMAP))) // TaskManagerPlus
                 menuItem->Flags |= PH_EMENU_CHECKED;

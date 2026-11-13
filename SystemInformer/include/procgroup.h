@@ -11,7 +11,31 @@
 
 #define PH_PROCESS_GROUP_APPS 0
 #define PH_PROCESS_GROUP_BACKGROUND 1
-#define PH_PROCESS_GROUP_COUNT 2
+#define PH_PROCESS_GROUP_WINDOWS 2 // only while Group by app is on
+#define PH_PROCESS_GROUP_COUNT 3
+
+BOOLEAN PhGroupByApp(
+    VOID
+    );
+
+// View > Group by app: turns the setting on/off (turning it on also turns the sections on) and restructures.
+VOID PhGroupSetByApp(
+    _In_ BOOLEAN Enabled,
+    _In_ PPH_LIST NodeList
+    );
+
+// TRUE for the fake app rows (a NULL process item, not a section header).
+BOOLEAN PhGroupIsAppNode(
+    _In_opt_ PVOID Node
+    );
+
+// Sum of an app row's members for a metric column (kind and value as the heat query: percent, bytes, bytes/s).
+BOOLEAN PhGroupGetAppMetric(
+    _In_ PVOID Node,
+    _In_ PPH_TREENEW_COLUMN Column,
+    _Out_ PULONG Kind,
+    _Out_ PDOUBLE Value
+    );
 
 VOID PhGroupInitialization(
     _In_ HWND TreeNewHandle

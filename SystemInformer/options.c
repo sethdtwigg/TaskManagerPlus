@@ -114,6 +114,9 @@ VOID PhResolveLookDefaults(
     if (PhGetIntegerSetting(SETTING_HEADER_TOTALS) == 0xff)
         PhSetIntegerSetting(SETTING_HEADER_TOTALS, PhSettingsLoadedFromFile ? 0 : 1);
 
+    if (PhGetIntegerSetting(SETTING_GROUP_BY_APP) == 0xff)
+        PhSetIntegerSetting(SETTING_GROUP_BY_APP, PhSettingsLoadedFromFile ? 0 : 1);
+
     if (PhGetIntegerSetting(SETTING_FLAT_LIST) == 0xff)
         PhSetIntegerSetting(SETTING_FLAT_LIST, PhSettingsLoadedFromFile ? 0 : 1);
 

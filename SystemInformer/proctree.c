@@ -2746,6 +2746,53 @@ static DOUBLE PhpGetNodeGpuPercent(
     return heat.Kind == PH_HEAT_KIND_GPU ? heat.Value : 0;
 }
 
+// TaskManagerPlus: the metric behind a column cell (heat map, app rows). Plugin columns (GPU, Network) are asked
+// through the same heat query the heat map uses.
+BOOLEAN PhGetProcessNodeMetric(
+    _In_ PPH_PROCESS_NODE Node,
+    _In_ PPH_TREENEW_COLUMN Column,
+    _Out_ PULONG Kind,
+    _Out_ PDOUBLE Value
+    )
+{
+    *Kind = PH_HEAT_KIND_NONE;
+    *Value = 0;
+
+    if (!Node->ProcessItem)
+        return FALSE;
+
+    switch (Column->Id)
+    {
+    case PHPRTLC_CPU:
+        *Kind = PH_HEAT_KIND_CPU;
+        *Value = PhpGetNodeCpuPercent(Node);
+        break;
+    case PHPRTLC_PRIVATEBYTES:
+        *Kind = PH_HEAT_KIND_MEMORY;
+        *Value = PhpGetNodePrivateBytes(Node);
+        break;
+    case PHPRTLC_IOTOTALRATE:
+        *Kind = PH_HEAT_KIND_DISK;
+        *Value = PhpGetNodeIoBytesPerSecond(Node);
+        break;
+    default:
+        if (Column->Id >= PHPRTLC_MAXIMUM) // plugin column (ExtendedTools: GPU, Network)
+        {
+            PH_TREENEW_GET_CELL_HEAT heat;
+
+            memset(&heat, 0, sizeof(heat));
+            heat.Node = &Node->Node;
+            heat.Column = Column;
+            PhCmForwardMessage(ProcessTreeListHandle, TreeNewGetCellHeat, &heat, NULL, &ProcessTreeListCm);
+            *Kind = heat.Kind;
+            *Value = heat.Value;
+        }
+        break;
+    }
+
+    return *Kind != PH_HEAT_KIND_NONE;
+}
+
 static ULONG PhpGetNodePowerLevel(
     _In_ PPH_PROCESS_NODE Node,
     _Out_opt_ DOUBLE *CpuPercent
@@ -3310,25 +3357,10 @@ BOOLEAN NTAPI PhpProcessTreeNewCallback(
             heat->Kind = PH_HEAT_KIND_NONE;
             heat->Value = 0;
 
-            switch (heat->Column->Id)
-            {
-            case PHPRTLC_CPU:
-                heat->Kind = PH_HEAT_KIND_CPU;
-                heat->Value = PhpGetNodeCpuPercent(heatNode);
-                break;
-            case PHPRTLC_PRIVATEBYTES:
-                heat->Kind = PH_HEAT_KIND_MEMORY;
-                heat->Value = PhpGetNodePrivateBytes(heatNode);
-                break;
-            case PHPRTLC_IOTOTALRATE:
-                heat->Kind = PH_HEAT_KIND_DISK;
-                heat->Value = PhpGetNodeIoBytesPerSecond(heatNode);
-                break;
-            default:
-                if (heat->Column->Id >= PHPRTLC_MAXIMUM) // plugin column (ExtendedTools: GPU, Network)
-                    PhCmForwardMessage(hwnd, Message, Parameter1, Parameter2, &ProcessTreeListCm);
-                break;
-            }
+            if (PhGroupIsAppNode(heat->Node)) // Group by app: the sum of the members
+                PhGroupGetAppMetric(heat->Node, heat->Column, &heat->Kind, &heat->Value);
+            else
+                PhGetProcessNodeMetric(heatNode, heat->Column, &heat->Kind, &heat->Value);
 
             return heat->Kind != PH_HEAT_KIND_NONE &&
                 PhHeatGetColors(heat->Kind, heat->Value, heat->RowBackColor, heat->RowTextColor, &heat->BackColor, &heat->TextColor);
@@ -6322,7 +6354,7 @@ BOOLEAN PhGetSelectedProcessItems(
     {
         PPH_PROCESS_NODE node = ProcessNodeList->Items[i];
 
-        if (node->Node.Visible && node->Node.Selected)
+        if (node->Node.Visible && (node->Node.Selected || (node->AppRow && node->AppRow->Node.Selected))) // TaskManagerPlus: a selected app row stands for its members
         {
             PhAddItemArray(&array, &node->ProcessItem);
         }
@@ -6354,7 +6386,7 @@ PPH_PROCESS_NODE PhGetSelectedProcessNode(
     {
         PPH_PROCESS_NODE node = ProcessNodeList->Items[i];
 
-        if (node->Node.Visible && node->Node.Selected)
+        if (node->Node.Visible && (node->Node.Selected || (node->AppRow && node->AppRow->Node.Selected))) // TaskManagerPlus: a selected app row stands for its members
         {
             processNode = node;
             break;
@@ -6379,7 +6411,7 @@ BOOLEAN PhGetSelectedProcessNodes(
     {
         PPH_PROCESS_NODE node = ProcessNodeList->Items[i];
 
-        if (node->Node.Visible && node->Node.Selected)
+        if (node->Node.Visible && (node->Node.Selected || (node->AppRow && node->AppRow->Node.Selected))) // TaskManagerPlus: a selected app row stands for its members
             PhAddItemArray(&array, &node);
     }
 
@@ -6463,7 +6495,7 @@ VOID PhGetSelectedAndPropagateProcessItems(
     {
         PPH_PROCESS_NODE node = ProcessNodeList->Items[i];
 
-        if (node->Node.Visible && node->Node.Selected)
+        if (node->Node.Visible && (node->Node.Selected || (node->AppRow && node->AppRow->Node.Selected))) // TaskManagerPlus: a selected app row stands for its members
         {
             if (PhCsPropagateCpuUsage && !node->Node.Expanded)
             {
@@ -6618,6 +6650,14 @@ VOID PhToggleProcessHeatMap(
         InvalidateRect(ProcessTreeListHandle, NULL, FALSE);
 }
 
+// TaskManagerPlus: View > Group by app.
+VOID PhToggleProcessGroupByApp(
+    VOID
+    )
+{
+    PhGroupSetByApp(!PhGroupByApp(), ProcessNodeList);
+}
+
 // TaskManagerPlus: View > Group processes.
 VOID PhToggleProcessGrouping(
     VOID
@@ -6694,6 +6734,12 @@ BOOLEAN PhSelectAndEnsureVisibleProcessNodes(
     {
         if (!ProcessNodes[i]->Node.Visible)
             continue;
+
+        if (ProcessNodes[i]->AppRow && !ProcessNodes[i]->AppRow->Node.Expanded) // TaskManagerPlus
+        {
+            ProcessNodes[i]->AppRow->Node.Expanded = TRUE;
+            needsRestructure = TRUE;
+        }
 
         node = ProcessNodes[i]->Parent;
 

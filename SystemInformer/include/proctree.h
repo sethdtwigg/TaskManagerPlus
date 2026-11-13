@@ -186,6 +186,7 @@ typedef struct _PH_PROCESS_NODE
     // TaskManagerPlus: process grouping (see procgroup.c)
     ULONG GroupId;
     PPH_LIST GroupChildren;
+    struct _PH_PROCESS_NODE *AppRow; // the app row this process is a member of (Group by app), else NULL
 
     // If the user has selected certain columns we need extra information that isn't retrieved by
     // the process provider.
@@ -488,6 +489,19 @@ VOID PhToggleProcessCountPill(
 
 VOID PhToggleProcessHeatMap(
     VOID
+    );
+
+VOID PhToggleProcessGroupByApp(
+    VOID
+    );
+
+// Value of a metric column for one real process node (CPU, memory, disk, plugin columns via the heat query).
+// Used by the app rows (procgroup.c) to sum their members.
+BOOLEAN PhGetProcessNodeMetric(
+    _In_ PPH_PROCESS_NODE Node,
+    _In_ PPH_TREENEW_COLUMN Column,
+    _Out_ PULONG Kind,
+    _Out_ PDOUBLE Value
     );
 
 VOID PhToggleProcessGrouping(

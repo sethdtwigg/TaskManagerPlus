@@ -1530,6 +1530,11 @@ VOID PhMwpOnCommand(
             PhToggleDetachedGraph(Id - ID_VIEW_DETACHEDGRAPH_FIRST);
         }
         break;
+    case ID_VIEW_GROUPBYAPP: // TaskManagerPlus
+        {
+            PhToggleProcessGroupByApp();
+        }
+        break;
     case ID_VIEW_GROUPPROCESSES: // TaskManagerPlus
         {
             PhToggleProcessGrouping();
