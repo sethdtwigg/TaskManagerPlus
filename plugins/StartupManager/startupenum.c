@@ -1024,8 +1024,10 @@ static HRESULT SmDeleteScheduledTask(
 // HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\
 // AppModel\SystemAppData\<PackageFamilyName>\<TaskId>, value "State":
 // 0 Disabled, 1 Enabled, 2 DisabledByUser, 3 DisabledByPolicy, 4 EnabledByPolicy.
-// The only supported way to change it is StartupTask.RequestEnableAsync from
-// inside the owning package, so these rows are read-only here.
+// The only documented way to change it is StartupTask.RequestEnableAsync/Disable from
+// inside the owning package. Writing the State value directly is undocumented (the key is
+// SYSTEM-owned platform state), so these rows stay read-only; the UI says so (tooltip) and
+// offers ms-settings:startupapps. See docs/plugins.md.
 
 static CONST PH_STRINGREF SmPackagedRootKey = PH_STRINGREF_INIT(L"Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\SystemAppData");
 static CONST PH_STRINGREF SmPackagedSchemasKey = PH_STRINGREF_INIT(L"Schemas");

@@ -17,6 +17,7 @@ typedef enum _SM_COMMAND_ID
     SM_COMMAND_ID_DELETE,
     SM_COMMAND_ID_COPY,
     SM_COMMAND_ID_REFRESH,
+    SM_COMMAND_ID_OPEN_SETTINGS, // TaskManagerPlus
 } SM_COMMAND_ID;
 
 static CONST PH_STRINGREF SmTabPageName = PH_STRINGREF_INIT(L"Startup");
@@ -446,6 +447,22 @@ static BOOLEAN NTAPI SmTreeNewCallback(
             getCellText->Flags = TN_CACHE;
         }
         return TRUE;
+    case TreeNewGetCellTooltip: // TaskManagerPlus: say why a Store app startup task cannot be toggled here
+        {
+            static CONST PH_STRINGREF packagedNote = PH_STRINGREF_INIT(L"Managed by the app; change in Windows Settings > Apps > Startup (right-click: Open Startup apps settings).");
+            PPH_TREENEW_GET_CELL_TOOLTIP getCellTooltip = Parameter1;
+
+            node = (PSM_STARTUP_ITEM)getCellTooltip->Node;
+
+            if (node->Source == SmSourcePackagedApp && (getCellTooltip->Column->Id == SM_COLUMN_STATUS || getCellTooltip->Column->Id == SM_COLUMN_NAME))
+            {
+                getCellTooltip->Text = packagedNote;
+                getCellTooltip->Unfolding = FALSE;
+                getCellTooltip->MaximumWidth = 360;
+                return TRUE;
+            }
+        }
+        return FALSE;
     case TreeNewGetNodeColor:
         {
             PPH_TREENEW_GET_NODE_COLOR getNodeColor = Parameter1;
@@ -571,6 +588,8 @@ static BOOLEAN NTAPI SmTreeNewCallback(
             PhInsertEMenuItem(menu, PhCreateEMenuSeparator(), ULONG_MAX);
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, SM_COMMAND_ID_COPY, L"&Copy\bCtrl+C", NULL, NULL), ULONG_MAX);
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, SM_COMMAND_ID_REFRESH, L"&Refresh\bF5", NULL, NULL), ULONG_MAX);
+            // TaskManagerPlus: Store app startup tasks are changed in Windows Settings (a local ms-settings shell URI, not a web link).
+            PhInsertEMenuItem(menu, PhCreateEMenuItem(0, SM_COMMAND_ID_OPEN_SETTINGS, L"Open Startup &apps settings", NULL, NULL), ULONG_MAX);
             PhInsertCopyCellEMenuItem(menu, SM_COMMAND_ID_COPY, WindowHandle, contextMenuEvent->Column);
             PhSetFlagsEMenuItem(menu, SM_COMMAND_ID_OPEN_FILE_LOCATION, PH_EMENU_DEFAULT, PH_EMENU_DEFAULT);
 
@@ -806,6 +825,9 @@ static VOID SmHandleCommand(
         break;
     case SM_COMMAND_ID_REFRESH:
         SmRefreshStartupList();
+        break;
+    case SM_COMMAND_ID_OPEN_SETTINGS: // TaskManagerPlus: opens Settings > Apps > Startup (local shell protocol, no network)
+        PhShellExecute(TreeWindowHandle, L"ms-settings:startupapps", NULL);
         break;
     }
 }
