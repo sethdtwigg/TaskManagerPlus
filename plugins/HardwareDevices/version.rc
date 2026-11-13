@@ -71,7 +71,7 @@ BEGIN
             VALUE "FileDescription", "HardwareDevices"
             VALUE "FileVersion", PHAPP_VERSION_STRING
             VALUE "InternalName", "HardwareDevices"
-            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc. MIT License. Modified as TaskManagerPlus."
+            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc. MIT License. TaskManagerPlus by sethdtwigg; modifications copyright (c) 2026 sethdtwigg."
             VALUE "OriginalFilename", "HardwareDevices.dll"
             VALUE "ProductName", "HardwareDevices"
             VALUE "ProductVersion", PHAPP_VERSION_STRING

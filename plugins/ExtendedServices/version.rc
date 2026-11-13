@@ -71,7 +71,7 @@ BEGIN
             VALUE "FileDescription", "ExtendedServices"
             VALUE "FileVersion", PHAPP_VERSION_STRING
             VALUE "InternalName", "ExtendedServices"
-            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc. MIT License. Modified as TaskManagerPlus."
+            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc. MIT License. TaskManagerPlus by sethdtwigg; modifications copyright (c) 2026 sethdtwigg."
             VALUE "OriginalFilename", "ExtendedServices.dll"
             VALUE "ProductName", "ExtendedServices"
             VALUE "ProductVersion", PHAPP_VERSION_STRING

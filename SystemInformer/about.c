@@ -51,6 +51,8 @@ static INT_PTR CALLBACK PhpAboutDlgProc(
             PhDereferenceObject(versionString);
 
             PhSetDialogItemText(hwndDlg, IDC_CREDITS,
+                L"TaskManagerPlus by sethdtwigg. A fork of System Informer, MIT licensed, copyright Winsider Seminars && Solutions, Inc.; "
+                L"modifications copyright (c) 2026 sethdtwigg.\n\n"
                 L"Thanks to:\n"
                 L"    wj32 - Wen Jia Liu\n"
                 L"    dmex - Steven G\n"

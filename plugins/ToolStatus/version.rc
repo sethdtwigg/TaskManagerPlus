@@ -71,7 +71,7 @@ BEGIN
             VALUE "FileDescription", "ToolStatus"
             VALUE "FileVersion", PHAPP_VERSION_STRING
             VALUE "InternalName", "ToolStatus"
-            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc. MIT License. Modified as TaskManagerPlus."
+            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc. MIT License. TaskManagerPlus by sethdtwigg; modifications copyright (c) 2026 sethdtwigg."
             VALUE "OriginalFilename", "ToolStatus.dll"
             VALUE "ProductName", "ToolStatus"
             VALUE "ProductVersion", PHAPP_VERSION_STRING

@@ -71,7 +71,7 @@ BEGIN
             VALUE "FileDescription", "ProcessRules"
             VALUE "FileVersion", PHAPP_VERSION_STRING
             VALUE "InternalName", "ProcessRules"
-            VALUE "LegalCopyright", "MIT License. Based on System Informer."
+            VALUE "LegalCopyright", "MIT License. TaskManagerPlus by sethdtwigg; modifications copyright (c) 2026 sethdtwigg. Based on System Informer, copyright Winsider Seminars & Solutions, Inc."
             VALUE "OriginalFilename", "ProcessRules.dll"
             VALUE "ProductName", "ProcessRules"
             VALUE "ProductVersion", PHAPP_VERSION_STRING

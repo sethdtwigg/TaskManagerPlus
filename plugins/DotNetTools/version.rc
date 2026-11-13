@@ -71,7 +71,7 @@ BEGIN
             VALUE "FileDescription", "DotNetTools"
             VALUE "FileVersion", PHAPP_VERSION_STRING
             VALUE "InternalName", "DotNetTools"
-            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc. MIT License. Modified as TaskManagerPlus."
+            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc. MIT License. TaskManagerPlus by sethdtwigg; modifications copyright (c) 2026 sethdtwigg."
             VALUE "OriginalFilename", "DotNetTools.dll"
             VALUE "ProductName", "DotNetTools"
             VALUE "ProductVersion", PHAPP_VERSION_STRING

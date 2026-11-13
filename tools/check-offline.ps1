@@ -53,7 +53,8 @@ $Allow = @(
     @{ Path = '^SystemInformer/resources/settings\.schema\.json$'; Line = 'json-schema\.org'; Why = 'JSON Schema meta-schema identifier, never fetched' },
     @{ Path = '^plugins/ExtendedTools/Efi/'; Line = 'opensource\.org'; Why = 'licence header text' },
     @{ Path = '^(LICENSE|COPYRIGHT)\.txt$'; Line = '.'; Why = 'licence text' },
-    @{ Path = '^README\.md$'; Line = 'LICENSE'; Why = 'local link' }
+    @{ Path = '^README\.md$'; Line = 'LICENSE\.txt'; Why = 'local link' },
+    @{ Path = '^README\.md$'; Line = 'github\.com/sethdtwigg/TaskManagerPlus'; Why = 'this project''s own repository name as plain text, never fetched' }
 )
 
 function Test-Allowed($path, $text) {
