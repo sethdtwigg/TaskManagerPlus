@@ -616,41 +616,7 @@ NTSTATUS PhpDebugConsoleThreadStart(
     DebugConsoleSymbolProvider = PhCreateSymbolProvider(NtCurrentProcessId());
     PhLoadSymbolProviderOptions(DebugConsoleSymbolProvider);
 
-    {
-        static CONST PH_STRINGREF variableNameSr = PH_STRINGREF_INIT(L"_NT_SYMBOL_PATH");
-        PPH_STRING variableValue;
-        PPH_STRING newSearchPath;
-
-        if (NT_SUCCESS(PhQueryEnvironmentVariable(NULL, &variableNameSr, &variableValue)))
-        {
-            PPH_STRING currentDirectory = PhGetApplicationDirectoryWin32();
-            PPH_STRING currentSearchPath = PhGetStringSetting(SETTING_DBGHELP_SEARCH_PATH);
-
-            if (currentSearchPath->Length != 0)
-            {
-                newSearchPath = PhFormatString(
-                    L"%s;%s;%s",
-                    variableValue->Buffer,
-                    PhGetStringOrEmpty(currentSearchPath),
-                    PhGetStringOrEmpty(currentDirectory)
-                    );
-            }
-            else
-            {
-                newSearchPath = PhFormatString(
-                    L"%s;%s",
-                    variableValue->Buffer,
-                    PhGetStringOrEmpty(currentDirectory)
-                    );
-            }
-
-            PhSetSearchPathSymbolProvider(DebugConsoleSymbolProvider, PhGetString(newSearchPath));
-
-            PhDereferenceObject(variableValue);
-            PhDereferenceObject(newSearchPath);
-            PhDereferenceObject(currentDirectory);
-        }
-    }
+    // TaskManagerPlus: the debug console uses the configured symbol path only (no environment variable).
 
     PhLoadSymbolProviderModules(
         DebugConsoleSymbolProvider,

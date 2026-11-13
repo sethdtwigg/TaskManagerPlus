@@ -1210,7 +1210,6 @@ VOID PhLoadSymbolProviderOptions(
     _Inout_ PPH_SYMBOL_PROVIDER SymbolProvider
     )
 {
-    static CONST PH_STRINGREF symbolPath = PH_STRINGREF_INIT(L"_NT_SYMBOL_PATH");
     PPH_STRING searchPath = NULL;
 
     PhSetOptionsSymbolProvider(
@@ -1219,10 +1218,9 @@ VOID PhLoadSymbolProviderOptions(
         (PhGetIntegerSetting(SETTING_DBGHELP_VERIFY_MICROSOFT_CHAIN) ? PH_SYMOPT_VERIFY_MICROSOFT_CHAIN : 0)
         );
 
-    PhQueryEnvironmentVariable(NULL, &symbolPath, &searchPath);
+    // TaskManagerPlus: symbols come only from the configured path (default C:\Symbols); the process environment is not consulted.
+    searchPath = PhGetStringSetting(SETTING_DBGHELP_SEARCH_PATH);
 
-    if (PhIsNullOrEmptyString(searchPath))
-        searchPath = PhGetStringSetting(SETTING_DBGHELP_SEARCH_PATH);
     if (!PhIsNullOrEmptyString(searchPath))
         PhSetSearchPathSymbolProvider(SymbolProvider, searchPath->Buffer);
     if (searchPath)

@@ -694,7 +694,9 @@ BOOLEAN PhpRegisterSymbolProvider(
         {
             PH_LOCK_SYMBOLS();
 
-            SymInitializeW_I(SymbolProvider->ProcessHandle, NULL, FALSE);
+            // TaskManagerPlus: an explicit path, because NULL makes dbghelp read symbol paths from the process environment.
+            // Every consumer replaces it with the configured path (PhSetSearchPathSymbolProvider).
+            SymInitializeW_I(SymbolProvider->ProcessHandle, L"C:\\Symbols", FALSE);
 
             if (SymRegisterCallbackW64_I)
                 SymRegisterCallbackW64_I(SymbolProvider->ProcessHandle, PhpSymbolCallbackFunction, (ULONG64)SymbolProvider);

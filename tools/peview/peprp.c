@@ -3254,7 +3254,6 @@ BOOLEAN PvpLoadDbgHelp(
     _Inout_ PPH_SYMBOL_PROVIDER *SymbolProvider
     )
 {
-    static PH_STRINGREF symbolPath = PH_STRINGREF_INIT(L"_NT_SYMBOL_PATH");
     PPH_STRING searchPath = NULL;
     PPH_STRING currentDirectory;
     PPH_SYMBOL_PROVIDER symbolProvider;
@@ -3266,12 +3265,8 @@ BOOLEAN PvpLoadDbgHelp(
         PhGetIntegerSetting(L"DbgHelpUndecorate") ? PH_SYMOPT_UNDNAME : 0
         );
 
-    PhQueryEnvironmentVariable(NULL, &symbolPath, &searchPath);
-
-    if (PhIsNullOrEmptyString(searchPath))
-    {
-        searchPath = PhGetStringSetting(L"DbgHelpSearchPath");
-    }
+    // TaskManagerPlus: only the configured symbol path is used, never the process environment.
+    searchPath = PhGetStringSetting(L"DbgHelpSearchPath");
 
     if (!PhIsNullOrEmptyString(searchPath))
     {

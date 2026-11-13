@@ -29,7 +29,7 @@ $apiRules = @(
     'WinHttp\w*', 'InternetOpen\w*', 'InternetConnect\w*', 'URLDownloadToFile\w*', 'WSAStartup',
     'getaddrinfo', 'GetAddrInfo\w*', 'DnsQuery_W', 'DnsQueryEx', 'IcmpCreateFile', 'IcmpSendEcho\w*',
     'Icmp6SendEcho\w*', 'PhHttp\w*', 'PhDnsQuery\w*', '\bwinhttp\b', '\bwininet\b', '\burlmon\b',
-    '\bws2_32\b', 'PhSearchOnlineString', 'EnableNetworkResolve'
+    '\bws2_32\b', 'PhSearchOnlineString', 'EnableNetworkResolve', '_NT_SYMBOL_PATH', '_NT_ALT_SYMBOL_PATH'
 )
 # Remote hosts / services.
 $hostRules = @(
