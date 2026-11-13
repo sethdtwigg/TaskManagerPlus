@@ -9786,9 +9786,21 @@ BOOLEAN TnHeaderCustomPaint(
                     SIZE totalSize;
 
                     // A column too narrow for the large total falls back to the list font instead of clipping it.
-                    if (GetTextExtentPoint32(CustomDraw->hdc, totals.Text.Buffer, (LONG)totals.Text.Length / (LONG)sizeof(WCHAR), &totalSize) &&
-                        totalSize.cx > totalsRect.right - totalsRect.left)
-                        SelectFont(CustomDraw->hdc, Context->Font);
+                    // The decision uses at least a typical rate string for rate columns ("0 MB/s" and "0.8 MB/s"
+                    // differ in width), so the size does not flip as the value changes.
+                    if (GetTextExtentPoint32(CustomDraw->hdc, totals.Text.Buffer, (LONG)totals.Text.Length / (LONG)sizeof(WCHAR), &totalSize))
+                    {
+                        SIZE sampleSize;
+                        LONG needed = totalSize.cx;
+
+                        if (totals.Text.Buffer[totals.Text.Length / sizeof(WCHAR) - 1] == L's' && // rate: "MB/s", "Mbps"
+                            GetTextExtentPoint32(CustomDraw->hdc, L"88.8 MB/s", 9, &sampleSize) &&
+                            sampleSize.cx > needed)
+                            needed = sampleSize.cx;
+
+                        if (needed > totalsRect.right - totalsRect.left)
+                            SelectFont(CustomDraw->hdc, Context->Font);
+                    }
                 }
 
                 DrawText(
