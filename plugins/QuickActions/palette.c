@@ -22,7 +22,8 @@ typedef enum _QA_KIND
 {
     QaKindProcess,
     QaKindService,
-    QaKindStartup
+    QaKindStartup,
+    QaKindCommand // TaskManagerPlus: commands exported by other plugins (reports, profiles, advisor)
 } QA_KIND;
 
 typedef enum _QA_VERB
@@ -46,6 +47,7 @@ typedef enum _QA_VERB
     QaVerbStartupDisable,
     QaVerbStartupEnable,
     QaVerbStartupOpenLocation,
+    QaVerbCommand,
     QaVerbMaximum
 } QA_VERB;
 
@@ -77,6 +79,7 @@ static CONST QA_VERB_INFO QaVerbInfo[QaVerbMaximum] =
     { L"Disable startup item", L"turn off remove autorun", FALSE },
     { L"Enable startup item", L"turn on autorun", FALSE },
     { L"Open file location", L"explore folder directory show in explorer", FALSE },
+    { L"", L"", FALSE }, // QaVerbCommand: the command's own label is the target text
 };
 
 static CONST ULONG QaProcessVerbs[] =
@@ -98,6 +101,8 @@ typedef struct _QA_ITEM
     LONGLONG CreateTime;
     PPH_STRING ServiceName;
     ULONG StartupIndex;
+    ULONG CommandId;
+    ULONG InterfaceIndex;
     LONG Score;
     ULONG Order;
     BOOLEAN Recent;
@@ -126,6 +131,9 @@ static PPH_LIST QaResults = NULL; // PQA_ITEM, currently shown (not owned)
 static PPH_LIST QaRecent = NULL; // PPH_STRING keys, most recent first
 static PPH_LIST QaStartupEntries = NULL; // PSTARTUP_ENTRY_INFO
 static PSTARTUP_MANAGER_INTERFACE QaStartupInterface = NULL;
+#define QA_COMMAND_PROVIDERS 3
+static PTMP_COMMANDS_INTERFACE QaCommandInterfaces[QA_COMMAND_PROVIDERS];
+static PPH_LIST QaCommandLists[QA_COMMAND_PROVIDERS]; // PTMP_COMMAND_INFO lists, freed with the interface
 static ULONG QaSelected = 0;
 static ULONG QaTop = 0;
 static LONG QaDpi = 96;
@@ -213,6 +221,15 @@ static VOID QaClearItems(
 
     QaStartupEntries = NULL;
     QaStartupInterface = NULL;
+
+    for (i = 0; i < QA_COMMAND_PROVIDERS; i++)
+    {
+        if (QaCommandLists[i] && QaCommandInterfaces[i])
+            QaCommandInterfaces[i]->FreeCommands(QaCommandLists[i]);
+
+        QaCommandLists[i] = NULL;
+        QaCommandInterfaces[i] = NULL;
+    }
 }
 
 static PQA_ITEM QaAddItem(
@@ -502,6 +519,46 @@ static VOID QaBuildStartup(
     }
 }
 
+static VOID QaBuildCommands(
+    VOID
+    )
+{
+    static PCWSTR names[QA_COMMAND_PROVIDERS] =
+    {
+        TMP_COMMANDS_REPORTS_PLUGIN_NAME, TMP_COMMANDS_PROFILES_PLUGIN_NAME, TMP_COMMANDS_ADVISOR_PLUGIN_NAME
+    };
+    ULONG p;
+    ULONG i;
+
+    for (p = 0; p < QA_COMMAND_PROVIDERS; p++)
+    {
+        QaCommandInterfaces[p] = PhGetPluginInterfaceZ(names[p], TMP_COMMANDS_INTERFACE_VERSION);
+
+        if (!QaCommandInterfaces[p])
+            continue;
+
+        QaCommandLists[p] = QaCommandInterfaces[p]->Enumerate();
+
+        for (i = 0; i < QaCommandLists[p]->Count; i++)
+        {
+            PTMP_COMMAND_INFO command = QaCommandLists[p]->Items[i];
+            PQA_ITEM item;
+
+            if (!command->Label)
+                continue;
+
+            item = QaAddItem(QaKindCommand, QaVerbCommand, command->Label, command->Detail ? PhReferenceObject(command->Detail) : PhReferenceEmptyString(), L"command");
+            item->CommandId = command->Id;
+            item->InterfaceIndex = p;
+
+            if (command->Alias)
+            {
+                PhMoveReference(&item->Match, PhFormatString(L"%s %s command", command->Label->Buffer, command->Alias));
+            }
+        }
+    }
+}
+
 static VOID QaBuildCandidates(
     VOID
     )
@@ -513,6 +570,7 @@ static VOID QaBuildCandidates(
     QaBuildProcesses();
     QaBuildServices();
     QaBuildStartup();
+    QaBuildCommands();
 }
 
 static int __cdecl QaResultCompare(
@@ -667,6 +725,8 @@ static PCWSTR QaKindText(
         return L"Process";
     case QaKindService:
         return L"Service";
+    case QaKindCommand:
+        return L"Command";
     default:
         return L"Startup";
     }
@@ -860,6 +920,8 @@ typedef struct _QA_ACTION
     PPH_STRING ServiceName;
     STARTUP_ENTRY_INFO Startup;
     PSTARTUP_MANAGER_INTERFACE StartupInterface;
+    PTMP_COMMANDS_INTERFACE CommandInterface;
+    ULONG CommandId;
 } QA_ACTION, *PQA_ACTION;
 
 static PPH_PROCESS_ITEM QaReferenceProcess(
@@ -1029,6 +1091,10 @@ static VOID QaRunAction(
     case QaKindStartup:
         QaRunStartupAction(Action);
         break;
+    case QaKindCommand:
+        if (Action->CommandInterface)
+            Action->CommandInterface->Run(Action->CommandId, SystemInformer_GetWindowHandle());
+        break;
     }
 }
 
@@ -1050,6 +1116,12 @@ static VOID QaRunSelected(
     action.CreateTime = item->CreateTime;
     PhSetReference(&action.Target, item->Target);
     PhSetReference(&action.ServiceName, item->ServiceName);
+
+    if (item->Kind == QaKindCommand && item->InterfaceIndex < QA_COMMAND_PROVIDERS)
+    {
+        action.CommandInterface = QaCommandInterfaces[item->InterfaceIndex];
+        action.CommandId = item->CommandId;
+    }
 
     if (item->Kind == QaKindStartup && QaStartupEntries && item->StartupIndex < QaStartupEntries->Count)
     {

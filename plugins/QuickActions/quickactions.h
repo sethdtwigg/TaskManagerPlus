@@ -15,6 +15,7 @@
 #include <settings.h>
 #include "resource.h"
 #include <startupmanagerintf.h>
+#include <commandsintf.h>
 #include "fuzzy.h"
 
 #define PLUGIN_NAME L"TaskManagerPlus.QuickActions"
