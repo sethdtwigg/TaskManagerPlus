@@ -238,6 +238,20 @@ BOOLEAN PhCmForwardMessage(
             plugin = column->Plugin;
         }
         break;
+    case TreeNewGetCellTooltip: // TaskManagerPlus: lets plugin columns provide tooltips
+        {
+            PPH_TREENEW_GET_CELL_TOOLTIP tooltip = Parameter1;
+            PPH_CM_COLUMN column;
+
+            if (tooltip->Column->Id < Manager->MinId)
+                return FALSE;
+
+            column = tooltip->Column->Context;
+            pluginMessage.SubId = column->SubId;
+            pluginMessage.Context = column->Context;
+            plugin = column->Plugin;
+        }
+        break;
     case TreeNewGetCellHeat: // TaskManagerPlus
         {
             PPH_TREENEW_GET_CELL_HEAT heat = Parameter1;

@@ -82,6 +82,7 @@ static CONST PH_STRINGREF DefaultPluginName[] =
     PH_STRINGREF_INIT(L"ExtendedTools.dll"),
     PH_STRINGREF_INIT(L"HardwareDevices.dll"),
     // TaskManagerPlus: bundled plugins.
+    PH_STRINGREF_INIT(L"NetworkLookup.dll"),
     PH_STRINGREF_INIT(L"ProcessHistory.dll"),
     PH_STRINGREF_INIT(L"ProcessRules.dll"),
     PH_STRINGREF_INIT(L"StartupManager.dll"),

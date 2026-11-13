@@ -20,4 +20,5 @@
     <Project Path="ProcessRules/ProcessRules.vcxproj" Id="9648576c-edae-4f91-84f9-b47625cb5ce9" />
     <Project Path="StartupManager/StartupManager.vcxproj" Id="7ce522d6-2edc-4db1-aaf8-1eef12713415" />
     <Project Path="ProcessHistory/ProcessHistory.vcxproj" Id="fca4a226-6589-48c2-96f8-605dc2fc58fe" />
+    <Project Path="NetworkLookup/NetworkLookup.vcxproj" Id="3b7e0d52-91c4-4e6a-a1f3-5d2c8e4b7a10" />
 </Solution>

@@ -32,6 +32,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StartupManager", "StartupMa
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ProcessHistory", "ProcessHistory\ProcessHistory.vcxproj", "{FCA4A226-6589-48C2-96F8-605DC2FC58FE}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NetworkLookup", "NetworkLookup\NetworkLookup.vcxproj", "{3B7E0D52-91C4-4E6A-A1F3-5D2C8E4B7A10}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -174,6 +176,18 @@ Global
 		{FCA4A226-6589-48C2-96F8-605DC2FC58FE}.Release|Win32.Build.0 = Release|Win32
 		{FCA4A226-6589-48C2-96F8-605DC2FC58FE}.Release|x64.ActiveCfg = Release|x64
 		{FCA4A226-6589-48C2-96F8-605DC2FC58FE}.Release|x64.Build.0 = Release|x64
+		{3B7E0D52-91C4-4E6A-A1F3-5D2C8E4B7A10}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{3B7E0D52-91C4-4E6A-A1F3-5D2C8E4B7A10}.Debug|ARM64.Build.0 = Debug|ARM64
+		{3B7E0D52-91C4-4E6A-A1F3-5D2C8E4B7A10}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3B7E0D52-91C4-4E6A-A1F3-5D2C8E4B7A10}.Debug|Win32.Build.0 = Debug|Win32
+		{3B7E0D52-91C4-4E6A-A1F3-5D2C8E4B7A10}.Debug|x64.ActiveCfg = Debug|x64
+		{3B7E0D52-91C4-4E6A-A1F3-5D2C8E4B7A10}.Debug|x64.Build.0 = Debug|x64
+		{3B7E0D52-91C4-4E6A-A1F3-5D2C8E4B7A10}.Release|ARM64.ActiveCfg = Release|ARM64
+		{3B7E0D52-91C4-4E6A-A1F3-5D2C8E4B7A10}.Release|ARM64.Build.0 = Release|ARM64
+		{3B7E0D52-91C4-4E6A-A1F3-5D2C8E4B7A10}.Release|Win32.ActiveCfg = Release|Win32
+		{3B7E0D52-91C4-4E6A-A1F3-5D2C8E4B7A10}.Release|Win32.Build.0 = Release|Win32
+		{3B7E0D52-91C4-4E6A-A1F3-5D2C8E4B7A10}.Release|x64.ActiveCfg = Release|x64
+		{3B7E0D52-91C4-4E6A-A1F3-5D2C8E4B7A10}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
