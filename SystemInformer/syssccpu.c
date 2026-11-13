@@ -26,6 +26,18 @@ static PH_LAYOUT_MANAGER CpuLayoutManager;
 static RECT CpuGraphMargin;
 static RECT CpuGraphMarginScaled;
 static HWND CpuGraphHandle;
+// TaskManagerPlus: hybrid CPUs get a "P-Core" / "E-Core" label on every per-core graph, not only in the tooltip.
+static VOID PhSipPrefixCpuTypeLabel(
+    _In_ ULONG Index,
+    _Inout_ PPH_STRING *Text
+    )
+{
+    PCPH_STRINGREF coreType = PhGetHybridProcessorType(Index);
+
+    if (coreType)
+        PhMoveReference(Text, PhFormatString(L"[%c] %s", coreType->Buffer[0], PhGetStringOrEmpty(*Text))); // [P] / [E]: short, the graphs are narrow
+}
+
 static PH_GRAPH_STATE CpuGraphState;
 static HWND *CpusGraphHandle;
 static PPH_GRAPH_STATE CpusGraphState;
@@ -1101,6 +1113,7 @@ BOOLEAN NTAPI PhSipCpuGraphCallback(
                         PhInitFormatFD(&format[9], 1000 / CpuFrequencyInformation[index], 3); // ns per cycle
                         PhInitFormatS(&format[10], L" \u00B5s)");
                         PhMoveReference(&CpusGraphState[index].Text, PhFormat(format, RTL_NUMBER_OF(format), 0));
+                        PhSipPrefixCpuTypeLabel(index, &CpusGraphState[index].Text);
 
                         hdc = Graph_GetBufferedContext(CpusGraphHandle[index]);
                         PhSetGraphText2(
@@ -1116,6 +1129,7 @@ BOOLEAN NTAPI PhSipCpuGraphCallback(
                     {
                         PhInitFormatS(&format[5], L"%) ");
                         PhMoveReference(&CpusGraphState[index].Text, PhFormat(format, 6, 0));
+                        PhSipPrefixCpuTypeLabel(index, &CpusGraphState[index].Text);
 
                         hdc = Graph_GetBufferedContext(CpusGraphHandle[index]);
                         PhSetGraphText(
@@ -1130,7 +1144,26 @@ BOOLEAN NTAPI PhSipCpuGraphCallback(
                 }
                 else
                 {
-                    drawInfo->Text.Buffer = NULL;
+                    PCPH_STRINGREF coreType = PhGetHybridProcessorType(index); // TaskManagerPlus: label only
+
+                    if (coreType)
+                    {
+                        HDC hdc = Graph_GetBufferedContext(CpusGraphHandle[index]);
+
+                        PhMoveReference(&CpusGraphState[index].Text, PhCreateString2(coreType));
+                        PhSetGraphText(
+                            hdc,
+                            drawInfo,
+                            &CpusGraphState[index].Text->sr,
+                            &PhNormalGraphTextMargin,
+                            &PhNormalGraphTextPadding,
+                            PH_ALIGN_TOP | PH_ALIGN_LEFT
+                            );
+                    }
+                    else
+                    {
+                        drawInfo->Text.Buffer = NULL;
+                    }
                 }
             }
         }
