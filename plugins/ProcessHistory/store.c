@@ -425,8 +425,10 @@ static LONGLONG HistGetRetentionCutoff(
  * unchanged; removed records simply become stale bytes for the compactor.
  * Returns the number of file bytes made stale.
  */
-static ULONG64 HistThinSnapshots(
-    _In_ LARGE_INTEGER Now
+static ULONG64 HistThinList(
+    _Inout_ PPH_LIST List,
+    _In_ LARGE_INTEGER Now,
+    _In_ LONGLONG ParkedTime
     )
 {
     ULONG64 staleBytes = 0;
@@ -434,9 +436,9 @@ static ULONG64 HistThinSnapshots(
     LONGLONG lastBucket = -1;
     LONGLONG lastSpacing = 0;
 
-    for (ULONG read = 0; read < HistSnapshotList->Count; read++)
+    for (ULONG read = 0; read < List->Count; read++)
     {
-        PHIST_SNAPSHOT snapshot = HistSnapshotList->Items[read];
+        PHIST_SNAPSHOT snapshot = List->Items[read];
         LONGLONG age = Now.QuadPart - snapshot->Time.QuadPart;
         LONGLONG spacing = 0;
 
@@ -448,6 +450,16 @@ static ULONG64 HistThinSnapshots(
         if (spacing != 0)
         {
             LONGLONG bucket = snapshot->Time.QuadPart / spacing;
+
+            // TaskManagerPlus: the snapshot the user is parked on on the timeline is never thinned away, so the
+            // tab keeps showing that very moment (the bucket still counts as taken for the ones after it).
+            if (ParkedTime != 0 && snapshot->Time.QuadPart == ParkedTime)
+            {
+                lastBucket = bucket;
+                lastSpacing = spacing;
+                List->Items[write++] = snapshot;
+                continue;
+            }
 
             if (spacing == lastSpacing && bucket == lastBucket)
             {
@@ -464,13 +476,167 @@ static ULONG64 HistThinSnapshots(
         }
 
         lastSpacing = spacing;
-        HistSnapshotList->Items[write++] = snapshot;
+        List->Items[write++] = snapshot;
     }
 
-    if (write != HistSnapshotList->Count)
-        HistSnapshotList->Count = write;
+    if (write != List->Count)
+        List->Count = write;
 
     return staleBytes;
+}
+
+static ULONG64 HistThinSnapshots(
+    _In_ LARGE_INTEGER Now
+    )
+{
+    return HistThinList(HistSnapshotList, Now, HistTabGetParkedTime());
+}
+
+/**
+ * Index of the snapshot closest in time to Time (the earlier one on a tie), or 0 when there are none.
+ */
+ULONG HistStoreFindNearestIndex(
+    _In_ LONGLONG Time
+    )
+{
+    ULONG best = 0;
+    LONGLONG bestDistance = MAXLONGLONG;
+
+    for (ULONG i = 0; i < HistSnapshotList->Count; i++)
+    {
+        PHIST_SNAPSHOT snapshot = HistSnapshotList->Items[i];
+        LONGLONG distance = snapshot->Time.QuadPart - Time;
+
+        if (distance < 0)
+            distance = -distance;
+
+        if (distance < bestDistance)
+        {
+            bestDistance = distance;
+            best = i;
+        }
+    }
+
+    return best;
+}
+
+static PPH_LIST HistSelfTestCreateList(
+    _In_ LARGE_INTEGER Now
+    )
+{
+    PPH_LIST list = PhCreateList(1024);
+
+    // 2 h of snapshots every 10 s, ending 1 h 10 min before "Now": all of them are in tier 1 (one per 60 s).
+    for (ULONG i = 0; i < 720; i++)
+    {
+        PHIST_SNAPSHOT snapshot = PhAllocateZero(sizeof(HIST_SNAPSHOT));
+
+        snapshot->Time.QuadPart = Now.QuadPart - (LONGLONG)(HIST_THIN_TIER1_AGE_SECONDS + 600 + (719 - i) * 10) * PH_TICKS_PER_SEC;
+        snapshot->FileBytes = 100;
+        PhAddItemList(list, snapshot);
+    }
+
+    return list;
+}
+
+static BOOLEAN HistSelfTestContains(
+    _In_ PPH_LIST List,
+    _In_ LONGLONG Time
+    )
+{
+    for (ULONG i = 0; i < List->Count; i++)
+    {
+        if (((PHIST_SNAPSHOT)List->Items[i])->Time.QuadPart == Time)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+static VOID HistSelfTestFree(
+    _In_ PPH_LIST List
+    )
+{
+    for (ULONG i = 0; i < List->Count; i++)
+        PhFree(List->Items[i]);
+
+    PhDereferenceObject(List);
+}
+
+/**
+ * Deterministic check of the thinning rules on synthetic lists (never the live history or its file). Enabled by the
+ * plugin setting TaskManagerPlus.ProcessHistory.SelfTest = 1; the result goes to %TEMP%\tmplus-history-selftest.txt.
+ */
+VOID HistStoreSelfTest(
+    VOID
+    )
+{
+    WCHAR path[MAX_PATH];
+    CHAR report[1024];
+    LARGE_INTEGER now;
+    PPH_LIST pinnedList;
+    PPH_LIST plainList;
+    PPH_LIST savedList;
+    LONGLONG parked;
+    LONGLONG distance;
+    ULONG before;
+    ULONG nearestIndex;
+    ULONG length;
+    BOOLEAN pinnedSurvived;
+    BOOLEAN plainSurvived;
+    BOOLEAN pass;
+    HANDLE fileHandle;
+    DWORD written;
+
+    now.QuadPart = 1000000LL * PH_TICKS_PER_SEC; // an arbitrary fixed "now"
+
+    pinnedList = HistSelfTestCreateList(now);
+    plainList = HistSelfTestCreateList(now);
+    before = pinnedList->Count;
+
+    // Item 304 is the 5th of its minute bucket (not the first), so plain thinning drops it.
+    parked = ((PHIST_SNAPSHOT)pinnedList->Items[304])->Time.QuadPart;
+
+    HistThinList(pinnedList, now, parked);
+    HistThinList(plainList, now, 0);
+
+    pinnedSurvived = HistSelfTestContains(pinnedList, parked);
+    plainSurvived = HistSelfTestContains(plainList, parked);
+
+    // Nearest survivor of the dropped moment (used when the parked snapshot is pruned by retention instead).
+    savedList = HistSnapshotList;
+    HistSnapshotList = plainList;
+    nearestIndex = HistStoreFindNearestIndex(parked);
+    distance = ((PHIST_SNAPSHOT)plainList->Items[nearestIndex])->Time.QuadPart - parked;
+    HistSnapshotList = savedList;
+
+    if (distance < 0)
+        distance = -distance;
+
+    pass = pinnedSurvived && !plainSurvived && pinnedList->Count > plainList->Count && pinnedList->Count < before &&
+        distance <= 60LL * PH_TICKS_PER_SEC;
+
+    length = (ULONG)_snprintf_s(report, sizeof(report), _TRUNCATE,
+        "ProcessHistory thinning self-test: %s\r\n"
+        "before=%lu, thinned with the parked snapshot pinned=%lu (parked kept=%d), unpinned=%lu (parked kept=%d)\r\n"
+        "nearest survivor of the dropped moment: index %lu, %I64d s away\r\n",
+        pass ? "PASS" : "FAIL", before, pinnedList->Count, pinnedSurvived, plainList->Count, plainSurvived,
+        nearestIndex, distance / PH_TICKS_PER_SEC);
+
+    HistSelfTestFree(pinnedList);
+    HistSelfTestFree(plainList);
+
+    if (GetTempPath(RTL_NUMBER_OF(path), path) == 0)
+        return;
+
+    wcscat_s(path, RTL_NUMBER_OF(path), L"tmplus-history-selftest.txt");
+    fileHandle = CreateFile(path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    if (fileHandle != INVALID_HANDLE_VALUE)
+    {
+        WriteFile(fileHandle, report, length, &written, NULL);
+        CloseHandle(fileHandle);
+    }
 }
 
 /**

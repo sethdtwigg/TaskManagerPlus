@@ -18,6 +18,7 @@
 #define SETTING_NAME_INTERVAL_SECONDS (PLUGIN_NAME L".IntervalSeconds")
 #define SETTING_NAME_RETENTION_HOURS (PLUGIN_NAME L".RetentionHours")
 #define SETTING_NAME_PERSIST_TO_DISK (PLUGIN_NAME L".PersistToDisk")
+#define SETTING_NAME_SELF_TEST (PLUGIN_NAME L".SelfTest") // TaskManagerPlus: 1 = run the thinning self-test once
 #define SETTING_NAME_TREE_LIST_COLUMNS (PLUGIN_NAME L".TreeListColumns")
 #define SETTING_NAME_TREE_LIST_SORT (PLUGIN_NAME L".TreeListSort")
 
@@ -96,6 +97,14 @@ PHIST_SNAPSHOT HistStoreGetSnapshot(
     _In_ ULONG Index
     );
 
+ULONG HistStoreFindNearestIndex(
+    _In_ LONGLONG Time
+    );
+
+VOID HistStoreSelfTest(
+    VOID
+    );
+
 PPH_STRING HistStoreGetString(
     _In_ ULONG Index
     );
@@ -121,6 +130,11 @@ VOID HistInitializeTab(
     );
 
 VOID HistTabSnapshotsChanged(
+    VOID
+    );
+
+// TaskManagerPlus: time of the snapshot the user is parked on (not in live mode), 0 when none; thinning keeps it.
+LONGLONG HistTabGetParkedTime(
     VOID
     );
 

@@ -435,6 +435,13 @@ static VOID HistSelectSnapshotIndex(
     HistUpdateLabel(snapshot, Index);
 }
 
+LONGLONG HistTabGetParkedTime(
+    VOID
+    )
+{
+    return (HistTreeNewCreated && !HistLiveMode) ? HistDisplayedTime : 0;
+}
+
 /**
  * Called by the store whenever snapshots are added, pruned or cleared.
  */
@@ -456,20 +463,9 @@ VOID HistTabSnapshotsChanged(
     }
     else
     {
-        // Keep showing the same moment in time if it still exists; if it was
-        // pruned, fall back to the oldest snapshot.
-        index = 0;
-
-        for (ULONG i = 0; i < count; i++)
-        {
-            PHIST_SNAPSHOT snapshot = HistStoreGetSnapshot(i);
-
-            if (snapshot->Time.QuadPart >= HistDisplayedTime)
-            {
-                index = i;
-                break;
-            }
-        }
+        // Keep showing the same moment in time. Thinning never removes the parked snapshot (HistTabGetParkedTime);
+        // if retention pruned it, show the nearest surviving one (TaskManagerPlus).
+        index = HistStoreFindNearestIndex(HistDisplayedTime);
     }
 
     HistSelectSnapshotIndex(index);

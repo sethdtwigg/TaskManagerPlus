@@ -58,6 +58,12 @@ static VOID NTAPI MainWindowShowingCallback(
     )
 {
     HistInitializeTab();
+
+    if (PhGetIntegerSetting(SETTING_NAME_SELF_TEST)) // TaskManagerPlus: deterministic thinning check, see HistStoreSelfTest
+    {
+        PhSetIntegerSetting(SETTING_NAME_SELF_TEST, 0);
+        HistStoreSelfTest();
+    }
 }
 
 /**
@@ -147,6 +153,7 @@ LOGICAL DllMain(
             { IntegerSettingType, SETTING_NAME_INTERVAL_SECONDS, L"a" }, // 10
             { IntegerSettingType, SETTING_NAME_RETENTION_HOURS, L"18" }, // 24
             { IntegerSettingType, SETTING_NAME_PERSIST_TO_DISK, L"1" },
+            { IntegerSettingType, SETTING_NAME_SELF_TEST, L"0" },
             { StringSettingType, SETTING_NAME_TREE_LIST_COLUMNS, L"" },
             { IntegerPairSettingType, SETTING_NAME_TREE_LIST_SORT, L"0,1" },
         };
