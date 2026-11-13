@@ -51,6 +51,8 @@ $Allow = @(
     @{ Path = '\.manifest$|\.rc$|\.natvis$|\.vcxproj|\.props$|\.targets$|\.sln|\.xml$|\.csproj$'; Line = 'schemas\.microsoft\.com|schemas\.openxmlformats|www\.w3\.org|msbuild/2003|aka\.ms/'; Why = 'XML namespaces / schema identifiers, never fetched' },
     @{ Path = '^tools/CustomBuildTool/NativeMethods\.json$'; Line = 'aka\.ms/'; Why = 'CsWin32 schema identifier, never fetched' },
     @{ Path = '^SystemInformer/resources/settings\.schema\.json$'; Line = 'json-schema\.org'; Why = 'JSON Schema meta-schema identifier, never fetched' },
+    @{ Path = '^tools/tests/(unit/test-boot\.c|boot-hidden\.ps1)$'; Line = 'schemas\.microsoft\.com/win/2004/08/events/event'; Why = 'XML namespace of the sample Windows event records the boot parser is tested with, never fetched' },
+    @{ Path = '^tools/tests/unit/test-reports\.c$'; Line = 'Has\(s, "https?://"\)'; Why = 'negative assertions: a generated HTML report must not contain any URL' },
     @{ Path = '^plugins/ExtendedTools/Efi/'; Line = 'opensource\.org'; Why = 'licence header text' },
     @{ Path = '^(LICENSE|COPYRIGHT)\.txt$'; Line = '.'; Why = 'licence text' },
     @{ Path = '^README\.md$'; Line = 'LICENSE\.txt'; Why = 'local link' },
