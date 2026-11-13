@@ -79,6 +79,22 @@ static PPH_LIST ProcessNodeRootList; // list of root nodes
 static PH_TN_FILTER_SUPPORT FilterSupport;
 
 CONST BOOLEAN PhProcessTreeListStateHighlighting = TRUE;
+// TaskManagerPlus: View > Flat list. 0 = legacy (the SortChildProcesses setting decides), 1 = flat when sorted,
+// 2 = tree when sorted (children are sorted under their parent).
+ULONG PhProcessFlatListMode = 0;
+
+static BOOLEAN PhpSortChildProcesses(
+    VOID
+    )
+{
+    if (PhProcessFlatListMode == 1)
+        return FALSE;
+    if (PhProcessFlatListMode == 2)
+        return TRUE;
+
+    return !!PhCsSortChildProcesses;
+}
+
 static PPH_POINTER_LIST ProcessNodeStateList = NULL; // list of nodes which need to be processed
 static ULONG PhProcessTreeColumnHeaderCacheLength = 0;
 static PVOID PhProcessTreeColumnHeaderCache = NULL;
@@ -122,6 +138,7 @@ VOID PhInitializeProcessTreeList(
     TreeNew_SetCellHeat(hwnd, TRUE); // TaskManagerPlus: heat-map tints and the process count pill
     PhHeatMapEnabled = !!PhGetIntegerSetting(SETTING_HEAT_MAP);
     PhHeatStyle = PhGetIntegerSetting(SETTING_HEAT_STYLE); // TaskManagerPlus
+    PhProcessFlatListMode = PhGetIntegerSetting(SETTING_FLAT_LIST) & 3; // TaskManagerPlus
     PhShowCountPill = !!PhGetIntegerSetting(SETTING_SHOW_COUNT_PILL); // TaskManagerPlus
     TreeNew_SetImageList(hwnd, PhProcessSmallImageList);
     TreeNew_SetMaxId(hwnd, PHPRTLC_MAXIMUM - 1);
@@ -812,7 +829,7 @@ VOID PhTickProcessNodes(
         }
     }
 
-    if (PhCsSortRootProcesses || PhCsSortChildProcesses || ProcessTreeListSortOrder != NoSortOrder)
+    if (PhCsSortRootProcesses || PhpSortChildProcesses() || ProcessTreeListSortOrder != NoSortOrder)
     {
         // Force a rebuild to sort the items.
         TreeNew_NodesStructured(ProcessTreeListHandle);
@@ -1004,7 +1021,7 @@ VOID PhAggregateProcessFieldIfNeeded(
     _Inout_ PVOID AggregatedValue
     )
 {
-    if (!PhCsPropagateCpuUsage || ProcessNode->Node.Expanded || (!PhCsSortChildProcesses && ProcessTreeListSortOrder != NoSortOrder))
+    if (!PhCsPropagateCpuUsage || ProcessNode->Node.Expanded || (!PhpSortChildProcesses() && ProcessTreeListSortOrder != NoSortOrder))
     {
         PhpAccumulateField(AggregatedValue, PTR_ADD_OFFSET(BaseAddress, FieldOffset), Type);
     }
@@ -3356,7 +3373,7 @@ BOOLEAN NTAPI PhpProcessTreeNewCallback(
             if (PhGroupGetChildren(
                 node,
                 getChildren,
-                !!PhCsSortChildProcesses,
+                !!PhpSortChildProcesses(),
                 !!PhCsSortRootProcesses,
                 sortOrder,
                 &sortList,
@@ -3367,7 +3384,7 @@ BOOLEAN NTAPI PhpProcessTreeNewCallback(
             {
                 // TaskManagerPlus: grouped view, children supplied above.
             }
-            else if (PhCsSortChildProcesses)
+            else if (PhpSortChildProcesses())
             {
                 if (!node)
                 {
@@ -3562,7 +3579,7 @@ BOOLEAN NTAPI PhpProcessTreeNewCallback(
 
             node = (PPH_PROCESS_NODE)isLeaf->Node;
 
-            if (PhCsSortChildProcesses || ProcessTreeListSortOrder == NoSortOrder)
+            if (PhpSortChildProcesses() || ProcessTreeListSortOrder == NoSortOrder)
                 isLeaf->IsLeaf = (PhGroupGetNodeChildren(node) ? PhGroupGetNodeChildren(node) : node->Children)->Count == 0; // TaskManagerPlus
             else
                 isLeaf->IsLeaf = TRUE;
@@ -6032,7 +6049,7 @@ BOOLEAN NTAPI PhpProcessTreeNewCallback(
             if (!node)
                 break;
 
-            if (PhCsSortChildProcesses || ProcessTreeListSortOrder == NoSortOrder)
+            if (PhpSortChildProcesses() || ProcessTreeListSortOrder == NoSortOrder)
             {
                 // in NoSortOrder we select subtree (TheEragon)
 
@@ -6450,6 +6467,22 @@ VOID PhToggleProcessCompactRows(
 
     if (ProcessTreeListHandle)
         TreeNew_SetStyleFlags(ProcessTreeListHandle, TN_STYLE_THIN_ROWS, thin ? TN_STYLE_THIN_ROWS : 0);
+}
+
+// TaskManagerPlus: View > Flat list (flat when sorted <-> tree when sorted).
+VOID PhToggleProcessFlatList(
+    VOID
+    )
+{
+    ULONG mode = PhProcessFlatListMode == 1 ? 2 : 1;
+
+    PhProcessFlatListMode = mode;
+    PhSetIntegerSetting(SETTING_FLAT_LIST, mode);
+
+    if (mode == 1 && ProcessTreeListSortOrder == NoSortOrder)
+        TreeNew_SetSort(ProcessTreeListHandle, PHPRTLC_CPU, DescendingSortOrder); // a flat list needs a sort
+
+    TreeNew_NodesStructured(ProcessTreeListHandle);
 }
 
 // TaskManagerPlus: View > Header totals (two-line column headers with the live totals; hides the totals row).

@@ -461,6 +461,10 @@ VOID PhToggleProcessCompactRows(
     VOID
     );
 
+VOID PhToggleProcessFlatList(
+    VOID
+    );
+
 VOID PhToggleProcessHeaderTotals(
     VOID
     );

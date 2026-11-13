@@ -172,6 +172,7 @@ VOID PhAddDefaultSettings(
     PhpAddStringSetting(SETTING_MAIN_WINDOW_HIDDEN_TABS, L""); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_SHOW_TOTALS_ROW, L"1"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_HEADER_TOTALS, L"ff"); // TaskManagerPlus: resolved after the settings file is read (fresh 1, existing 0)
+    PhpAddIntegerSetting(SETTING_FLAT_LIST, L"ff"); // TaskManagerPlus: resolved after the settings file is read (fresh 1, existing 0)
     PhpAddIntegerSetting(SETTING_SHOW_COUNT_PILL, L"0"); // TaskManagerPlus: the count lives in the status bar
     PhpAddStringSetting(SETTING_DETACHED_GRAPHS, L""); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_HIDE_MICROSOFT_PROCESSES, L"0");
