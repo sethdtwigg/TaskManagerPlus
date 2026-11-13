@@ -72,6 +72,7 @@
     <ClCompile Include="store.c" />
     <ClCompile Include="tracker.c" />
     <ClCompile Include="tab.c" />
+    <ClCompile Include="intf.c" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="resourcetrends.h" />
   </ItemGroup>

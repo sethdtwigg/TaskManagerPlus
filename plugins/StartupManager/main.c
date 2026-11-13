@@ -63,6 +63,7 @@ static PPH_LIST NTAPI SmIntfEnumerate(
         entry->Enabled = item->Enabled;
         entry->CanToggle = item->CanToggle;
         entry->Source = item->Source;
+        entry->Impact = SmGetImpactString(item->Impact)->Buffer;
         PhSetReference(&entry->ObjectPath, item->ObjectPath);
         PhSetReference(&entry->ApprovedValueName, item->ApprovedValueName);
         PhAddItemList(entries, entry);

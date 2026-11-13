@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files"><UniqueIdentifier>{77865850-7202-493B-AFE6-0DF432738116}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files"><UniqueIdentifier>{982C7799-0386-4EE8-B610-9DA6FC535389}</UniqueIdentifier></Filter>
+    <Filter Include="Resource Files"><UniqueIdentifier>{84D641BB-3D92-45FE-B339-3CB035082078}</UniqueIdentifier></Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="collect.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="export.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="reportfmt.c"><Filter>Source Files</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="sessionreports.h"><Filter>Header Files</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="SessionReports.rc"><Filter>Resource Files</Filter></ResourceCompile>
+    <ResourceCompile Include="version.rc"><Filter>Resource Files</Filter></ResourceCompile>
+  </ItemGroup>
+</Project>

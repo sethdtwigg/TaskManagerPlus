@@ -38,6 +38,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "QuickActions", "QuickAction
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ResourceTrends", "ResourceTrends\ResourceTrends.vcxproj", "{9E2B5F17-4C3A-48D6-B1A8-2F6D0C7E3A95}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SessionReports", "SessionReports\SessionReports.vcxproj", "{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -216,6 +218,18 @@ Global
 		{9E2B5F17-4C3A-48D6-B1A8-2F6D0C7E3A95}.Release|Win32.Build.0 = Release|Win32
 		{9E2B5F17-4C3A-48D6-B1A8-2F6D0C7E3A95}.Release|x64.ActiveCfg = Release|x64
 		{9E2B5F17-4C3A-48D6-B1A8-2F6D0C7E3A95}.Release|x64.Build.0 = Release|x64
+		{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}.Debug|ARM64.Build.0 = Debug|ARM64
+		{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}.Debug|Win32.Build.0 = Debug|Win32
+		{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}.Debug|x64.ActiveCfg = Debug|x64
+		{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}.Debug|x64.Build.0 = Debug|x64
+		{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}.Release|ARM64.ActiveCfg = Release|ARM64
+		{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}.Release|ARM64.Build.0 = Release|ARM64
+		{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}.Release|Win32.ActiveCfg = Release|Win32
+		{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}.Release|Win32.Build.0 = Release|Win32
+		{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}.Release|x64.ActiveCfg = Release|x64
+		{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

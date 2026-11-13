@@ -240,7 +240,7 @@ try {
 
     # Scripted UI steps (-Steps), each "op" or "op:arg". Everything is posted to windows on the hidden desktop.
     #   wait:<seconds>                 sleep
-    #   msg:<registered message name>  post RegisterWindowMessage(name) to the main window (e.g. the QuickActions open message,
+    #   msg:<registered message name>[,wParam[,lParam]]  post RegisterWindowMessage(name) to the main window (decimal params, default 0) (e.g. the QuickActions open message,
     #                                  used instead of Ctrl+K because posted key messages do not carry Ctrl state)
     #   type:<text>                    WM_CHAR for every character to the Edit of the window class given by -StepClass
     #   key:<vk>                       WM_KEYDOWN/WM_KEYUP (decimal virtual key) to that Edit (13 = Return, 27 = Escape, 40 = Down)
@@ -251,7 +251,7 @@ try {
         $op, $arg = $s -split ":", 2
         switch ($op) {
             "wait" { Start-Sleep -Seconds ([double]$arg) }
-            "msg" { $m = [H]::RegisterWindowMessageW($arg); [void][H]::PostMessage($main, $m, [IntPtr]::Zero, [IntPtr]::Zero); "posted $arg ($m)" }
+            "msg" { $mn, $wp, $lp = $arg -split ",", 3; $m = [H]::RegisterWindowMessageW($mn); [void][H]::PostMessage($main, $m, [IntPtr][int]$wp, [IntPtr][int]$lp); "posted $mn ($m)" }
             "type" {
                 $w = (Get-DeskWindows | Where-Object { $_.Class -eq $StepClass } | Select-Object -First 1).H
                 if (-not $w) { "step type: no $StepClass window"; break }

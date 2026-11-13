@@ -3,6 +3,9 @@
  */
 
 #include "resourcetrends.h"
+#include <resourcetrendsintf.h>
+
+extern RESOURCE_TRENDS_INTERFACE TrsInterface; // intf.c
 
 PPH_PLUGIN PluginInstance = NULL;
 
@@ -187,6 +190,7 @@ LOGICAL DllMain(
         info->Description = L"Records system and per-process CPU, memory and commit history on disk, shows sparklines and a"
             L" \"what used the CPU or memory at this time\" lookup on a Trends tab, and flags processes whose private bytes grow steadily.";
         info->HasOptions = TRUE;
+        info->Interface = &TrsInterface; // TaskManagerPlus: usage table for SessionReports
 
         PhRegisterCallback(
             PhGetPluginCallback(PluginInstance, PluginCallbackLoad),

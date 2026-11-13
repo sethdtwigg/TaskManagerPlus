@@ -28,6 +28,10 @@ typedef struct _STARTUP_ENTRY_INFO
     ULONG Source;
     PPH_STRING ObjectPath;
     PPH_STRING ApprovedValueName; // may be NULL
+
+    // Appended for SessionReports / boot timing (read only).
+    PCWSTR Impact; // static string: "Low", "Medium", "High", "Not measured"
+    ULONG BootDelayMs; // measured boot delay from the Diagnostics-Performance log, 0 = none
 } STARTUP_ENTRY_INFO, *PSTARTUP_ENTRY_INFO;
 
 typedef struct _STARTUP_MANAGER_INTERFACE

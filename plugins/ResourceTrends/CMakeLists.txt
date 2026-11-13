@@ -21,6 +21,7 @@ set(SOURCES
     "store.c"
     "tracker.c"
     "tab.c"
+    "intf.c"
 )
 source_group("Source Files" FILES ${SOURCES})
 

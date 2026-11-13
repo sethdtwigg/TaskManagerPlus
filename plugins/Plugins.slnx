@@ -23,4 +23,5 @@
     <Project Path="NetworkLookup/NetworkLookup.vcxproj" Id="3b7e0d52-91c4-4e6a-a1f3-5d2c8e4b7a10" />
     <Project Path="QuickActions/QuickActions.vcxproj" Id="6a1d3c84-2b7f-4e95-9c10-7e4a5b3d8f21" />
     <Project Path="ResourceTrends/ResourceTrends.vcxproj" Id="9e2b5f17-4c3a-48d6-b1a8-2f6d0c7e3a95" />
+    <Project Path="SessionReports/SessionReports.vcxproj" Id="5c8e2a91-d3b4-4f67-8a19-0e7b6c2d4f58" />
 </Solution>
