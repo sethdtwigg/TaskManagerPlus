@@ -13,12 +13,15 @@
 #include <settings.h>
 #include "resource.h"
 #include <toolstatusintf.h>
+#include <processcaptureintf.h>
 
 #define PLUGIN_NAME L"TaskManagerPlus.ProcessHistory"
 #define SETTING_NAME_INTERVAL_SECONDS (PLUGIN_NAME L".IntervalSeconds")
 #define SETTING_NAME_RETENTION_HOURS (PLUGIN_NAME L".RetentionHours")
 #define SETTING_NAME_PERSIST_TO_DISK (PLUGIN_NAME L".PersistToDisk")
 #define SETTING_NAME_SELF_TEST (PLUGIN_NAME L".SelfTest") // TaskManagerPlus: 1 = run the thinning self-test once
+#define SETTING_NAME_CAPTURE (PLUGIN_NAME L".CaptureShortLived") // TaskManagerPlus: 1 = ETW capture of short-lived processes (needs admin)
+#define SETTING_NAME_CAPTURE_SELF_TEST (PLUGIN_NAME L".CaptureSelfTest") // TaskManagerPlus: 1 = inject a synthetic short-lived process once (tests)
 #define SETTING_NAME_TREE_LIST_COLUMNS (PLUGIN_NAME L".TreeListColumns")
 #define SETTING_NAME_TREE_LIST_SORT (PLUGIN_NAME L".TreeListSort")
 
@@ -120,6 +123,23 @@ ULONG HistGetIntervalSeconds(
     );
 
 ULONG HistGetRetentionHours(
+    VOID
+    );
+
+// Short-lived process capture (capture.c)
+
+extern PROCESS_CAPTURE_INTERFACE CapInterface;
+
+VOID CapMarkSeen(
+    _In_ ULONG ProcessId,
+    _In_ LONGLONG CreateTime
+    );
+
+VOID CapUpdate(
+    VOID
+    );
+
+VOID CapShutdown(
     VOID
     );
 

@@ -73,6 +73,11 @@ static LARGE_INTEGER HistFilePosition = { 0 };
 static ULONG64 HistStaleBytes = 0;
 static LARGE_INTEGER HistLastSnapshotTime = { 0 };
 static BOOLEAN HistPersistEnabled = FALSE;
+// TaskManagerPlus: short-lived processes captured since the last snapshot (added to the next one).
+#define HIST_PENDING_MAX 256
+static PROCESS_CAPTURE_RECORD HistPending[HIST_PENDING_MAX];
+static ULONG HistPendingCount = 0;
+static ULONG64 HistCaptureCursor = 0;
 
 static BOOLEAN NTAPI HistStringEqualFunction(
     _In_ PVOID Entry1,
@@ -936,6 +941,71 @@ static VOID HistSyncPersistSetting(
     }
 }
 
+/**
+ * TaskManagerPlus: pulls processes that started and exited since the last refresh
+ * from the ETW capture (see capture.c) into a pending list.
+ */
+static VOID HistDrainCaptured(
+    VOID
+    )
+{
+    PROCESS_CAPTURE_RECORD records[32];
+    ULONG count;
+
+    while ((count = CapInterface.ReadCompleted(&HistCaptureCursor, records, RTL_NUMBER_OF(records))) != 0)
+    {
+        for (ULONG i = 0; i < count; i++)
+        {
+            if (HistPendingCount < HIST_PENDING_MAX)
+                HistPending[HistPendingCount++] = records[i];
+        }
+    }
+}
+
+/**
+ * Adds the pending short-lived processes to a snapshot being built (space for
+ * HistPendingCount extra entries was allocated) and clears the pending list.
+ */
+static VOID HistAddPendingToSnapshot(
+    _Inout_ PHIST_SNAPSHOT Snapshot
+    )
+{
+    PH_STRINGREF empty;
+
+    PhInitializeEmptyStringRef(&empty);
+
+    for (ULONG i = 0; i < HistPendingCount; i++)
+    {
+        PPROCESS_CAPTURE_RECORD record = &HistPending[i];
+        PHIST_ENTRY entry;
+        PPH_STRING nt;
+        PPH_STRING win32;
+        PH_STRINGREF path;
+        PH_STRINGREF name;
+        PH_STRINGREF directory;
+
+        PhInitializeStringRef(&path, record->ImagePath);
+
+        if (!PhSplitStringRefAtLastChar(&path, L'\\', &directory, &name))
+            name = path;
+
+        entry = &Snapshot->Entries[Snapshot->Count++];
+        entry->ProcessId = record->ProcessId;
+        entry->ParentProcessId = record->ParentProcessId;
+        entry->SessionId = record->SessionId;
+        entry->CreateTime = record->CreateTime;
+        entry->NameIndex = HistInternString(&name);
+
+        nt = PhCreateString(record->ImagePath);
+        win32 = PhGetFileName(nt);
+        entry->PathIndex = HistInternString(win32 ? &win32->sr : &empty);
+        PhClearReference(&win32);
+        PhDereferenceObject(nt);
+    }
+
+    HistPendingCount = 0;
+}
+
 VOID HistStoreCollect(
     VOID
     )
@@ -949,6 +1019,7 @@ VOID HistStoreCollect(
     PhQuerySystemTime(&now);
 
     HistSyncPersistSetting();
+    HistDrainCaptured();
 
     if (HistLastSnapshotTime.QuadPart != 0 &&
         now.QuadPart - HistLastSnapshotTime.QuadPart < (LONGLONG)HistGetIntervalSeconds() * PH_TICKS_PER_SEC)
@@ -959,7 +1030,7 @@ VOID HistStoreCollect(
     PhInitializeEmptyStringRef(&empty);
     PhEnumProcessItems(&processItems, &numberOfProcessItems);
 
-    snapshot = PhAllocateZero(FIELD_OFFSET(HIST_SNAPSHOT, Entries) + (SIZE_T)numberOfProcessItems * sizeof(HIST_ENTRY));
+    snapshot = PhAllocateZero(FIELD_OFFSET(HIST_SNAPSHOT, Entries) + ((SIZE_T)numberOfProcessItems + HistPendingCount) * sizeof(HIST_ENTRY));
     snapshot->Time = now;
 
     for (ULONG i = 0; i < numberOfProcessItems; i++)
@@ -991,6 +1062,8 @@ VOID HistStoreCollect(
 
     PhDereferenceObjects(processItems, numberOfProcessItems);
     PhFree(processItems);
+
+    HistAddPendingToSnapshot(snapshot);
 
     qsort(snapshot->Entries, snapshot->Count, sizeof(HIST_ENTRY), HistEntryCompare);
 
@@ -1027,6 +1100,7 @@ VOID HistStoreClear(
     HistStringsWritten = 0;
     HistStaleBytes = 0;
     HistLastSnapshotTime.QuadPart = 0;
+    HistPendingCount = 0;
 
     HistCloseFile();
 

@@ -11,6 +11,7 @@ static PH_CALLBACK_REGISTRATION PluginUnloadCallbackRegistration;
 static PH_CALLBACK_REGISTRATION PluginShowOptionsCallbackRegistration;
 static PH_CALLBACK_REGISTRATION MainWindowShowingCallbackRegistration;
 static PH_CALLBACK_REGISTRATION ProcessesUpdatedCallbackRegistration;
+static PH_CALLBACK_REGISTRATION ProcessAddedCallbackRegistration; // TaskManagerPlus: lets the capture know which processes the list showed
 
 _Function_class_(PH_CALLBACK_FUNCTION)
 static VOID NTAPI LoadCallback(
@@ -28,6 +29,7 @@ static VOID NTAPI UnloadCallback(
     _In_opt_ PVOID Context
     )
 {
+    CapShutdown();
     HistStoreFlush();
 }
 
@@ -76,7 +78,21 @@ static VOID NTAPI ProcessesUpdatedCallback(
     _In_opt_ PVOID Context
     )
 {
+    CapUpdate();
     HistStoreCollect();
+}
+
+/** [process provider thread] */
+_Function_class_(PH_CALLBACK_FUNCTION)
+static VOID NTAPI ProcessAddedCallback(
+    _In_opt_ PVOID Parameter,
+    _In_opt_ PVOID Context
+    )
+{
+    PPH_PROCESS_ITEM processItem = Parameter;
+
+    if (processItem)
+        CapMarkSeen(HandleToUlong(processItem->ProcessId), processItem->CreateTime.QuadPart);
 }
 
 static ULONG HistClampSetting(
@@ -106,6 +122,7 @@ INT_PTR CALLBACK HistOptionsDlgProc(
             PhSetDialogItemValue(WindowHandle, IDC_INTERVAL, HistGetIntervalSeconds(), FALSE);
             PhSetDialogItemValue(WindowHandle, IDC_RETENTION, HistGetRetentionHours(), FALSE);
             Button_SetCheck(GetDlgItem(WindowHandle, IDC_PERSIST), PhGetIntegerSetting(SETTING_NAME_PERSIST_TO_DISK) ? BST_CHECKED : BST_UNCHECKED);
+            Button_SetCheck(GetDlgItem(WindowHandle, IDC_CAPTURE), PhGetIntegerSetting(SETTING_NAME_CAPTURE) ? BST_CHECKED : BST_UNCHECKED);
         }
         break;
     case WM_DESTROY:
@@ -125,6 +142,10 @@ INT_PTR CALLBACK HistOptionsDlgProc(
             PhSetIntegerSetting(
                 SETTING_NAME_PERSIST_TO_DISK,
                 Button_GetCheck(GetDlgItem(WindowHandle, IDC_PERSIST)) == BST_CHECKED
+                );
+            PhSetIntegerSetting(
+                SETTING_NAME_CAPTURE,
+                Button_GetCheck(GetDlgItem(WindowHandle, IDC_CAPTURE)) == BST_CHECKED
                 );
         }
         break;
@@ -154,6 +175,8 @@ LOGICAL DllMain(
             { IntegerSettingType, SETTING_NAME_RETENTION_HOURS, L"18" }, // 24
             { IntegerSettingType, SETTING_NAME_PERSIST_TO_DISK, L"1" },
             { IntegerSettingType, SETTING_NAME_SELF_TEST, L"0" },
+            { IntegerSettingType, SETTING_NAME_CAPTURE, L"1" },
+            { IntegerSettingType, SETTING_NAME_CAPTURE_SELF_TEST, L"0" },
             { StringSettingType, SETTING_NAME_TREE_LIST_COLUMNS, L"" },
             { IntegerPairSettingType, SETTING_NAME_TREE_LIST_SORT, L"0,1" },
         };
@@ -166,8 +189,10 @@ LOGICAL DllMain(
         info->DisplayName = L"Process History";
         info->Author = L"TaskManagerPlus";
         info->Description = L"Records periodic snapshots of the process list and adds a History tab"
-            L" for scrubbing back in time to see which processes were running, started or exited.";
+            L" for scrubbing back in time to see which processes were running, started or exited."
+            L" With administrator rights it also records processes that start and exit between two refreshes (ETW).";
         info->HasOptions = TRUE;
+        info->Interface = &CapInterface; // TaskManagerPlus: short-lived process records for ProcessRules
 
         PhRegisterCallback(
             PhGetPluginCallback(PluginInstance, PluginCallbackLoad),
@@ -198,6 +223,13 @@ LOGICAL DllMain(
             ProcessesUpdatedCallback,
             NULL,
             &ProcessesUpdatedCallbackRegistration
+            );
+
+        PhRegisterCallback(
+            PhGetGeneralCallback(GeneralCallbackProcessProviderAddedEvent),
+            ProcessAddedCallback,
+            NULL,
+            &ProcessAddedCallbackRegistration
             );
 
         PhAddSettings(settings, RTL_NUMBER_OF(settings));

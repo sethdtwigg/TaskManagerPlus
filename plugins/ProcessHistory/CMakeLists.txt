@@ -16,6 +16,7 @@ source_group("Resource Files" FILES ${RESOURCES})
 
 set(SOURCES
     "main.c"
+    "capture.c"
     "store.c"
     "tab.c"
 )
@@ -31,4 +32,5 @@ si_add_plugin(ProcessHistory ${ALL_FILES})
 
 target_link_libraries(ProcessHistory PRIVATE
     user32
+    tdh
 )

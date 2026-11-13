@@ -37,6 +37,7 @@ typedef enum _HIST_STATUS
     HIST_STATUS_NEW,
     HIST_STATUS_EXITED,
     HIST_STATUS_EXITED_LATER,
+    HIST_STATUS_SHORT_LIVED, // TaskManagerPlus: started and exited between two snapshots
     HIST_STATUS_MAXIMUM
 } HIST_STATUS;
 
@@ -46,6 +47,7 @@ static CONST PH_STRINGREF HistStatusStrings[HIST_STATUS_MAXIMUM] =
     PH_STRINGREF_INIT(L"New"),
     PH_STRINGREF_INIT(L"Exited"),
     PH_STRINGREF_INIT(L"Exited later"),
+    PH_STRINGREF_INIT(L"Short-lived"),
 };
 
 typedef struct _HIST_NODE
@@ -225,7 +227,11 @@ static BOOLEAN HistUpdateStatuses(
         PHIST_NODE node = HistNodeList->Items[i];
         HIST_STATUS status = HIST_STATUS_RUNNING;
 
-        if (previous && !HistSnapshotFindEntry(previous, node->Entry.ProcessId, node->Entry.CreateTime))
+        if (previous && next &&
+            !HistSnapshotFindEntry(previous, node->Entry.ProcessId, node->Entry.CreateTime) &&
+            !HistSnapshotFindEntry(next, node->Entry.ProcessId, node->Entry.CreateTime))
+            status = HIST_STATUS_SHORT_LIVED;
+        else if (previous && !HistSnapshotFindEntry(previous, node->Entry.ProcessId, node->Entry.CreateTime))
             status = HIST_STATUS_NEW;
         else if (next && !HistSnapshotFindEntry(next, node->Entry.ProcessId, node->Entry.CreateTime))
             status = HIST_STATUS_EXITED;
@@ -236,6 +242,11 @@ static BOOLEAN HistUpdateStatuses(
             HistCountNew++;
         else if (status == HIST_STATUS_EXITED)
             HistCountExited++;
+        else if (status == HIST_STATUS_SHORT_LIVED)
+        {
+            HistCountNew++;
+            HistCountExited++;
+        }
 
         if (node->Status != status)
         {
@@ -897,6 +908,7 @@ static BOOLEAN NTAPI HistTreeNewCallback(
             switch (node->Status)
             {
             case HIST_STATUS_NEW:
+            case HIST_STATUS_SHORT_LIVED:
                 getNodeColor->BackColor = HistColorNew;
                 break;
             case HIST_STATUS_EXITED:

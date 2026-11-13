@@ -7,6 +7,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="capture.c"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="store.c"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="tab.c"><Filter>Source Files</Filter></ClCompile>
   </ItemGroup>

@@ -8,6 +8,7 @@
  */
 
 #include "processrules.h"
+#include <processcaptureintf.h>
 
 static BOOLEAN TmpEnginePaused = FALSE;
 static LARGE_INTEGER TmpEngineStartTime;
@@ -96,9 +97,10 @@ static BOOLEAN TmpShouldSkipProcess(
 /**
  * Records an event on a rule and emits the notification/log entry.
  */
-static VOID TmpReportEvent(
+static VOID TmpReportEventNamed(
     _In_ PTMP_RULE Rule,
-    _In_ PPH_PROCESS_ITEM ProcessItem,
+    _In_opt_ PPH_STRING ProcessName,
+    _In_ ULONG ProcessId,
     _In_ PCWSTR Description,
     _In_ BOOLEAN Important
     )
@@ -107,8 +109,8 @@ static VOID TmpReportEvent(
 
     text = PhFormatString(
         L"%s (%lu): %s",
-        PhGetStringOrEmpty(ProcessItem->ProcessName),
-        HandleToUlong(ProcessItem->ProcessId),
+        PhGetStringOrEmpty(ProcessName),
+        ProcessId,
         Description
         );
 
@@ -131,6 +133,16 @@ static VOID TmpReportEvent(
     }
 
     PhDereferenceObject(text);
+}
+
+static VOID TmpReportEvent(
+    _In_ PTMP_RULE Rule,
+    _In_ PPH_PROCESS_ITEM ProcessItem,
+    _In_ PCWSTR Description,
+    _In_ BOOLEAN Important
+    )
+{
+    TmpReportEventNamed(Rule, ProcessItem->ProcessName, HandleToUlong(ProcessItem->ProcessId), Description, Important);
 }
 
 /**
@@ -276,10 +288,11 @@ static VOID TmpRestoreProcess(
     memset(Extension->Fired, 0, sizeof(Extension->Fired));
 }
 
-static PPH_STRING TmpExpandCommand(
+static PPH_STRING TmpExpandCommandEx(
     _In_ PTMP_RULE Rule,
-    _In_ PPH_PROCESS_ITEM ProcessItem,
-    _Inout_ PTMP_PROCESS_EXTENSION Extension
+    _In_ ULONG ProcessId,
+    _In_opt_ PPH_STRING ProcessName,
+    _In_opt_ PPH_STRING FileNameWin32
     )
 {
     PH_STRING_BUILDER sb;
@@ -289,15 +302,19 @@ static PPH_STRING TmpExpandCommand(
     static CONST PH_STRINGREF openBrace = PH_STRINGREF_INIT(L"{");
     static CONST PH_STRINGREF closeBrace = PH_STRINGREF_INIT(L"}");
 
-    if (!Extension->FileNameWin32 && ProcessItem->FileName)
-        Extension->FileNameWin32 = PhGetFileName(ProcessItem->FileName);
-
     PhInitializeStringBuilder(&sb, Rule->Command->Length);
     remaining = Rule->Command->sr;
 
-    while (PhSplitStringRefAtString(&remaining, &openBrace, FALSE, &before, &remaining))
+    // TaskManagerPlus: when no further "{" exists the split returns the tail in "before"; it used to be
+    // dropped, so text after the last token ("{pid}>> file") was lost.
+    for (;;)
     {
+        BOOLEAN foundOpen = PhSplitStringRefAtString(&remaining, &openBrace, FALSE, &before, &remaining);
+
         PhAppendStringBuilder(&sb, &before);
+
+        if (!foundOpen)
+            break;
 
         if (!PhSplitStringRefAtString(&remaining, &closeBrace, FALSE, &token, &remaining))
         {
@@ -308,11 +325,11 @@ static PPH_STRING TmpExpandCommand(
         }
 
         if (PhEqualStringRef2(&token, L"pid", TRUE))
-            PhAppendFormatStringBuilder(&sb, L"%lu", HandleToUlong(ProcessItem->ProcessId));
+            PhAppendFormatStringBuilder(&sb, L"%lu", ProcessId);
         else if (PhEqualStringRef2(&token, L"name", TRUE))
-            PhAppendStringBuilder2(&sb, PhGetStringOrEmpty(ProcessItem->ProcessName));
+            PhAppendStringBuilder2(&sb, PhGetStringOrEmpty(ProcessName));
         else if (PhEqualStringRef2(&token, L"path", TRUE))
-            PhAppendStringBuilder2(&sb, PhGetStringOrEmpty(Extension->FileNameWin32));
+            PhAppendStringBuilder2(&sb, PhGetStringOrEmpty(FileNameWin32));
         else
         {
             PhAppendStringBuilder(&sb, &openBrace);
@@ -324,6 +341,34 @@ static PPH_STRING TmpExpandCommand(
     PhAppendStringBuilder(&sb, &remaining);
 
     return PhFinalStringBuilderString(&sb);
+}
+
+static PPH_STRING TmpExpandCommand(
+    _In_ PTMP_RULE Rule,
+    _In_ PPH_PROCESS_ITEM ProcessItem,
+    _Inout_ PTMP_PROCESS_EXTENSION Extension
+    )
+{
+    if (!Extension->FileNameWin32 && ProcessItem->FileName)
+        Extension->FileNameWin32 = PhGetFileName(ProcessItem->FileName);
+
+    return TmpExpandCommandEx(Rule, HandleToUlong(ProcessItem->ProcessId), ProcessItem->ProcessName, Extension->FileNameWin32);
+}
+
+static NTSTATUS TmpStartCommandLine(
+    _In_ PPH_STRING CommandLine
+    )
+{
+    return PhCreateProcessWin32(
+        NULL,
+        PhGetString(CommandLine),
+        NULL,
+        NULL,
+        PH_CREATE_PROCESS_NEW_CONSOLE,
+        NULL,
+        NULL,
+        NULL
+        );
 }
 
 static VOID TmpRunCommand(
@@ -340,16 +385,7 @@ static VOID TmpRunCommand(
 
     commandLine = TmpExpandCommand(Rule, ProcessItem, Extension);
 
-    status = PhCreateProcessWin32(
-        NULL,
-        PhGetString(commandLine),
-        NULL,
-        NULL,
-        PH_CREATE_PROCESS_NEW_CONSOLE,
-        NULL,
-        NULL,
-        NULL
-        );
+    status = TmpStartCommandLine(commandLine);
 
     if (NT_SUCCESS(status))
     {
@@ -786,6 +822,160 @@ VOID TmpSetEnginePaused(
     TmpRefreshRulesTab();
 }
 
+// TaskManagerPlus: processes that started and exited between two refreshes (ETW capture in ProcessHistory)
+
+#define TMP_SHORT_LIVED_COMMANDS_PER_MINUTE 10
+
+static PPROCESS_CAPTURE_INTERFACE TmpCaptureInterface = NULL;
+static ULONG64 TmpCaptureCursor = 0;
+static ULONG TmpShortLivedCommandCount = 0;
+static ULONG64 TmpShortLivedCommandWindowStart = 0;
+
+static PTMP_RULE TmpFindRuleForImage(
+    _In_ PCPH_STRINGREF Name,
+    _In_opt_ PPH_STRING FileNameWin32
+    )
+{
+    if (!TmpRulesList)
+        return NULL;
+
+    for (ULONG i = 0; i < TmpRulesList->Count; i++)
+    {
+        PTMP_RULE rule = TmpRulesList->Items[i];
+
+        if (!rule->Enabled || PhIsNullOrEmptyString(rule->ProgramName))
+            continue;
+        if (!PhEqualStringRef(&rule->ProgramName->sr, Name, TRUE))
+            continue;
+
+        if (!PhIsNullOrEmptyString(rule->MatchPath))
+        {
+            if (!FileNameWin32)
+                continue;
+            if (PhFindStringInStringRef(&FileNameWin32->sr, &rule->MatchPath->sr, TRUE) == SIZE_MAX)
+                continue;
+        }
+
+        return rule;
+    }
+
+    return NULL;
+}
+
+/**
+ * Applies the rules to processes that were gone before the process list could show them:
+ * the event is counted, logged (and shown for block rules), and the rule's command runs.
+ * Priority, affinity, efficiency mode, end and watchdogs cannot act on a process that has
+ * already exited.
+ */
+static VOID TmpHandleShortLivedProcesses(
+    VOID
+    )
+{
+    PROCESS_CAPTURE_RECORD records[16];
+    ULONG count;
+
+    if (!TmpCaptureInterface)
+    {
+        TmpCaptureInterface = PhGetPluginInterfaceZ(PROCESS_CAPTURE_PLUGIN_NAME, PROCESS_CAPTURE_INTERFACE_VERSION);
+
+        if (!TmpCaptureInterface)
+            return;
+
+        // Records from before the engine started are skipped by their create time below.
+        TmpCaptureCursor = 0;
+    }
+
+    while ((count = TmpCaptureInterface->ReadCompleted(&TmpCaptureCursor, records, RTL_NUMBER_OF(records))) != 0)
+    {
+        for (ULONG i = 0; i < count; i++)
+        {
+            PPROCESS_CAPTURE_RECORD record = &records[i];
+            PPH_STRING ntPath;
+            PPH_STRING fileName;
+            PH_STRINGREF path;
+            PH_STRINGREF directory;
+            PH_STRINGREF name;
+            PPH_STRING nameString;
+            PTMP_RULE rule;
+            PPH_STRING description;
+            LONGLONG milliseconds;
+
+            if (record->SeenByProcessList || TmpEnginePaused)
+                continue; // the normal engine pass handled (or skipped) it
+            if (record->CreateTime <= TmpEngineStartTime.QuadPart)
+                continue;
+            if (record->ProcessId == HandleToUlong(NtCurrentProcessId()))
+                continue;
+
+            PhInitializeStringRef(&path, record->ImagePath);
+
+            if (!PhSplitStringRefAtLastChar(&path, L'\\', &directory, &name))
+                name = path;
+
+            ntPath = PhCreateString(record->ImagePath);
+            fileName = PhGetFileName(ntPath);
+            rule = TmpFindRuleForImage(&name, fileName);
+
+            if (rule)
+            {
+                nameString = PhCreateString2(&name);
+                milliseconds = (record->ExitTime - record->CreateTime) / PH_TICKS_PER_MS;
+
+                if (milliseconds < 0)
+                    milliseconds = 0;
+
+                if (rule->StartEnd)
+                {
+                    description = PhFormatString(
+                        L"short-lived: exited by itself after %I64d ms, before it could be ended on start (blocked)",
+                        milliseconds
+                        );
+                }
+                else
+                {
+                    description = PhFormatString(
+                        L"short-lived: started and exited after %I64d ms (exit code %lu), between two refreshes",
+                        milliseconds,
+                        record->ExitCode
+                        );
+                }
+
+                TmpReportEventNamed(rule, nameString, record->ProcessId, PhGetString(description), rule->StartEnd);
+                PhDereferenceObject(description);
+
+                if (!PhIsNullOrEmptyString(rule->Command))
+                {
+                    ULONG64 now = NtGetTickCount64();
+
+                    if (now - TmpShortLivedCommandWindowStart > TMP_GUARD_WINDOW_MS)
+                    {
+                        TmpShortLivedCommandWindowStart = now;
+                        TmpShortLivedCommandCount = 0;
+                    }
+
+                    if (++TmpShortLivedCommandCount <= TMP_SHORT_LIVED_COMMANDS_PER_MINUTE)
+                    {
+                        PPH_STRING commandLine = TmpExpandCommandEx(rule, record->ProcessId, nameString, fileName);
+
+                        if (NT_SUCCESS(TmpStartCommandLine(commandLine)))
+                            TmpReportEventNamed(rule, nameString, record->ProcessId, L"command started", FALSE);
+                        else
+                            TmpReportEventNamed(rule, nameString, record->ProcessId, L"unable to start the command", TRUE);
+
+                        PhDereferenceObject(commandLine);
+                    }
+                }
+
+                PhDereferenceObject(nameString);
+            }
+
+            PhClearReference(&fileName);
+            PhDereferenceObject(ntPath);
+        }
+    }
+}
+
 VOID NTAPI TmpProcessesUpdatedCallback(
     _In_ PVOID Parameter,
     _In_ PVOID Context
@@ -864,6 +1054,8 @@ VOID NTAPI TmpProcessesUpdatedCallback(
 
     PhDereferenceObjects(processes, numberOfProcesses);
     PhFree(processes);
+
+    TmpHandleShortLivedProcesses();
 
     if (TmpRulesList)
     {
