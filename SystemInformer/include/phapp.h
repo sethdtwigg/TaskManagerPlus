@@ -873,6 +873,15 @@ VOID PhApplyLookPreset(
     _In_ BOOLEAN Calm
     );
 
+// TaskManagerPlus: TRUE when an existing settings file was loaded (existing install), FALSE for fresh/-nosettings.
+extern BOOLEAN PhSettingsLoadedFromFile;
+
+// Resolves the "new look" settings still holding the unresolved marker: fresh installs get the new look,
+// existing installs keep the old one (never changed silently).
+VOID PhResolveLookDefaults(
+    VOID
+    );
+
 VOID PhOfferCalmLook(
     VOID
     );

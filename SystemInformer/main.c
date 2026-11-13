@@ -38,6 +38,7 @@
 BOOLEAN PhPluginsEnabled = FALSE;
 BOOLEAN PhPortableEnabled = FALSE;
 PPH_STRING PhSettingsFileName = NULL;
+BOOLEAN PhSettingsLoadedFromFile = FALSE; // TaskManagerPlus
 PH_STARTUP_PARAMETERS PhStartupParameters = { .UpdateChannel = PhInvalidChannel };
 PH_PROVIDER_THREAD PhPrimaryProviderThread;
 PH_PROVIDER_THREAD PhSecondaryProviderThread;
@@ -1651,6 +1652,8 @@ VOID PhInitializeAppSettings(
             }
         }
 
+        PhSettingsLoadedFromFile = NT_SUCCESS(status); // TaskManagerPlus
+
         // Handle errors
         if (status == STATUS_FILE_CORRUPT_ERROR)
         {
@@ -1689,6 +1692,8 @@ VOID PhInitializeAppSettings(
 
         PhDereferenceObject(symbolSearchPath);
     }
+
+    PhResolveLookDefaults(); // TaskManagerPlus
 
     PhUpdateCachedSettings();
 

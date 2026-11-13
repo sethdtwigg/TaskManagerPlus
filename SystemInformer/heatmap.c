@@ -9,6 +9,12 @@
  * Because the row background and the accent both come from the active palette, the same code
  * serves the light and the dark palette.
  *
+ * TaskManagerPlus heat styles (setting HeatStyle, Options > Highlighting): 0 off, 1 subtle (the ramp above),
+ * 2 band (default for fresh installs): five steps per metric, a blue accent ramp per light/dark/OLED
+ * palette blended over the row background, and a non-zero floor so each metric column reads as a band even
+ * at zero load. Worst text contrast over the band cells: light 10.5:1, dark 6.5:1, OLED 7.9:1 (all > 4.5:1);
+ * the 4.5:1 fallback below still applies to custom colours.
+ *
  * Intensity thresholds (below "low" there is no tint at all):
  *   CPU      0.5% .. 50%            (square-root ramp)
  *   Memory   0.5% .. 20% of RAM     (square-root ramp)
@@ -143,6 +149,62 @@ static COLORREF PhpMix(
         );
 }
 
+// TaskManagerPlus: band style (HeatStyle 2). Five steps per metric; the step picks one entry of a
+// per-theme blue ramp which is blended over the row background. Step 0 still carries a light tint so a
+// metric column reads as a band even at zero load. Step bounds are the value at which the next step
+// starts (CPU/GPU in %, memory in % of physical RAM, disk/network in bytes per second).
+static const DOUBLE PhpBandBounds[5][4] =
+{
+    { 0.05, 1, 5, 25 },               // PH_HEAT_KIND_CPU (kinds start at 1, see PhpBandKindIndex)
+    { 0.1, 1, 4, 10 },                // memory, % of RAM
+    { 1, 100.0 * 1024, 1024.0 * 1024, 10.0 * 1024 * 1024 },  // disk
+    { 1, 10.0 * 1024, 100.0 * 1024, 1024.0 * 1024 },         // network
+    { 0.05, 1, 5, 25 }                // GPU
+};
+
+// Blend strength of the accent over the row background, per step. Light, dark and OLED have their own
+// accent and strengths (dark surfaces need a brighter accent and a gentler blend for light text).
+typedef struct _PH_HEAT_BAND_RAMP
+{
+    COLORREF Accent;
+    DOUBLE Alpha[5];
+} PH_HEAT_BAND_RAMP;
+
+static const PH_HEAT_BAND_RAMP PhpBandLight = { RGB(0x00, 0x78, 0xd4), { 0.05, 0.12, 0.22, 0.34, 0.48 } };
+static const PH_HEAT_BAND_RAMP PhpBandDark = { RGB(0x2b, 0x8c, 0xe6), { 0.10, 0.20, 0.32, 0.46, 0.62 } };
+static const PH_HEAT_BAND_RAMP PhpBandOled = { RGB(0x1f, 0x7a, 0xd0), { 0.16, 0.26, 0.38, 0.52, 0.68 } };
+
+ULONG PhHeatStyle = 2; // setting HeatStyle: 0 off, 1 subtle, 2 band
+
+static ULONG PhpBandGetStep(
+    _In_ ULONG Kind,
+    _In_ DOUBLE Value
+    )
+{
+    const DOUBLE *bounds;
+    ULONG step;
+
+    if (Kind < 1 || Kind > 5)
+        return 0;
+
+    if (Kind == PH_HEAT_KIND_MEMORY)
+    {
+        DOUBLE total = (DOUBLE)PhSystemBasicInformation.NumberOfPhysicalPages * PhSystemBasicInformation.PageSize;
+
+        Value = total > 0 ? Value / total * 100 : 0;
+    }
+
+    bounds = PhpBandBounds[Kind - 1];
+
+    for (step = 0; step < 4; step++)
+    {
+        if (!(Value >= bounds[step]))
+            break;
+    }
+
+    return step; // 0 = below the first bound, 4 = at or above the last
+}
+
 BOOLEAN PhHeatGetColors(
     _In_ ULONG Kind,
     _In_ DOUBLE Value,
@@ -157,6 +219,25 @@ BOOLEAN PhHeatGetColors(
     COLORREF back;
     FLOAT backLuminance;
 
+    if (PhHeatStyle == 0)
+        return FALSE;
+
+    if (PhHeatStyle == 2) // TaskManagerPlus: band style
+    {
+        const PH_HEAT_BAND_RAMP *ramp;
+        FLOAT rowLuminance = PhpLuminance(RowBackColor);
+
+        if (rowLuminance > 0.4f)
+            ramp = &PhpBandLight;
+        else if (rowLuminance < 0.002f)
+            ramp = &PhpBandOled;
+        else
+            ramp = &PhpBandDark;
+
+        back = PhpMix(RowBackColor, ramp->Accent, ramp->Alpha[PhpBandGetStep(Kind, Value)]);
+    }
+    else
+    {
     fraction = PhpHeatGetFraction(Kind, Value);
 
     if (fraction < PH_HEAT_MIN_FRACTION)
@@ -168,6 +249,7 @@ BOOLEAN PhHeatGetColors(
         tint = PhpMix(tint, PH_HEAT_WARM_COLOR, (fraction - PH_HEAT_WARM_START) / (1 - PH_HEAT_WARM_START));
 
     back = PhpMix(RowBackColor, tint, PH_HEAT_MIN_ALPHA + (PH_HEAT_MAX_ALPHA - PH_HEAT_MIN_ALPHA) * fraction);
+    }
     backLuminance = PhpLuminance(back);
 
     *BackColor = back;

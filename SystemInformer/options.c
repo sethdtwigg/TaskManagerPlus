@@ -26,6 +26,7 @@
 #include <proctree.h>
 #include <phplug.h>
 #include <phsettings.h>
+#include <heatmap.h> // TaskManagerPlus
 #include <minimeters.h> // TaskManagerPlus
 
 #define WM_PH_CHILD_EXIT (WM_APP + 301)
@@ -98,6 +99,17 @@ VOID PhApplyLookPreset(
     }
 
     PhInvalidateAllProcessNodes();
+}
+
+// TaskManagerPlus: the readability look settings. Each registers with the unresolved marker (0xff). A fresh
+// install (no settings file) gets the new look; an install that already has a settings file keeps the old
+// look until the user opts in (Readable preset, R8). Nothing already saved is rewritten.
+VOID PhResolveLookDefaults(
+    VOID
+    )
+{
+    if (PhGetIntegerSetting(SETTING_HEAT_STYLE) == 0xff)
+        PhSetIntegerSetting(SETTING_HEAT_STYLE, PhSettingsLoadedFromFile ? 1 : 2);
 }
 
 /**
@@ -4666,6 +4678,16 @@ INT_PTR CALLBACK PhpOptionsHighlightingDlgProc(
             // Highlighting Duration
             PhSetDialogItemValue(hwndDlg, IDC_HIGHLIGHTINGDURATION, PhCsHighlightingDuration, FALSE);
 
+            // TaskManagerPlus: heat map style
+            {
+                HWND heatCombo = GetDlgItem(hwndDlg, IDC_HEATSTYLE);
+
+                ComboBox_AddString(heatCombo, L"Off");
+                ComboBox_AddString(heatCombo, L"Subtle");
+                ComboBox_AddString(heatCombo, L"Band");
+                ComboBox_SetCurSel(heatCombo, min(PhGetIntegerSetting(SETTING_HEAT_STYLE), 2));
+            }
+
             // New Objects
             ColorBox_SetColor(GetDlgItem(hwndDlg, IDC_NEWOBJECTS), PhCsColorNew);
             ColorBox_ThemeSupport(GetDlgItem(hwndDlg, IDC_NEWOBJECTS), PhEnableThemeSupport);
@@ -4713,6 +4735,7 @@ INT_PTR CALLBACK PhpOptionsHighlightingDlgProc(
             PhAddLayoutItem(&LayoutManager, GetDlgItem(hwndDlg, IDC_INFO), NULL, PH_ANCHOR_BOTTOM | PH_ANCHOR_LEFT | PH_LAYOUT_FORCE_INVALIDATE);
             PhAddLayoutItem(&LayoutManager, GetDlgItem(hwndDlg, IDC_HIGHLIGHTMINIMAL), NULL, PH_ANCHOR_BOTTOM | PH_ANCHOR_LEFT); // TaskManagerPlus
             PhAddLayoutItem(&LayoutManager, GetDlgItem(hwndDlg, IDC_HIGHLIGHTCLASSIC), NULL, PH_ANCHOR_BOTTOM | PH_ANCHOR_LEFT); // TaskManagerPlus
+            PhAddLayoutItem(&LayoutManager, GetDlgItem(hwndDlg, IDC_HEATSTYLE), NULL, PH_ANCHOR_BOTTOM | PH_ANCHOR_LEFT); // TaskManagerPlus
             PhAddLayoutItem(&LayoutManager, GetDlgItem(hwndDlg, IDC_ENABLEALL), NULL, PH_ANCHOR_BOTTOM | PH_ANCHOR_RIGHT);
             PhAddLayoutItem(&LayoutManager, GetDlgItem(hwndDlg, IDC_DISABLEALL), NULL, PH_ANCHOR_BOTTOM | PH_ANCHOR_RIGHT);
         }
@@ -4724,6 +4747,17 @@ INT_PTR CALLBACK PhpOptionsHighlightingDlgProc(
             PH_SET_INTEGER_CACHED_SETTING(ColorRemoved, ColorBox_GetColor(GetDlgItem(hwndDlg, IDC_REMOVEDOBJECTS)));
 
             PhSetIntegerSetting(SETTING_ENABLE_WINDOW_BORDER_COLOR, Button_GetCheck(GetDlgItem(hwndDlg, IDC_ENABLE_WINDOW_BORDER_COLOR)) == BST_CHECKED);
+
+            { // TaskManagerPlus: heat map style, live
+                INT heatSel = ComboBox_GetCurSel(GetDlgItem(hwndDlg, IDC_HEATSTYLE));
+
+                if (heatSel != CB_ERR)
+                {
+                    PhSetIntegerSetting(SETTING_HEAT_STYLE, heatSel);
+                    PhHeatStyle = heatSel;
+                    PhInvalidateAllProcessNodes();
+                }
+            }
 
             for (ULONG i = 0; i < RTL_NUMBER_OF(ColorItems); i++)
             {

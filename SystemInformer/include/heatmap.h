@@ -14,6 +14,7 @@
 #define PH_POWER_HIGH 3
 
 extern BOOLEAN PhHeatMapEnabled; // View > Heat map (setting HeatMap)
+extern ULONG PhHeatStyle; // Options > Highlighting (setting HeatStyle): 0 off, 1 subtle, 2 band
 
 /**
  * Computes the tinted cell colours for a measured value.

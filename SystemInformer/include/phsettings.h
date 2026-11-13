@@ -362,6 +362,7 @@ EXT ULONG PhCsProcessMonitorCacheLimit;
 #define SETTING_HIDE_SIGNED_PROCESSES                               L"HideSignedProcesses"
 #define SETTING_GROUP_PROCESSES                                     L"GroupProcesses" // TaskManagerPlus
 #define SETTING_HEAT_MAP                                            L"HeatMap" // TaskManagerPlus
+#define SETTING_HEAT_STYLE                                          L"HeatStyle" // TaskManagerPlus: 0 off, 1 subtle, 2 band (0xff = not yet resolved; see PhResolveLookDefaults)
 #define SETTING_MINI_METERS                                         L"MiniMeters" // TaskManagerPlus
 #define SETTING_MAIN_WINDOW_HIDDEN_TABS                             L"MainWindowHiddenTabs" // TaskManagerPlus: comma list of tab names kept under More
 #define SETTING_SHOW_TOTALS_ROW                                     L"ShowTotalsRow" // TaskManagerPlus

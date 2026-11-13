@@ -380,6 +380,14 @@ static VOID EtpProcessTreeGetCellHeat(
             heat->Value = (DOUBLE)EtCalculateRate(number);
         }
         break;
+    default:
+        // TaskManagerPlus: the per-adapter GPU columns (adapter 0 is the default GPU column).
+        if (Message->SubId >= ETPRTNC_GPUADAPTER_FIRST && Message->SubId < ETPRTNC_GPUADAPTER_FIRST + EtGetGpuAdapterCount())
+        {
+            heat->Kind = PH_HEAT_KIND_GPU;
+            heat->Value = EtpGetGpuAdapterValue(processNode, block, Message->SubId - ETPRTNC_GPUADAPTER_FIRST) * 100.0;
+        }
+        break;
     }
 }
 

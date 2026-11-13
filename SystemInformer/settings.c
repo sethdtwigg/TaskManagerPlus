@@ -163,6 +163,7 @@ VOID PhAddDefaultSettings(
     PhpAddIntegerSetting(SETTING_HIDE_SIGNED_PROCESSES, L"0");
     PhpAddIntegerSetting(SETTING_GROUP_PROCESSES, L"1"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_HEAT_MAP, L"1"); // TaskManagerPlus
+    PhpAddIntegerSetting(SETTING_HEAT_STYLE, L"ff"); // TaskManagerPlus: resolved after the settings file is read (fresh 2, existing 1)
     PhpAddIntegerSetting(SETTING_MINI_METERS, L"0"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_HIGHLIGHT_MODE, L"1"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_SEARCH_OPTIONS_MENU, L"1"); // TaskManagerPlus

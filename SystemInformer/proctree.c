@@ -120,6 +120,7 @@ VOID PhInitializeProcessTreeList(
     TreeNew_SetTotalsRow(hwnd, !!PhGetIntegerSetting(SETTING_SHOW_TOTALS_ROW)); // TaskManagerPlus: totals row under the headers (View > Totals row)
     TreeNew_SetCellHeat(hwnd, TRUE); // TaskManagerPlus: heat-map tints and the process count pill
     PhHeatMapEnabled = !!PhGetIntegerSetting(SETTING_HEAT_MAP);
+    PhHeatStyle = PhGetIntegerSetting(SETTING_HEAT_STYLE); // TaskManagerPlus
     PhShowCountPill = !!PhGetIntegerSetting(SETTING_SHOW_COUNT_PILL); // TaskManagerPlus
     TreeNew_SetImageList(hwnd, PhProcessSmallImageList);
     TreeNew_SetMaxId(hwnd, PHPRTLC_MAXIMUM - 1);
