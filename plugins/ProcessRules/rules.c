@@ -6,6 +6,7 @@
  */
 
 #include "processrules.h"
+#include "sharecode.h"
 
 PPH_LIST TmpRulesList = NULL;
 ULONG TmpRulesVersion = 1;
@@ -378,32 +379,17 @@ NTSTATUS TmpSaveRulesToFile(
 }
 
 /**
- * Loads rules from a file. When Merge is set, rules whose program name already
- * exists replace the existing rule; otherwise the current list is cleared first.
+ * TaskManagerPlus: merges the "rules" array of a parsed rules document (file or share code) into the rule list. When Merge is
+ * set, rules whose program name already exists replace the existing rule; otherwise the current list is cleared first.
+ * Returns the number of rules read.
  */
-NTSTATUS TmpLoadRulesFromFile(
-    _In_ PCPH_STRINGREF FileName,
+ULONG TmpMergeRulesFromJson(
+    _In_ PVOID root,
     _In_ BOOLEAN Merge
     )
 {
-    NTSTATUS status;
-    PVOID root = NULL;
     PVOID rules;
-    PPH_STRING ntFileName;
-
-    // TaskManagerPlus: NT path, see TmpSaveRulesToFile.
-    if (ntFileName = PhDosPathNameToNtPathName(FileName))
-    {
-        status = PhLoadJsonObjectFromFile(&root, &ntFileName->sr);
-        PhDereferenceObject(ntFileName);
-    }
-    else
-    {
-        status = STATUS_OBJECT_PATH_SYNTAX_BAD;
-    }
-
-    if (!NT_SUCCESS(status))
-        return status;
+    ULONG read = 0;
 
     if (!TmpRulesList)
         TmpRulesList = PhCreateList(16);
@@ -430,6 +416,7 @@ NTSTATUS TmpLoadRulesFromFile(
                 continue;
 
             rule = TmpRuleFromJson(entry);
+            read++;
 
             if (PhIsNullOrEmptyString(rule->ProgramName))
             {
@@ -454,9 +441,139 @@ NTSTATUS TmpLoadRulesFromFile(
         }
     }
 
+    return read;
+}
+
+/**
+ * Loads rules from a file. When Merge is set, rules whose program name already
+ * exists replace the existing rule; otherwise the current list is cleared first.
+ */
+NTSTATUS TmpLoadRulesFromFile(
+    _In_ PCPH_STRINGREF FileName,
+    _In_ BOOLEAN Merge
+    )
+{
+    NTSTATUS status;
+    PVOID root = NULL;
+    PPH_STRING ntFileName;
+
+    // TaskManagerPlus: NT path, see TmpSaveRulesToFile.
+    if (ntFileName = PhDosPathNameToNtPathName(FileName))
+    {
+        status = PhLoadJsonObjectFromFile(&root, &ntFileName->sr);
+        PhDereferenceObject(ntFileName);
+    }
+    else
+    {
+        status = STATUS_OBJECT_PATH_SYNTAX_BAD;
+    }
+
+    if (!NT_SUCCESS(status))
+        return status;
+
+    TmpMergeRulesFromJson(root, Merge);
     PhFreeJsonObject(root);
 
     return STATUS_SUCCESS;
+}
+
+/**
+ * TaskManagerPlus: share code of the given rules (all rules when Rules is NULL), see sharecode.h. Returns NULL when there is
+ * nothing to share.
+ */
+PPH_STRING TmpCreateShareCode(
+    _In_opt_ PTMP_RULE *Rules,
+    _In_ ULONG Count
+    )
+{
+    PVOID root;
+    PVOID array;
+    PPH_BYTES json;
+    PPH_STRING result = NULL;
+    ULONG i;
+
+    if (!Rules && TmpRulesList)
+    {
+        Rules = (PTMP_RULE *)TmpRulesList->Items;
+        Count = TmpRulesList->Count;
+    }
+
+    if (!Rules || !Count)
+        return NULL;
+
+    root = PhCreateJsonObject();
+    PhAddJsonObjectUInt64(root, "version", TMP_RULES_FILE_VERSION);
+    array = PhCreateJsonArray();
+
+    for (i = 0; i < Count; i++)
+        PhAddJsonArrayObject(array, TmpRuleToJson(Rules[i]));
+
+    PhAddJsonObjectValue(root, "rules", array);
+    json = PhJsonObjectToJsonString(root, PH_JSON_TO_STRING_PLAIN);
+
+    if (json)
+    {
+        SIZE_T capacity = ScEncodedSize(json->Length);
+        PSTR code = PhAllocate(capacity);
+
+        if (ScEncode((const uint8_t *)json->Buffer, json->Length, code, capacity))
+            result = PhConvertUtf8ToUtf16(code);
+
+        PhFree(code);
+        PhDereferenceObject(json);
+    }
+
+    PhFreeJsonObject(root);
+    return result;
+}
+
+/**
+ * TaskManagerPlus: imports a share code (merging by program name). Returns FALSE with a message in Reason when the code is
+ * damaged, cut off or not a rules code; nothing is changed then.
+ */
+BOOLEAN TmpImportShareCode(
+    _In_ PPH_STRING Text,
+    _Out_ PULONG Imported,
+    _Out_ PCSTR *Reason
+    )
+{
+    PPH_BYTES utf8;
+    uint8_t *data;
+    size_t length;
+    PVOID root = NULL;
+
+    *Imported = 0;
+    utf8 = PhConvertUtf16ToUtf8Ex(Text->Buffer, Text->Length);
+
+    if (!utf8 || !ScDecode(utf8->Buffer, utf8->Length, &data, &length, Reason))
+    {
+        if (utf8)
+            PhDereferenceObject(utf8);
+
+        if (!utf8)
+            *Reason = "The text could not be read.";
+
+        return FALSE;
+    }
+
+    PhDereferenceObject(utf8);
+
+    if (!NT_SUCCESS(PhCreateJsonParser(&root, (PCSTR)data)) || !root)
+    {
+        ScFree(data);
+        *Reason = "The code does not hold a rules document.";
+        return FALSE;
+    }
+
+    ScFree(data);
+    *Imported = TmpMergeRulesFromJson(root, TRUE);
+    PhFreeJsonObject(root);
+
+    if (*Imported)
+        TmpRulesChanged();
+
+    *Reason = "";
+    return *Imported != 0;
 }
 
 VOID TmpLoadRules(

@@ -5,6 +5,7 @@
 set(HEADERS
     "resource.h"
     "processrules.h"
+    "sharecode.h"
 )
 source_group("Header Files" FILES ${HEADERS})
 
@@ -22,6 +23,7 @@ set(SOURCES
     "rules.c"
     "tab.c"
     "intf.c"
+    "sharecode.c"
 )
 source_group("Source Files" FILES ${SOURCES})
 

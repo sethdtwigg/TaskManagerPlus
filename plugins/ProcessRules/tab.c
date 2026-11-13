@@ -27,6 +27,8 @@ typedef enum _TMP_COMMAND
     TMP_COMMAND_MUTE_RULE,
     TMP_COMMAND_EXPORT,
     TMP_COMMAND_IMPORT,
+    TMP_COMMAND_COPY_CODE, // TaskManagerPlus: share code
+    TMP_COMMAND_PASTE_CODE,
     TMP_COMMAND_COPY
 } TMP_COMMAND;
 
@@ -427,6 +429,40 @@ static VOID TmpImportRules(
     PhFreeFileDialog(fileDialog);
 }
 
+// TaskManagerPlus: PhGetClipboardString is not exported to plugins, read CF_UNICODETEXT directly.
+static PPH_STRING TmpGetClipboardText(
+    _In_ HWND WindowHandle
+    )
+{
+    PPH_STRING text = NULL;
+
+    if (OpenClipboard(WindowHandle))
+    {
+        HANDLE data = GetClipboardData(CF_UNICODETEXT);
+
+        if (data)
+        {
+            PWSTR buffer = GlobalLock(data);
+
+            if (buffer)
+            {
+                SIZE_T maxChars = GlobalSize(data) / sizeof(WCHAR);
+                SIZE_T length = 0;
+
+                while (length < maxChars && buffer[length])
+                    length++;
+
+                text = PhCreateStringEx(buffer, length * sizeof(WCHAR));
+                GlobalUnlock(data);
+            }
+        }
+
+        CloseClipboard();
+    }
+
+    return text;
+}
+
 static VOID TmpHandleCommand(
     _In_ HWND WindowHandle,
     _In_ ULONG Id
@@ -526,6 +562,47 @@ static VOID TmpHandleCommand(
     case TMP_COMMAND_IMPORT:
         TmpImportRules(WindowHandle);
         break;
+    case TMP_COMMAND_COPY_CODE:
+        {
+            PPH_STRING code = TmpCreateShareCode(rules, numberOfRules); // the selected rules, or all of them when none is selected
+
+            if (code)
+            {
+                PhSetClipboardString(WindowHandle, &code->sr);
+                PhShowInformation2(WindowHandle, L"Share code", L"Copied a share code for %lu rule(s) to the clipboard. Paste it into a message; the other person uses Import from share code.", numberOfRules ? numberOfRules : (TmpRulesList ? TmpRulesList->Count : 0));
+                PhDereferenceObject(code);
+            }
+            else
+            {
+                PhShowInformation2(WindowHandle, L"Share code", L"%s", L"There are no rules to share.");
+            }
+        }
+        break;
+    case TMP_COMMAND_PASTE_CODE:
+        {
+            PPH_STRING text = TmpGetClipboardText(WindowHandle);
+            ULONG imported;
+            PCSTR reason;
+
+            if (!text || !text->Length)
+            {
+                PhShowInformation2(WindowHandle, L"Share code", L"%s", L"The clipboard has no text. Copy a share code first.");
+            }
+            else if (TmpImportShareCode(text, &imported, &reason))
+            {
+                PhShowInformation2(WindowHandle, L"Share code", L"Imported %lu rule(s). Rules with the same program name were replaced.", imported);
+            }
+            else
+            {
+                PPH_STRING message = PhConvertUtf8ToUtf16((PSTR)reason);
+
+                PhShowError2(WindowHandle, L"Share code", L"%s", message ? message->Buffer : L"The code could not be imported.");
+                PhClearReference(&message);
+            }
+
+            PhClearReference(&text);
+        }
+        break;
     case TMP_COMMAND_COPY:
         {
             PPH_STRING text;
@@ -570,6 +647,8 @@ static VOID TmpShowContextMenu(
     PhInsertEMenuItem(menu, PhCreateEMenuSeparator(), ULONG_MAX);
     PhInsertEMenuItem(menu, PhCreateEMenuItem(0, TMP_COMMAND_IMPORT, L"&Import rules...", NULL, NULL), ULONG_MAX);
     PhInsertEMenuItem(menu, PhCreateEMenuItem(0, TMP_COMMAND_EXPORT, L"E&xport rules...", NULL, NULL), ULONG_MAX);
+    PhInsertEMenuItem(menu, PhCreateEMenuItem(0, TMP_COMMAND_COPY_CODE, L"Copy share &code", NULL, NULL), ULONG_MAX); // TaskManagerPlus
+    PhInsertEMenuItem(menu, PhCreateEMenuItem(0, TMP_COMMAND_PASTE_CODE, L"Import from share c&ode (clipboard)", NULL, NULL), ULONG_MAX);
     PhInsertEMenuItem(menu, PhCreateEMenuSeparator(), ULONG_MAX);
     PhInsertEMenuItem(menu, PhCreateEMenuItem(0, TMP_COMMAND_COPY, L"&Copy\bCtrl+C", NULL, NULL), ULONG_MAX);
     PhInsertCopyCellEMenuItem(menu, TMP_COMMAND_COPY, WindowHandle, ContextMenuEvent->Column);

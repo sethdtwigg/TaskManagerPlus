@@ -95,10 +95,12 @@
     <ClCompile Include="rules.c" />
     <ClCompile Include="tab.c" />
     <ClCompile Include="intf.c" />
+    <ClCompile Include="sharecode.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
     <ClInclude Include="processrules.h" />
+    <ClInclude Include="sharecode.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ProcessRules.rc" />

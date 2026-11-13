@@ -16,6 +16,112 @@ static PH_CALLBACK_REGISTRATION PluginMenuItemCallbackRegistration;
 static PH_CALLBACK_REGISTRATION MainWindowShowingCallbackRegistration;
 static PH_CALLBACK_REGISTRATION ProcessMenuInitializingCallbackRegistration;
 static PH_CALLBACK_REGISTRATION ProcessesUpdatedCallbackRegistration;
+static PPH_MESSAGE_LOOP_FILTER_ENTRY FilterEntry = NULL;
+static UINT CommandMessage = 0;
+
+// TaskManagerPlus: test seam for share codes (the clipboard cannot be driven on a hidden desktop). The registered message
+// "TaskManagerPlus.ProcessRules.Command": wParam 1 writes the share code of all rules to the file in the TestShareFile setting,
+// wParam 2 imports the code in that file and writes "OK <count>" or "FAIL <reason>" to <file>.result.
+static VOID TmpTestWriteText(
+    _In_ PPH_STRING FileName,
+    _In_ PPH_STRING Text
+    )
+{
+    HANDLE fileHandle;
+    PPH_BYTES utf8 = PhConvertUtf16ToUtf8Ex(Text->Buffer, Text->Length);
+
+    if (utf8 && NT_SUCCESS(PhCreateFileWin32(&fileHandle, FileName->Buffer, FILE_GENERIC_WRITE, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ, FILE_OVERWRITE_IF, FILE_SYNCHRONOUS_IO_NONALERT | FILE_NON_DIRECTORY_FILE)))
+    {
+        PhWriteFile(fileHandle, utf8->Buffer, (ULONG)utf8->Length, NULL, NULL);
+        NtClose(fileHandle);
+    }
+
+    if (utf8)
+        PhDereferenceObject(utf8);
+}
+
+static PPH_STRING TmpTestReadText(
+    _In_ PPH_STRING FileName
+    )
+{
+    HANDLE fileHandle;
+    LARGE_INTEGER size;
+    PPH_STRING text = NULL;
+
+    if (NT_SUCCESS(PhCreateFileWin32(&fileHandle, FileName->Buffer, FILE_GENERIC_READ, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_OPEN, FILE_SYNCHRONOUS_IO_NONALERT | FILE_NON_DIRECTORY_FILE)))
+    {
+        if (NT_SUCCESS(PhGetFileSize(fileHandle, &size)) && size.QuadPart > 0 && size.QuadPart < 4 * 1024 * 1024)
+        {
+            PVOID buffer = PhAllocate((SIZE_T)size.QuadPart);
+            ULONG read = 0;
+
+            if (NT_SUCCESS(PhReadFile(fileHandle, buffer, (ULONG)size.QuadPart, NULL, &read)) && read)
+                text = PhConvertUtf8ToUtf16Ex(buffer, read);
+
+            PhFree(buffer);
+        }
+
+        NtClose(fileHandle);
+    }
+
+    return text;
+}
+
+_Function_class_(PH_MESSAGE_LOOP_FILTER)
+static BOOLEAN NTAPI MessageLoopFilter(
+    _In_ PMSG Message,
+    _In_ PVOID Context
+    )
+{
+    if (CommandMessage && Message->message == CommandMessage)
+    {
+        PPH_STRING file = PhGetStringSetting(SETTING_NAME_TEST_SHARE_FILE);
+
+        if (file->Length)
+        {
+            if (Message->wParam == 1)
+            {
+                PPH_STRING code = TmpCreateShareCode(NULL, 0);
+
+                if (code)
+                {
+                    TmpTestWriteText(file, code);
+                    PhDereferenceObject(code);
+                }
+            }
+            else if (Message->wParam == 2)
+            {
+                PPH_STRING text = TmpTestReadText(file);
+                PPH_STRING resultFile = PhFormatString(L"%s.result", file->Buffer);
+                PPH_STRING result;
+                ULONG imported = 0;
+                PCSTR reason = "";
+
+                if (text && TmpImportShareCode(text, &imported, &reason))
+                {
+                    result = PhFormatString(L"OK %lu", imported);
+                }
+                else
+                {
+                    PPH_STRING why = PhConvertUtf8ToUtf16((PSTR)reason);
+
+                    result = PhFormatString(L"FAIL %s", why ? why->Buffer : L"unreadable");
+                    PhClearReference(&why);
+                }
+
+                TmpTestWriteText(resultFile, result);
+                PhDereferenceObject(result);
+                PhDereferenceObject(resultFile);
+                PhClearReference(&text);
+            }
+        }
+
+        PhDereferenceObject(file);
+        return TRUE;
+    }
+
+    return FALSE;
+}
 
 _Function_class_(PH_CALLBACK_FUNCTION)
 static VOID NTAPI LoadCallback(
@@ -25,6 +131,8 @@ static VOID NTAPI LoadCallback(
 {
     TmpEngineInitialize();
     TmpLoadRules();
+    CommandMessage = RegisterWindowMessage(COMMAND_MESSAGE_NAME);
+    FilterEntry = PhRegisterMessageLoopFilter(MessageLoopFilter, NULL);
 }
 
 _Function_class_(PH_CALLBACK_FUNCTION)
@@ -33,6 +141,12 @@ static VOID NTAPI UnloadCallback(
     _In_ PVOID Context
     )
 {
+    if (FilterEntry)
+    {
+        PhUnregisterMessageLoopFilter(FilterEntry);
+        FilterEntry = NULL;
+    }
+
     TmpSaveRules();
 }
 
@@ -164,6 +278,7 @@ LOGICAL DllMain(
             { IntegerSettingType, SETTING_NAME_GUARD_RULE, L"5" },
             { IntegerSettingType, SETTING_NAME_DUMPS_PER_HOUR, L"3" },
             { StringSettingType, SETTING_NAME_DUMP_DIRECTORY, L"" },
+            { StringSettingType, SETTING_NAME_TEST_SHARE_FILE, L"" },
         };
 
         PluginInstance = PhRegisterPlugin(PLUGIN_NAME, Instance, &info);

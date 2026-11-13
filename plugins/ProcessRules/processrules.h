@@ -28,6 +28,8 @@
 #define SETTING_NAME_GUARD_RULE (PLUGIN_NAME L".GuardRulePerMinute")
 #define SETTING_NAME_DUMPS_PER_HOUR (PLUGIN_NAME L".DumpsPerHour")
 #define SETTING_NAME_DUMP_DIRECTORY (PLUGIN_NAME L".DumpDirectory")
+#define SETTING_NAME_TEST_SHARE_FILE (PLUGIN_NAME L".TestShareFile") // TaskManagerPlus: share code test seam (see main.c)
+#define COMMAND_MESSAGE_NAME L"TaskManagerPlus.ProcessRules.Command"
 
 #define TMP_RULES_FILE_NAME L"tmp-rules.json"
 #define TMP_RULES_FILE_VERSION 1
@@ -197,6 +199,22 @@ NTSTATUS TmpSaveRulesToFile(
 NTSTATUS TmpLoadRulesFromFile(
     _In_ PCPH_STRINGREF FileName,
     _In_ BOOLEAN Merge
+    );
+
+ULONG TmpMergeRulesFromJson(
+    _In_ PVOID root,
+    _In_ BOOLEAN Merge
+    );
+
+PPH_STRING TmpCreateShareCode(
+    _In_opt_ PTMP_RULE *Rules,
+    _In_ ULONG Count
+    );
+
+BOOLEAN TmpImportShareCode(
+    _In_ PPH_STRING Text,
+    _Out_ PULONG Imported,
+    _Out_ PCSTR *Reason
     );
 
 VOID TmpLoadRules(

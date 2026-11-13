@@ -2,7 +2,7 @@
 .SYNOPSIS
   Builds and runs the pure-C unit tests: fuzzy matcher, trend file format, thinning, aggregation, leak detection
   (unit-tests.c), report CSV/JSON/HTML escaping (test-reports.c), boot event-log parsing and impact rating
-  (test-boot.c), profile apply/revert and JSON round trip (test-profiles.c), efficiency advisor ranking (test-advisor.c).
+  (test-boot.c), profile apply/revert and JSON round trip (test-profiles.c), efficiency advisor ranking (test-advisor.c), rules share code encode/decode (test-sharecode.c).
   Needs only cl.exe from Visual Studio; no System Informer headers, no app, no elevation.
 #>
 $ErrorActionPreference = "Stop"
@@ -21,6 +21,7 @@ $suites = [ordered]@{
     "test-boot" = @("StartupManager\bootparse.c")
     "test-profiles" = @("Profiles\profilecore.c")
     "test-advisor" = @("EfficiencyAdvisor\advisor.c")
+    "test-sharecode" = @("ProcessRules\sharecode.c")
 }
 
 $failed = 0
