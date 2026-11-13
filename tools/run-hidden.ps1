@@ -28,6 +28,7 @@ param(
     [string[]]$Dialogs = @(),          # answers (yes/no) for modal prompts at startup; yes = Return, no = Escape
     [int]$OptionsClick = 0,            # open Options and click the button with this control id
     [string[]]$Dialogs2 = @(),         # answers for prompts raised by that click
+    [switch]$CaptureDialog,            # also capture the first dialog (e.g. About: -Commands 10106) to <Name>-dialog.png
     [switch]$ExitCmd,                  # end with File > Exit so the app saves its settings, then wait
     [int]$Width = 1000, [int]$Height = 1150,
     [switch]$Cleanup
@@ -228,6 +229,7 @@ try {
     if ($Commands.Count) { Start-Sleep -Seconds $Wait2 }
 
     Save-Window $main (Join-Path $runDir "$Name.png")
+    if ($CaptureDialog) { $dlg = Get-Dialog; if ($dlg) { Save-Window $dlg (Join-Path $runDir "$Name-dialog.png") } else { "no dialog to capture" } }
 
     if ($ExitCmd) {
         [void][H]::PostMessage($main, 0x111, [IntPtr]10001, [IntPtr]::Zero)   # ID_HACKER_EXIT
