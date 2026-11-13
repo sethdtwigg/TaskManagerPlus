@@ -157,7 +157,7 @@ END
 
 IDR_MAINWND_ACCEL ACCELERATORS
 BEGIN
-    "K",            ID_SEARCH,              VIRTKEY, CONTROL, NOINVERT
+    "E",            ID_SEARCH,              VIRTKEY, CONTROL, NOINVERT // TaskManagerPlus: was Ctrl+K, which now opens the Quick Actions palette
     VK_TAB,         ID_SEARCH_TAB,          VIRTKEY, NOINVERT
 END
 

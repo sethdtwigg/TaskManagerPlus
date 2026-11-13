@@ -22,7 +22,7 @@ static CONST PCWSTR CustomizeTextOptionsStrings[] =
 static CONST PCWSTR CustomizeSearchDisplayStrings[] =
 {
     L"Always show",
-    L"Hide when inactive (Ctrl+K)",
+    L"Hide when inactive (Ctrl+E)",
     // L"Auto-hide"
 };
 

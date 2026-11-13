@@ -421,7 +421,7 @@ VOID SearchBoxCreate(
     PhCreateSearchControl(
         MainWindowHandle,
         SearchboxHandle,
-        L"Search Processes (Ctrl+K)",
+        L"Search Processes (Ctrl+E)",
         SearchControlCallback,
         NULL
         );

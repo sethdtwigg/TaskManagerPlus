@@ -368,17 +368,17 @@ VOID NTAPI TabPageUpdatedCallback(
     switch (tabIndex)
     {
     case 0:
-        Edit_SetCueBannerText(SearchboxHandle, L"Search Processes (Ctrl+K)");
+        Edit_SetCueBannerText(SearchboxHandle, L"Search Processes (Ctrl+E)");
         break;
     case 1:
-        Edit_SetCueBannerText(SearchboxHandle, L"Search Services (Ctrl+K)");
+        Edit_SetCueBannerText(SearchboxHandle, L"Search Services (Ctrl+E)");
         break;
     case 2:
-        Edit_SetCueBannerText(SearchboxHandle, L"Search Network (Ctrl+K)");
+        Edit_SetCueBannerText(SearchboxHandle, L"Search Network (Ctrl+E)");
         break;
     default:
         {
-            static CONST PH_STRINGREF string = PH_STRINGREF_INIT(L" (Ctrl+K)");
+            static CONST PH_STRINGREF string = PH_STRINGREF_INIT(L" (Ctrl+E)");
             PPH_STRING text;
 
             text = PH_AUTO_T(PH_STRING, GetTabIndexBannerText(tabIndex, &string));
@@ -1116,7 +1116,7 @@ LRESULT CALLBACK MainWindowCallbackProc(
                 }
                 break;
             case ID_SEARCH:
-                // handle keybind Ctrl + K
+                // handle keybind Ctrl + E (TaskManagerPlus: was Ctrl + K)
                 ToggleSearchFocus(WindowHandle);
                 goto DefaultWndProc;
             case ID_SEARCH_TAB:

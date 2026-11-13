@@ -14,6 +14,7 @@
 #include <settings.h>
 #include "resource.h"
 #include <toolstatusintf.h>
+#include <startupmanagerintf.h>
 
 #define PLUGIN_NAME L"TaskManagerPlus.StartupManager"
 #define SETTING_NAME_TREE_LIST_COLUMNS (PLUGIN_NAME L".TreeListColumns")
