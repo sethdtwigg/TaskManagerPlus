@@ -1485,6 +1485,16 @@ VOID PhMwpOnCommand(
             PhToggleProcessCompactRows();
         }
         break;
+    case ID_VIEW_FRIENDLYNAMES: // TaskManagerPlus
+        {
+            PhToggleProcessFriendlyNames();
+        }
+        break;
+    case ID_VIEW_METRICUNITS: // TaskManagerPlus
+        {
+            PhToggleProcessMetricUnits();
+        }
+        break;
     case ID_VIEW_FLATLIST: // TaskManagerPlus
         {
             PhToggleProcessFlatList();

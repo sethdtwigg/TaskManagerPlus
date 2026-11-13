@@ -368,6 +368,8 @@ EXT ULONG PhCsProcessMonitorCacheLimit;
 #define SETTING_SHOW_TOTALS_ROW                                     L"ShowTotalsRow" // TaskManagerPlus
 #define SETTING_HEADER_TOTALS                                       L"HeaderTotals" // TaskManagerPlus: two-line column headers with live totals (0xff = unresolved, see PhResolveLookDefaults)
 #define SETTING_FLAT_LIST                                           L"FlatList" // TaskManagerPlus: 0 legacy, 1 flat when sorted, 2 tree when sorted (0xff = unresolved)
+#define SETTING_FRIENDLY_NAMES                                      L"FriendlyNames" // TaskManagerPlus: Name column shows the file description (0xff = unresolved)
+#define SETTING_METRIC_UNITS                                        L"MetricUnits" // TaskManagerPlus: fixed MB, MB/s, Mbps metric text (0xff = unresolved)
 #define SETTING_SHOW_COUNT_PILL                                     L"ShowCountPill" // TaskManagerPlus
 #define SETTING_SEARCH_OPTIONS_MENU                                 L"SearchOptionsMenu" // TaskManagerPlus: 1 = Case/Regex/Fuzzy behind a funnel menu
 #define SETTING_HIGHLIGHT_MODE                                      L"HighlightMode" // TaskManagerPlus: 0 custom, 1 minimal, 2 classic

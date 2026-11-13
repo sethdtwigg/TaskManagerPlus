@@ -22,6 +22,7 @@
 #include <proctree.h>
 #include <procgroup.h> // TaskManagerPlus
 #include <heatmap.h> // TaskManagerPlus
+#include <metricfmt.h> // TaskManagerPlus
 
 #include <appresolver.h>
 #include <cpysave.h>
@@ -138,6 +139,8 @@ VOID PhInitializeProcessTreeList(
     TreeNew_SetCellHeat(hwnd, TRUE); // TaskManagerPlus: heat-map tints and the process count pill
     PhHeatMapEnabled = !!PhGetIntegerSetting(SETTING_HEAT_MAP);
     PhHeatStyle = PhGetIntegerSetting(SETTING_HEAT_STYLE); // TaskManagerPlus
+    PhFriendlyNames = !!PhGetIntegerSetting(SETTING_FRIENDLY_NAMES); // TaskManagerPlus
+    PhMetricUnits = !!PhGetIntegerSetting(SETTING_METRIC_UNITS); // TaskManagerPlus
     PhProcessFlatListMode = PhGetIntegerSetting(SETTING_FLAT_LIST) & 3; // TaskManagerPlus
     PhShowCountPill = !!PhGetIntegerSetting(SETTING_SHOW_COUNT_PILL); // TaskManagerPlus
     TreeNew_SetImageList(hwnd, PhProcessSmallImageList);
@@ -2086,9 +2089,21 @@ LONG PhpProcessTreeNewPostSortFunction(
 
 BEGIN_SORT_FUNCTION(Name)
 {
+    // TaskManagerPlus: sort by the text that is shown (the file description with friendly names).
+    PPH_STRING name1 = processItem1->ProcessName;
+    PPH_STRING name2 = processItem2->ProcessName;
+
+    if (PhFriendlyNames)
+    {
+        if (!PhIsNullOrEmptyString(processItem1->VersionInfo.FileDescription))
+            name1 = processItem1->VersionInfo.FileDescription;
+        if (!PhIsNullOrEmptyString(processItem2->VersionInfo.FileDescription))
+            name2 = processItem2->VersionInfo.FileDescription;
+    }
+
     sortResult = PhCompareStringWithNullSortOrder(
-        processItem1->ProcessName,
-        processItem2->ProcessName,
+        name1,
+        name2,
         ProcessTreeListSortOrder,
         TRUE
         );
@@ -3596,7 +3611,11 @@ BOOLEAN NTAPI PhpProcessTreeNewCallback(
             switch (getCellText->Id)
             {
             case PHPRTLC_NAME:
-                getCellText->Text = PhGetStringRef(processItem->ProcessName);
+                // TaskManagerPlus: friendly names show the file description (the image name is in the tooltip).
+                if (PhFriendlyNames && !PhIsNullOrEmptyString(processItem->VersionInfo.FileDescription))
+                    getCellText->Text = PhGetStringRef(processItem->VersionInfo.FileDescription);
+                else
+                    getCellText->Text = PhGetStringRef(processItem->ProcessName);
                 break;
             case PHPRTLC_PID:
                 {
@@ -3659,8 +3678,15 @@ BOOLEAN NTAPI PhpProcessTreeNewCallback(
                     {
                         PH_FORMAT format[2];
 
-                        PhInitFormatSize(&format[0], number);
-                        PhInitFormatS(&format[1], L"/s");
+                        if (PhMetricUnits)
+                        {
+                            PhMetricInitByteRate(format, number); // TaskManagerPlus: fixed MB/s
+                        }
+                        else
+                        {
+                            PhInitFormatSize(&format[0], number);
+                            PhInitFormatS(&format[1], L"/s");
+                        }
 
                         PhMoveReference(&node->IoTotalRateText, PhFormat(format, 2, 0));
                         getCellText->Text = node->IoTotalRateText->sr;
@@ -3675,7 +3701,18 @@ BOOLEAN NTAPI PhpProcessTreeNewCallback(
 
                     if (value != 0)
                     {
-                        PhMoveReference(&node->PrivateBytesText, PhFormatSize(value, ULONG_MAX));
+                        if (PhMetricUnits) // TaskManagerPlus: fixed MB / GB
+                        {
+                            PH_FORMAT format[2];
+
+                            PhMetricInitBytes(format, value);
+                            PhMoveReference(&node->PrivateBytesText, PhFormat(format, 2, 0));
+                        }
+                        else
+                        {
+                            PhMoveReference(&node->PrivateBytesText, PhFormatSize(value, ULONG_MAX));
+                        }
+
                         getCellText->Text = PhGetStringRef(node->PrivateBytesText);
                     }
                 }
@@ -5235,10 +5272,28 @@ BOOLEAN NTAPI PhpProcessTreeNewCallback(
             tickCount = NtGetTickCount64();
 
             if ((LONG64)(node->TooltipTextValidToTickCount - tickCount) < 0)
+            {
                 PhClearReference(&node->TooltipText);
+                node->TooltipNamed = FALSE; // TaskManagerPlus
+            }
 
             if (PhEnableTooltipSupport && !node->TooltipText)
                 node->TooltipText = PhGetProcessTooltipText(node->ProcessItem, &node->TooltipTextValidToTickCount);
+
+            // TaskManagerPlus: with friendly names the image name goes first in the tooltip.
+            if (PhFriendlyNames && !PhIsNullOrEmptyString(node->ProcessItem->VersionInfo.FileDescription) &&
+                !PhIsNullOrEmptyString(node->ProcessItem->ProcessName) && !node->TooltipNamed)
+            {
+                PPH_STRING named;
+
+                if (!PhIsNullOrEmptyString(node->TooltipText))
+                    named = PhConcatStrings(3, PhGetString(node->ProcessItem->ProcessName), L"\r\n", PhGetString(node->TooltipText));
+                else
+                    named = PhReferenceObject(node->ProcessItem->ProcessName);
+
+                PhMoveReference(&node->TooltipText, named);
+                node->TooltipNamed = TRUE;
+            }
 
             if (!PhIsNullOrEmptyString(node->TooltipText))
             {
@@ -6467,6 +6522,30 @@ VOID PhToggleProcessCompactRows(
 
     if (ProcessTreeListHandle)
         TreeNew_SetStyleFlags(ProcessTreeListHandle, TN_STYLE_THIN_ROWS, thin ? TN_STYLE_THIN_ROWS : 0);
+}
+
+// TaskManagerPlus: View > Friendly names and View > Metric units.
+VOID PhToggleProcessFriendlyNames(
+    VOID
+    )
+{
+    PhFriendlyNames = !PhFriendlyNames;
+    PhSetIntegerSetting(SETTING_FRIENDLY_NAMES, PhFriendlyNames);
+
+    if (ProcessTreeListHandle)
+    {
+        TreeNew_NodesStructured(ProcessTreeListHandle); // the sort order may change
+        PhInvalidateAllProcessNodes();
+    }
+}
+
+VOID PhToggleProcessMetricUnits(
+    VOID
+    )
+{
+    PhMetricUnits = !PhMetricUnits;
+    PhSetIntegerSetting(SETTING_METRIC_UNITS, PhMetricUnits);
+    PhInvalidateAllProcessNodes(); // the text is rebuilt on the next refresh
 }
 
 // TaskManagerPlus: View > Flat list (flat when sorted <-> tree when sorted).

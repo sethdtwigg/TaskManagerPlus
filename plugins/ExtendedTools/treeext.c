@@ -11,6 +11,7 @@
  */
 
 #include "exttools.h"
+#include "metricfmt.h" // TaskManagerPlus
 #include <netfw.h>
 
 _Function_class_(PH_PLUGIN_TREENEW_SORT_FUNCTION)
@@ -425,8 +426,15 @@ static VOID EtpProcessTreeGetTotalsText(
             if (Message->SubId != ETPRTNC_NETWORKRECEIVERATE)
                 number += EtNetworkSendDelta.Delta;
 
-            PhInitFormatSizeWithPrecision(&format[0], EtCalculateRate(number), 1); // TaskManagerPlus: short, e.g. 321.3 kB/s
-            PhInitFormatS(&format[1], L"/s");
+            if (PhGetIntegerSetting(L"MetricUnits"))
+            {
+                PhMetricInitBitRate(format, EtCalculateRate(number)); // TaskManagerPlus: fixed Mbps
+            }
+            else
+            {
+                PhInitFormatSizeWithPrecision(&format[0], EtCalculateRate(number), 1); // short, e.g. 321.3 kB/s
+                PhInitFormatS(&format[1], L"/s");
+            }
         }
         break;
     default:

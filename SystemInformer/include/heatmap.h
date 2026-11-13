@@ -15,6 +15,8 @@
 
 extern BOOLEAN PhHeatMapEnabled; // View > Heat map (setting HeatMap)
 extern ULONG PhHeatStyle; // Options > Highlighting (setting HeatStyle): 0 off, 1 subtle, 2 band
+extern BOOLEAN PhFriendlyNames; // setting FriendlyNames: Name column shows the file description
+extern BOOLEAN PhMetricUnits; // setting MetricUnits: fixed MB, MB/s, Mbps text (metricfmt.h)
 
 /**
  * Computes the tinted cell colours for a measured value.

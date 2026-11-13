@@ -937,6 +937,8 @@
 #define ID_VIEW_COMPACTROWS             10371 // TaskManagerPlus
 #define ID_VIEW_HEADERTOTALS            10372 // TaskManagerPlus
 #define ID_VIEW_FLATLIST                10373 // TaskManagerPlus
+#define ID_VIEW_FRIENDLYNAMES           10374 // TaskManagerPlus
+#define ID_VIEW_METRICUNITS             10375 // TaskManagerPlus
 #define ID_VIEW_TABS_FIRST              10380 // TaskManagerPlus: + page number (16 consecutive ids)
 #define ID_VIEW_TABS_LAST               10395 // TaskManagerPlus
 #define IDC_APPLYCALMLOOK               1574 // TaskManagerPlus

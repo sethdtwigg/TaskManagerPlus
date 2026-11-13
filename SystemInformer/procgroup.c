@@ -23,6 +23,8 @@
 #include <procprv.h>
 #include <procgroup.h>
 #include <settings.h>
+#include <heatmap.h> // TaskManagerPlus
+#include <metricfmt.h> // TaskManagerPlus
 
 static HWND GroupTreeHandle;
 static BOOLEAN GroupEnabled = FALSE;
@@ -444,8 +446,15 @@ static BOOLEAN PhpGroupGetTotalsText(
             rate = PhIoReadDelta.Delta + PhIoWriteDelta.Delta + PhIoOtherDelta.Delta;
             rate = rate * 1000 / PhProcessProviderElapsedMilliseconds;
 
-            PhInitFormatSizeWithPrecision(&format[0], rate, 1); // short, e.g. 321.3 kB/s
-            PhInitFormatS(&format[1], L"/s");
+            if (PhMetricUnits)
+            {
+                PhMetricInitByteRate(format, rate); // TaskManagerPlus: fixed MB/s
+            }
+            else
+            {
+                PhInitFormatSizeWithPrecision(&format[0], rate, 1); // short, e.g. 321.3 kB/s
+                PhInitFormatS(&format[1], L"/s");
+            }
             count = 2;
             buffer = TotalsDiskText;
             bufferSize = sizeof(TotalsDiskText);

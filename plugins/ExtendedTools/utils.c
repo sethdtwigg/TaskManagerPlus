@@ -11,6 +11,7 @@
  */
 
 #include "exttools.h"
+#include "metricfmt.h" // TaskManagerPlus
 
  // Undocumented device properties (Win10 only)
 DEFINE_GUID(GUID_DISPLAY_DEVICE_ARRIVAL, 0x1ca05180, 0xa699, 0x450a, 0x9a, 0x0c, 0xde, 0x4f, 0xbe, 0x3d, 0xdd, 0x89);
@@ -198,8 +199,19 @@ VOID EtFormatRate(
     {
         PH_FORMAT format[2];
 
-        PhInitFormatSize(&format[0], number);
-        PhInitFormatS(&format[1], L"/s");
+        if (PhGetIntegerSetting(L"MetricUnits")) // TaskManagerPlus: fixed MB/s for disk, Mbps for network
+        {
+            if ((Message->SubId >= ETPRTNC_NETWORKRECEIVES && Message->SubId <= ETPRTNC_NETWORKTOTALBYTESDELTA) ||
+                (Message->SubId >= ETPRTNC_NETWORKRECEIVERATE && Message->SubId <= ETPRTNC_NETWORKTOTALRATE))
+                PhMetricInitBitRate(format, number);
+            else
+                PhMetricInitByteRate(format, number);
+        }
+        else
+        {
+            PhInitFormatSize(&format[0], number);
+            PhInitFormatS(&format[1], L"/s");
+        }
 
         EtFormatToBuffer(format, 2, Block, Message);
     }

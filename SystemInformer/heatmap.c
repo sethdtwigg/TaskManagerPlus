@@ -175,6 +175,8 @@ static const PH_HEAT_BAND_RAMP PhpBandDark = { RGB(0x2b, 0x8c, 0xe6), { 0.10, 0.
 static const PH_HEAT_BAND_RAMP PhpBandOled = { RGB(0x1f, 0x7a, 0xd0), { 0.16, 0.26, 0.38, 0.52, 0.68 } };
 
 ULONG PhHeatStyle = 2; // setting HeatStyle: 0 off, 1 subtle, 2 band
+BOOLEAN PhFriendlyNames = TRUE; // TaskManagerPlus
+BOOLEAN PhMetricUnits = TRUE; // TaskManagerPlus
 
 static ULONG PhpBandGetStep(
     _In_ ULONG Kind,

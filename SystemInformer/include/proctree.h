@@ -249,6 +249,7 @@ typedef struct _PH_PROCESS_NODE
     ULONG ServerSiloId;
 
     PPH_STRING TooltipText;
+    BOOLEAN TooltipNamed; // TaskManagerPlus: the image name was prepended to TooltipText
     ULONG64 TooltipTextValidToTickCount;
 
     // Text buffers
@@ -458,6 +459,14 @@ extern BOOLEAN PhShowCountPill;
 extern BOOLEAN PhProcessColumnsResetPending;
 
 VOID PhToggleProcessCompactRows(
+    VOID
+    );
+
+VOID PhToggleProcessFriendlyNames(
+    VOID
+    );
+
+VOID PhToggleProcessMetricUnits(
     VOID
     );
 

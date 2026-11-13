@@ -12,6 +12,7 @@
 
 #include <phapp.h>
 #include <mainwnd.h>
+#include <heatmap.h> // TaskManagerPlus
 
 #include <emenu.h>
 #include <phconsole.h>
@@ -124,6 +125,8 @@ BOOLEAN PhMwpProcessesPageCallback(
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_MINIMETERS, L"&Mini meters", NULL, NULL), ULONG_MAX); // TaskManagerPlus
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_COUNTPILL, L"Count &pill", NULL, NULL), ULONG_MAX); // TaskManagerPlus
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_FLATLIST, L"&Flat list", NULL, NULL), ULONG_MAX); // TaskManagerPlus
+            PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_FRIENDLYNAMES, L"Friendl&y names", NULL, NULL), ULONG_MAX); // TaskManagerPlus
+            PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_METRICUNITS, L"Metric &units (MB, MB/s, Mbps)", NULL, NULL), ULONG_MAX); // TaskManagerPlus
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_HEADERTOTALS, L"Header t&otals", NULL, NULL), ULONG_MAX); // TaskManagerPlus
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_TOTALSROW, L"&Totals row", NULL, NULL), ULONG_MAX); // TaskManagerPlus
             PhInsertEMenuItem(menu, PhCreateEMenuItem(0, ID_VIEW_TOTALSROW, L"&Totals row", NULL, NULL), ULONG_MAX); // TaskManagerPlus
@@ -160,6 +163,10 @@ BOOLEAN PhMwpProcessesPageCallback(
             if (PhGetIntegerSetting(SETTING_GROUP_PROCESSES) && (menuItem = PhFindEMenuItem(menu, 0, NULL, ID_VIEW_GROUPPROCESSES))) // TaskManagerPlus
                 menuItem->Flags |= PH_EMENU_CHECKED;
             if (PhGetIntegerSetting(SETTING_HEAT_MAP) && (menuItem = PhFindEMenuItem(menu, 0, NULL, ID_VIEW_HEATMAP))) // TaskManagerPlus
+                menuItem->Flags |= PH_EMENU_CHECKED;
+            if (PhFriendlyNames && (menuItem = PhFindEMenuItem(menu, 0, NULL, ID_VIEW_FRIENDLYNAMES))) // TaskManagerPlus
+                menuItem->Flags |= PH_EMENU_CHECKED;
+            if (PhMetricUnits && (menuItem = PhFindEMenuItem(menu, 0, NULL, ID_VIEW_METRICUNITS))) // TaskManagerPlus
                 menuItem->Flags |= PH_EMENU_CHECKED;
             if (PhGetIntegerSetting(SETTING_FLAT_LIST) == 1 && (menuItem = PhFindEMenuItem(menu, 0, NULL, ID_VIEW_FLATLIST))) // TaskManagerPlus
                 menuItem->Flags |= PH_EMENU_CHECKED;
