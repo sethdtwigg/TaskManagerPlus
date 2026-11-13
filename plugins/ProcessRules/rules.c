@@ -340,6 +340,7 @@ NTSTATUS TmpSaveRulesToFile(
     PVOID rules;
     PH_STRINGREF directory;
     PH_STRINGREF baseName;
+    PPH_STRING ntFileName;
 
     root = PhCreateJsonObject();
     PhAddJsonObjectUInt64(root, "version", TMP_RULES_FILE_VERSION);
@@ -360,7 +361,16 @@ NTSTATUS TmpSaveRulesToFile(
         PhCreateDirectoryFullPathWin32(&directory);
     }
 
-    status = PhSaveJsonObjectToFile(FileName, root, PH_JSON_TO_STRING_PRETTY);
+    // TaskManagerPlus: the phlib JSON file functions take NT paths (a Win32 path fails with STATUS_OBJECT_PATH_SYNTAX_BAD).
+    if (ntFileName = PhDosPathNameToNtPathName(FileName))
+    {
+        status = PhSaveJsonObjectToFile(&ntFileName->sr, root, PH_JSON_TO_STRING_PRETTY);
+        PhDereferenceObject(ntFileName);
+    }
+    else
+    {
+        status = STATUS_OBJECT_PATH_SYNTAX_BAD;
+    }
 
     PhFreeJsonObject(root);
 
@@ -377,10 +387,20 @@ NTSTATUS TmpLoadRulesFromFile(
     )
 {
     NTSTATUS status;
-    PVOID root;
+    PVOID root = NULL;
     PVOID rules;
+    PPH_STRING ntFileName;
 
-    status = PhLoadJsonObjectFromFile(&root, FileName);
+    // TaskManagerPlus: NT path, see TmpSaveRulesToFile.
+    if (ntFileName = PhDosPathNameToNtPathName(FileName))
+    {
+        status = PhLoadJsonObjectFromFile(&root, &ntFileName->sr);
+        PhDereferenceObject(ntFileName);
+    }
+    else
+    {
+        status = STATUS_OBJECT_PATH_SYNTAX_BAD;
+    }
 
     if (!NT_SUCCESS(status))
         return status;
