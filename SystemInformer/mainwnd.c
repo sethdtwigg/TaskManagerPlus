@@ -1485,6 +1485,11 @@ VOID PhMwpOnCommand(
             PhToggleProcessCompactRows();
         }
         break;
+    case ID_VIEW_HEADERTOTALS: // TaskManagerPlus
+        {
+            PhToggleProcessHeaderTotals();
+        }
+        break;
     case ID_VIEW_TOTALSROW: // TaskManagerPlus
         {
             PhToggleProcessTotalsRow();

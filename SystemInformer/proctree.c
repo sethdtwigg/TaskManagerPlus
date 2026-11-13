@@ -118,6 +118,7 @@ VOID PhInitializeProcessTreeList(
     TreeNew_SetCallback(hwnd, PhpProcessTreeNewCallback, NULL);
     PhGroupInitialization(hwnd); // TaskManagerPlus
     TreeNew_SetTotalsRow(hwnd, !!PhGetIntegerSetting(SETTING_SHOW_TOTALS_ROW)); // TaskManagerPlus: totals row under the headers (View > Totals row)
+    TreeNew_SetHeaderTotals(hwnd, !!PhGetIntegerSetting(SETTING_HEADER_TOTALS)); // TaskManagerPlus: live totals in two-line column headers
     TreeNew_SetCellHeat(hwnd, TRUE); // TaskManagerPlus: heat-map tints and the process count pill
     PhHeatMapEnabled = !!PhGetIntegerSetting(SETTING_HEAT_MAP);
     PhHeatStyle = PhGetIntegerSetting(SETTING_HEAT_STYLE); // TaskManagerPlus
@@ -755,6 +756,13 @@ VOID PhTickProcessNodes(
     if (PhProcessTreeColumnHeaderCache)
     {
         memset(PhProcessTreeColumnHeaderCache, 0, PhProcessTreeColumnHeaderCacheLength);
+    }
+
+    // TaskManagerPlus: the live totals in the two-line headers change with every refresh.
+    if (PhGetIntegerSetting(SETTING_HEADER_TOTALS))
+    {
+        InvalidateRect(TreeNew_GetFixedHeader(ProcessTreeListHandle), NULL, FALSE);
+        InvalidateRect(TreeNew_GetHeader(ProcessTreeListHandle), NULL, FALSE);
     }
 
     // Node text invalidation, node updates
@@ -6442,6 +6450,19 @@ VOID PhToggleProcessCompactRows(
 
     if (ProcessTreeListHandle)
         TreeNew_SetStyleFlags(ProcessTreeListHandle, TN_STYLE_THIN_ROWS, thin ? TN_STYLE_THIN_ROWS : 0);
+}
+
+// TaskManagerPlus: View > Header totals (two-line column headers with the live totals; hides the totals row).
+VOID PhToggleProcessHeaderTotals(
+    VOID
+    )
+{
+    BOOLEAN enabled = !PhGetIntegerSetting(SETTING_HEADER_TOTALS);
+
+    PhSetIntegerSetting(SETTING_HEADER_TOTALS, enabled);
+
+    if (ProcessTreeListHandle)
+        TreeNew_SetHeaderTotals(ProcessTreeListHandle, enabled);
 }
 
 // TaskManagerPlus: View > Totals row.

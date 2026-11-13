@@ -110,6 +110,9 @@ VOID PhResolveLookDefaults(
 {
     if (PhGetIntegerSetting(SETTING_HEAT_STYLE) == 0xff)
         PhSetIntegerSetting(SETTING_HEAT_STYLE, PhSettingsLoadedFromFile ? 1 : 2);
+
+    if (PhGetIntegerSetting(SETTING_HEADER_TOTALS) == 0xff)
+        PhSetIntegerSetting(SETTING_HEADER_TOTALS, PhSettingsLoadedFromFile ? 0 : 1);
 }
 
 /**

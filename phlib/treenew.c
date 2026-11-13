@@ -789,6 +789,9 @@ VOID PhTnpDestroyTreeNewContext(
     if (Context->HeaderThemeHandle)
         PhCloseThemeData(Context->HeaderThemeHandle);
 
+    if (Context->HeaderTotalsFontHandle) // TaskManagerPlus
+        DeleteFont(Context->HeaderTotalsFontHandle);
+
     if (Context->HeaderBoldFontHandle)
         DeleteFont(Context->HeaderBoldFontHandle);
 
@@ -2590,6 +2593,50 @@ BOOLEAN PhTnpOnNotify(
     return FALSE;
 }
 
+// TaskManagerPlus: the totals row is replaced by the live totals in the column headers.
+#define PhpTnpTotalsRowShown(Context) ((Context)->TotalsRowEnabled && !(Context)->HeaderTotalsEnabled)
+
+// TaskManagerPlus: creates the font of the live total (one and a half times the list font, semibold) and
+// computes the two-line header height: total line + name line + 4/2/4 px (scaled) of padding.
+static VOID PhpTnpEnsureHeaderTotals(
+    _In_ PPH_TREENEW_CONTEXT Context
+    )
+{
+    LOGFONT logFont;
+    HDC hdc;
+    TEXTMETRIC bigMetrics;
+    TEXTMETRIC smallMetrics;
+    HFONT oldFont;
+
+    if (Context->HeaderTotalsFontHandle && Context->HeaderTotalsHeight)
+        return;
+
+    if (Context->HeaderTotalsFontHandle)
+    {
+        DeleteFont(Context->HeaderTotalsFontHandle);
+        Context->HeaderTotalsFontHandle = NULL;
+    }
+
+    if (!Context->Font || !GetObject(Context->Font, sizeof(LOGFONT), &logFont))
+        return;
+
+    logFont.lfHeight = MulDiv(logFont.lfHeight, 3, 2);
+    logFont.lfWeight = FW_SEMIBOLD;
+    Context->HeaderTotalsFontHandle = CreateFontIndirect(&logFont);
+
+    if (!Context->HeaderTotalsFontHandle || !(hdc = GetDC(Context->Handle)))
+        return;
+
+    oldFont = SelectFont(hdc, Context->HeaderTotalsFontHandle);
+    GetTextMetrics(hdc, &bigMetrics);
+    SelectFont(hdc, Context->Font);
+    GetTextMetrics(hdc, &smallMetrics);
+    SelectFont(hdc, oldFont);
+    ReleaseDC(Context->Handle, hdc);
+
+    Context->HeaderTotalsHeight = bigMetrics.tmHeight + smallMetrics.tmHeight + MulDiv(10, Context->WindowDpi ? Context->WindowDpi : 96, 96);
+}
+
 /**
  * Processes treenew-specific user messages (TNM_* messages).
  *
@@ -2679,6 +2726,27 @@ LRESULT PhTnpOnUserMessage(
                 Context->TotalsRowEnabled = enable;
                 PhTnpInvalidateLayoutCache(Context);
                 PhTnpLayout(Context);
+                PhpTnpInvalidateContent(Context);
+            }
+        }
+        return TRUE;
+    case TNM_SETHEADERTOTALS: // TaskManagerPlus
+        {
+            BOOLEAN enable = !!WParam && Context->HeaderCustomDraw;
+
+            if (Context->HeaderTotalsEnabled != enable)
+            {
+                Context->HeaderTotalsEnabled = enable;
+
+                if (enable)
+                    PhpTnpEnsureHeaderTotals(Context);
+
+                Context->FixedHeaderLastOutRect.bottom = -1; // force the header windows to be resized
+                Context->NormalHeaderLastOutRect.bottom = -1;
+                PhTnpInvalidateLayoutCache(Context);
+                PhTnpLayout(Context);
+                InvalidateRect(Context->FixedHeaderHandle, NULL, FALSE);
+                InvalidateRect(Context->HeaderHandle, NULL, FALSE);
                 PhpTnpInvalidateContent(Context);
             }
         }
@@ -3335,6 +3403,13 @@ VOID PhTnpSetFont(
         }
     }
 
+    if (Context->HeaderTotalsFontHandle) // TaskManagerPlus: re-created for the new font on next use
+    {
+        DeleteFont(Context->HeaderTotalsFontHandle);
+        Context->HeaderTotalsFontHandle = NULL;
+        Context->HeaderTotalsHeight = 0;
+    }
+
     SetWindowFont(Context->FixedHeaderHandle, Context->Font, Redraw);
     SetWindowFont(Context->HeaderHandle, Context->Font, Redraw);
 
@@ -3729,6 +3804,9 @@ VOID PhTnpLayoutHeader(
     hdl.prc = &rect;
     hdl.pwpos = &windowPos;
 
+    if (Context->HeaderTotalsEnabled) // TaskManagerPlus
+        PhpTnpEnsureHeaderTotals(Context);
+
     if (!(Context->Style & TN_STYLE_NO_COLUMN_HEADER))
     {
         LONG headerHeight = 0;
@@ -3776,7 +3854,9 @@ VOID PhTnpLayoutHeader(
         // TaskManagerPlus: ~+25% header height on an 8px grid.
         if (!Context->HeaderCustomDraw)
             outRect.bottom = PhTnpComfortableHeight(outRect.bottom, Context->WindowDpi);
-        else if (Context->TotalsRowEnabled && Context->RowHeight) // TaskManagerPlus: single-line header, same height as a row (8px grid)
+        else if (Context->HeaderTotalsEnabled && Context->HeaderTotalsHeight) // TaskManagerPlus: two-line header (live total over the name)
+            outRect.bottom = Context->HeaderTotalsHeight;
+        else if (PhpTnpTotalsRowShown(Context) && Context->RowHeight) // TaskManagerPlus: single-line header, same height as a row (8px grid)
             outRect.bottom = Context->RowHeight;
 
         if (!PhEqualRect(&outRect, &Context->FixedHeaderLastOutRect))
@@ -3799,7 +3879,7 @@ VOID PhTnpLayoutHeader(
 
         // TaskManagerPlus: reserve a totals row between the header and the first row.
         Context->TotalsTop = Context->HeaderHeight;
-        if (Context->TotalsRowEnabled)
+        if (PhpTnpTotalsRowShown(Context))
             Context->HeaderHeight += Context->RowHeight;
 
         // Normal portion header control
@@ -3815,7 +3895,9 @@ VOID PhTnpLayoutHeader(
         // TaskManagerPlus: ~+25% header height on an 8px grid.
         if (!Context->HeaderCustomDraw)
             outRect.bottom = PhTnpComfortableHeight(outRect.bottom, Context->WindowDpi);
-        else if (Context->TotalsRowEnabled && Context->RowHeight) // TaskManagerPlus: single-line header, same height as a row (8px grid)
+        else if (Context->HeaderTotalsEnabled && Context->HeaderTotalsHeight) // TaskManagerPlus: two-line header (live total over the name)
+            outRect.bottom = Context->HeaderTotalsHeight;
+        else if (PhpTnpTotalsRowShown(Context) && Context->RowHeight) // TaskManagerPlus: single-line header, same height as a row (8px grid)
             outRect.bottom = Context->RowHeight;
 
         if (!PhEqualRect(&outRect, &Context->NormalHeaderLastOutRect))
@@ -8275,7 +8357,7 @@ VOID PhTnpPaint(
             );
     }
 
-    if (Context->TotalsRowEnabled) // TaskManagerPlus
+    if (PhpTnpTotalsRowShown(Context)) // TaskManagerPlus
         PhpTnpPaintTotalsRow(Context, hdc, PaintRect);
 
     if (Context->CellHeatEnabled) // TaskManagerPlus: overlay (the "N Processes" pill)
@@ -9639,12 +9721,17 @@ BOOLEAN TnHeaderCustomPaint(
         textRect = CustomDraw->rc;
         textRect.left += Context->HeaderTextPadding;
         textRect.right -= Context->HeaderTextPadding;
-        if (!Context->TotalsRowEnabled) // TaskManagerPlus: with a totals row the title is one centred line
+        if (!PhpTnpTotalsRowShown(Context)) // TaskManagerPlus: with a totals row the title is one centred line
         {
             textRect.bottom -= Context->HeaderTextPadding;
             textRect.top += Context->HeaderTextMargin;
         }
 
+        if (Context->HeaderTotalsEnabled) // TaskManagerPlus: muted name under the live total (about 66% text colour, >= 5.5:1)
+            SetTextColor(CustomDraw->hdc, Context->ThemeSupport ?
+                PhpTnpBlendColor(PhThemeWindowBackgroundColor, PhThemeWindowTextColor, 170) :
+                PhpTnpBlendColor(GetSysColor(COLOR_WINDOW), GetSysColor(COLOR_WINDOWTEXT), 170));
+        else
         SetTextColor(CustomDraw->hdc, Context->ThemeSupport ? PhThemeWindowDisabledTextColor : RGB(97, 116, 139)); // RGB(178, 178, 178)
 
         oldFont = SelectFont(CustomDraw->hdc, Context->Font);
@@ -9652,16 +9739,85 @@ BOOLEAN TnHeaderCustomPaint(
         {
             DrawText(
                 CustomDraw->hdc, textBuffer, textLength, &textRect,
-                DT_SINGLELINE | DT_HIDEPREFIX | DT_WORD_ELLIPSIS | (Context->TotalsRowEnabled ? DT_VCENTER : DT_BOTTOM) | DT_RIGHT);
+                DT_SINGLELINE | DT_HIDEPREFIX | DT_WORD_ELLIPSIS | (PhpTnpTotalsRowShown(Context) ? DT_VCENTER : DT_BOTTOM) | DT_RIGHT);
         }
         else
         {
             DrawText(CustomDraw->hdc, textBuffer, textLength, &textRect,
-                DT_SINGLELINE | DT_HIDEPREFIX | DT_WORD_ELLIPSIS | (Context->TotalsRowEnabled ? DT_VCENTER : DT_BOTTOM) | DT_LEFT);
+                DT_SINGLELINE | DT_HIDEPREFIX | DT_WORD_ELLIPSIS | (PhpTnpTotalsRowShown(Context) ? DT_VCENTER : DT_BOTTOM) | DT_LEFT);
         }
         SelectFont(CustomDraw->hdc, oldFont);
 
-        if (Context->HeaderCustomDraw && !Context->TotalsRowEnabled && PhTnpGetColumnHeaderText(Context, column, &headerString)) // TaskManagerPlus: the totals row replaces the native header stats
+        if (Context->HeaderTotalsEnabled) // TaskManagerPlus: live total above the column name
+        {
+            PH_TREENEW_GET_TOTALS_TEXT totals;
+            COLORREF muted = Context->ThemeSupport ?
+                PhpTnpBlendColor(PhThemeWindowBackgroundColor, PhThemeWindowTextColor, 170) :
+                PhpTnpBlendColor(GetSysColor(COLOR_WINDOW), GetSysColor(COLOR_WINDOWTEXT), 170);
+            LONG pad = MulDiv(4, Context->WindowDpi ? Context->WindowDpi : 96, 96);
+            RECT totalsRect = textRect;
+
+            PhpTnpEnsureHeaderTotals(Context);
+
+            memset(&totals, 0, sizeof(totals));
+            totals.ColumnId = column->Id;
+
+            if (Context->HeaderTotalsFontHandle &&
+                Context->Callback(Context->Handle, TreeNewGetTotalsText, &totals, NULL, Context->CallbackContext) &&
+                totals.Text.Length != 0)
+            {
+                totalsRect.top = CustomDraw->rc.top + pad;
+                totalsRect.bottom = CustomDraw->rc.bottom;
+                SetTextColor(CustomDraw->hdc, Context->ThemeSupport ? PhThemeWindowTextColor : RGB(0, 0, 0));
+                oldFont = SelectFont(CustomDraw->hdc, Context->HeaderTotalsFontHandle);
+                DrawText(
+                    CustomDraw->hdc, totals.Text.Buffer, (LONG)totals.Text.Length / (LONG)sizeof(WCHAR), &totalsRect,
+                    DT_SINGLELINE | DT_NOPREFIX | DT_TOP | (FlagOn(fmt, HDF_RIGHT) ? DT_RIGHT : DT_LEFT));
+                SelectFont(CustomDraw->hdc, oldFont);
+            }
+
+            // The sort arrow sits just before the column name (the native one would cover the total).
+            if (FlagOn(fmt, HDF_SORTDOWN | HDF_SORTUP))
+            {
+                SIZE nameSize;
+                LONG arrow = MulDiv(4, Context->WindowDpi ? Context->WindowDpi : 96, 96);
+                LONG x;
+                LONG y;
+                POINT points[3];
+                HBRUSH oldArrowBrush;
+                HPEN oldArrowPen;
+
+                oldFont = SelectFont(CustomDraw->hdc, Context->Font);
+                GetTextExtentPoint32(CustomDraw->hdc, textBuffer, textLength, &nameSize);
+                SelectFont(CustomDraw->hdc, oldFont);
+
+                x = FlagOn(fmt, HDF_RIGHT) ? textRect.right - nameSize.cx - 3 * arrow : textRect.left + nameSize.cx + arrow;
+                y = textRect.bottom - nameSize.cy / 2;
+
+                if (FlagOn(fmt, HDF_SORTUP))
+                {
+                    points[0].x = x; points[0].y = y + arrow / 2;
+                    points[1].x = x + 2 * arrow; points[1].y = y + arrow / 2;
+                    points[2].x = x + arrow; points[2].y = y - arrow / 2;
+                }
+                else
+                {
+                    points[0].x = x; points[0].y = y - arrow / 2;
+                    points[1].x = x + 2 * arrow; points[1].y = y - arrow / 2;
+                    points[2].x = x + arrow; points[2].y = y + arrow / 2;
+                }
+
+                SetDCBrushColor(CustomDraw->hdc, muted);
+                SetDCPenColor(CustomDraw->hdc, muted);
+                oldArrowBrush = SelectBrush(CustomDraw->hdc, PhGetStockBrush(DC_BRUSH));
+                oldArrowPen = SelectPen(CustomDraw->hdc, PhGetStockPen(DC_PEN));
+                Polygon(CustomDraw->hdc, points, 3);
+                SelectPen(CustomDraw->hdc, oldArrowPen);
+                SelectBrush(CustomDraw->hdc, oldArrowBrush);
+            }
+        }
+
+        if (Context->HeaderCustomDraw && !PhpTnpTotalsRowShown(Context) && !Context->HeaderTotalsEnabled && PhTnpGetColumnHeaderText(Context, column, &headerString)) // TaskManagerPlus: the totals row replaces the native header stats
         {
             SetTextColor(CustomDraw->hdc, Context->ThemeSupport ? PhThemeWindowTextColor : RGB(0, 0, 0));
             oldFont = SelectFont(CustomDraw->hdc, Context->HeaderBoldFontHandle);
@@ -9680,7 +9836,7 @@ BOOLEAN TnHeaderCustomPaint(
         PatBlt(CustomDraw->hdc, CustomDraw->rc.right - 1, CustomDraw->rc.top, 1, CustomDraw->rc.bottom - CustomDraw->rc.top, PATCOPY);
         SelectBrush(CustomDraw->hdc, oldBrush);
 
-        if (FlagOn(fmt, HDF_SORTDOWN | HDF_SORTUP))
+        if (!Context->HeaderTotalsEnabled && FlagOn(fmt, HDF_SORTDOWN | HDF_SORTUP)) // TaskManagerPlus: totals mode draws its own arrow
         {
             if (Context->HeaderThemeHandle)
             {
