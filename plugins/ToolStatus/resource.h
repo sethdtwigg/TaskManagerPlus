@@ -46,6 +46,10 @@
 #define IDB_TMS_POWER_ONDARK 217
 #define IDB_TMS_MENU_ONLIGHT 218
 #define IDB_TMS_MENU_ONDARK 219
+#define IDB_TMS_RUN_ONLIGHT 220
+#define IDB_TMS_RUN_ONDARK 221
+#define IDB_TMS_ECO_ONLIGHT 222
+#define IDB_TMS_ECO_ONDARK 223
 #define IDD_CUSTOMIZE_TB                140
 #define IDD_CUSTOMIZE_SB                141
 #define IDI_ARROW_REFRESH               142

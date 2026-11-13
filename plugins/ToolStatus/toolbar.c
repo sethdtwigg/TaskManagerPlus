@@ -20,6 +20,9 @@ TBBUTTON ToolbarButtons[MAX_TOOLBAR_ITEMS] =
 {
     // Default toolbar buttons (displayed)
     { I_IMAGECALLBACK, TIDC_MAINMENUDROPDOWN, TBSTATE_ENABLED, BTNS_WHOLEDROPDOWN | BTNS_BUTTON | BTNS_AUTOSIZE | BTNS_SHOWTEXT, { 0 }, 0, 0 }, // TaskManagerPlus
+    { I_IMAGECALLBACK, PHAPP_ID_HACKER_RUN, TBSTATE_ENABLED, BTNS_BUTTON | BTNS_AUTOSIZE | BTNS_SHOWTEXT, { 0 }, 0, 0 }, // TaskManagerPlus: Run new task
+    { I_IMAGECALLBACK, PHAPP_ID_PROCESS_TERMINATE, TBSTATE_ENABLED, BTNS_BUTTON | BTNS_AUTOSIZE | BTNS_SHOWTEXT, { 0 }, 0, 0 }, // TaskManagerPlus: End task
+    { I_IMAGECALLBACK, PHAPP_ID_MISCELLANEOUS_ECOMODE, TBSTATE_ENABLED, BTNS_BUTTON | BTNS_AUTOSIZE | BTNS_SHOWTEXT, { 0 }, 0, 0 }, // TaskManagerPlus: Efficiency mode
     // TaskManagerPlus: calm look = 4 buttons; the find-window and shield buttons are available (hidden)
     { I_IMAGECALLBACK, PHAPP_ID_VIEW_REFRESH, TBSTATE_ENABLED, BTNS_BUTTON | BTNS_AUTOSIZE | BTNS_SHOWTEXT, { 0 }, 0, 0 },
     { I_IMAGECALLBACK, PHAPP_ID_HACKER_FINDHANDLESORDLLS, TBSTATE_ENABLED, BTNS_BUTTON | BTNS_AUTOSIZE | BTNS_SHOWTEXT, { 0 }, 0, 0 },
@@ -750,10 +753,9 @@ VOID ToolBarApplySettings(
             {
                 switch (buttonInfo.idCommand)
                 {
-                case PHAPP_ID_VIEW_REFRESH:
-                case PHAPP_ID_HACKER_OPTIONS:
-                case PHAPP_ID_HACKER_FINDHANDLESORDLLS:
-                case PHAPP_ID_VIEW_SYSTEMINFORMATION:
+                case PHAPP_ID_HACKER_RUN: // TaskManagerPlus: only the three primary actions carry text
+                case PHAPP_ID_PROCESS_TERMINATE:
+                case PHAPP_ID_MISCELLANEOUS_ECOMODE:
                     buttonInfo.fsStyle = BTNS_BUTTON | BTNS_AUTOSIZE | BTNS_SHOWTEXT;
                     break;
                 default:
@@ -1050,6 +1052,12 @@ static ULONG ToolbarMapStableToCommandId(
         return PHAPP_ID_VIEW_ALWAYSONTOP;
     case TOOLBAR_SAVE_ID_RUNASADMINISTRATOR:
         return PHAPP_ID_HACKER_RUNASADMINISTRATOR;
+    case TOOLBAR_SAVE_ID_ENDTASK: // TaskManagerPlus
+        return PHAPP_ID_PROCESS_TERMINATE;
+    case TOOLBAR_SAVE_ID_EFFICIENCY:
+        return PHAPP_ID_MISCELLANEOUS_ECOMODE;
+    case TOOLBAR_SAVE_ID_RUNNEWTASK:
+        return PHAPP_ID_HACKER_RUN;
 
     // Migration only: original historical ids from older configs
     case 40079:
@@ -1099,6 +1107,12 @@ static ULONG ToolbarMapCommandIdToStable(
         return TOOLBAR_SAVE_ID_ALWAYSONTOP;
     case PHAPP_ID_HACKER_RUNASADMINISTRATOR:
         return TOOLBAR_SAVE_ID_RUNASADMINISTRATOR;
+    case PHAPP_ID_PROCESS_TERMINATE: // TaskManagerPlus
+        return TOOLBAR_SAVE_ID_ENDTASK;
+    case PHAPP_ID_MISCELLANEOUS_ECOMODE:
+        return TOOLBAR_SAVE_ID_EFFICIENCY;
+    case PHAPP_ID_HACKER_RUN:
+        return TOOLBAR_SAVE_ID_RUNNEWTASK;
     }
 
     return CommandID;
@@ -1116,6 +1130,12 @@ PCWSTR ToolbarGetText(
 {
     switch (CommandID)
     {
+    case PHAPP_ID_HACKER_RUN: // TaskManagerPlus
+        return L"Run new task";
+    case PHAPP_ID_PROCESS_TERMINATE:
+        return L"End task";
+    case PHAPP_ID_MISCELLANEOUS_ECOMODE:
+        return L"Efficiency mode";
     case PHAPP_ID_VIEW_REFRESH:
         return L"Refresh";
     case PHAPP_ID_HACKER_OPTIONS:
@@ -1287,6 +1307,15 @@ HBITMAP ToolbarGetImage(
                 id = IDI_APPLICATION_GET;
             }
         }
+        break;
+    case PHAPP_ID_HACKER_RUN: // TaskManagerPlus: Run new task
+        id = ToolbarIsDarkTheme() ? IDB_TMS_RUN_ONDARK : IDB_TMS_RUN_ONLIGHT;
+        break;
+    case PHAPP_ID_PROCESS_TERMINATE: // TaskManagerPlus: End task
+        id = ToolStatusConfig.ModernIcons ? (ToolbarIsDarkTheme() ? IDB_TMS_KILL_ONDARK : IDB_TMS_KILL_ONLIGHT) : IDI_CROSS;
+        break;
+    case PHAPP_ID_MISCELLANEOUS_ECOMODE: // TaskManagerPlus: Efficiency mode
+        id = ToolbarIsDarkTheme() ? IDB_TMS_ECO_ONDARK : IDB_TMS_ECO_ONLIGHT;
         break;
     case TIDC_MAINMENUDROPDOWN:
         {
