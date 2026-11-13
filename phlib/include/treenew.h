@@ -303,11 +303,16 @@ NTAPI PH_TREENEW_CALLBACK(
     );
 typedef PH_TREENEW_CALLBACK* PPH_TREENEW_CALLBACK;
 
+// TaskManagerPlus: level of a header total. HIGH draws the big total in the theme-aware blue accent.
+#define PH_TOTALS_LEVEL_NORMAL 0
+#define PH_TOTALS_LEVEL_HIGH 1
+
 // TaskManagerPlus: query for the text of one cell in the totals row.
 typedef struct _PH_TREENEW_GET_TOTALS_TEXT
 {
     ULONG ColumnId; // in
     PH_STRINGREF Text; // out; must stay valid until the next callback
+    ULONG Level; // out; PH_TOTALS_LEVEL_*, zero (normal) when the callback does not set it
 } PH_TREENEW_GET_TOTALS_TEXT, *PPH_TREENEW_GET_TOTALS_TEXT;
 
 // TaskManagerPlus: heat map. The control asks, per painted cell, for a background tint.

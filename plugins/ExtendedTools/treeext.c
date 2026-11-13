@@ -411,6 +411,9 @@ static VOID EtpProcessTreeGetTotalsText(
             if (usage > 100)
                 usage = 100;
 
+            if (usage >= 25) // TaskManagerPlus: accent threshold (top heat step for GPU)
+                totals->Level = PH_TOTALS_LEVEL_HIGH;
+
             PhInitFormatF(&format[0], usage, 0);
             PhInitFormatC(&format[1], L'%');
         }
@@ -425,6 +428,9 @@ static VOID EtpProcessTreeGetTotalsText(
                 number += EtNetworkReceiveDelta.Delta;
             if (Message->SubId != ETPRTNC_NETWORKRECEIVERATE)
                 number += EtNetworkSendDelta.Delta;
+
+            if (EtCalculateRate(number) >= 1024 * 1024) // TaskManagerPlus: accent threshold (top heat step for network)
+                totals->Level = PH_TOTALS_LEVEL_HIGH;
 
             if (PhGetIntegerSetting(L"MetricUnits"))
             {

@@ -9779,7 +9779,17 @@ BOOLEAN TnHeaderCustomPaint(
             {
                 totalsRect.top = CustomDraw->rc.top + pad;
                 totalsRect.bottom = CustomDraw->rc.bottom;
-                SetTextColor(CustomDraw->hdc, Context->ThemeSupport ? PhThemeWindowTextColor : RGB(0, 0, 0));
+                if (totals.Level == PH_TOTALS_LEVEL_HIGH) // TaskManagerPlus: high load -> blue accent, contrast >= 4.5:1 on the header background
+                {
+                    COLORREF headerBack = Context->ThemeSupport ? PhThemeWindowBackgroundColor : GetSysColor(COLOR_WINDOW);
+                    BOOLEAN darkBack = (GetRValue(headerBack) * 299 + GetGValue(headerBack) * 587 + GetBValue(headerBack) * 114) / 1000 < 128;
+
+                    // Light header: #0067C0 (5.5:1 on #FAFBFD, 5.7:1 on white). Dark/OLED header: #4CA6F5
+                    // (6.2:1 on #1E2228, 8.1:1 on black). Measured with the WCAG relative luminance formula.
+                    SetTextColor(CustomDraw->hdc, darkBack ? RGB(0x4c, 0xa6, 0xf5) : RGB(0x00, 0x67, 0xc0));
+                }
+                else
+                    SetTextColor(CustomDraw->hdc, Context->ThemeSupport ? PhThemeWindowTextColor : RGB(0, 0, 0));
                 oldFont = SelectFont(CustomDraw->hdc, Context->HeaderTotalsFontHandle);
 
                 {

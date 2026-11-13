@@ -1232,6 +1232,8 @@ static BOOLEAN PhpGroupGetTotalsText(
     ULONG bufferSize;
     ULONG count;
 
+    Totals->Level = PH_TOTALS_LEVEL_NORMAL;
+
     switch (Totals->ColumnId)
     {
     case PHPRTLC_CPU:
@@ -1240,6 +1242,9 @@ static BOOLEAN PhpGroupGetTotalsText(
 
             if (usage > 100)
                 usage = 100;
+
+            if (usage >= 50) // TaskManagerPlus: accent threshold, see docs/readability-plan.md
+                Totals->Level = PH_TOTALS_LEVEL_HIGH;
 
             PhInitFormatF(&format[0], usage, 0);
             PhInitFormatC(&format[1], L'%');
@@ -1259,6 +1264,9 @@ static BOOLEAN PhpGroupGetTotalsText(
 
             used = total - min(total, PhPerfInformation.AvailablePages);
 
+            if ((FLOAT)used * 100 / (FLOAT)total >= 80) // TaskManagerPlus: accent threshold
+                Totals->Level = PH_TOTALS_LEVEL_HIGH;
+
             PhInitFormatF(&format[0], (FLOAT)used * 100 / (FLOAT)total, 0);
             PhInitFormatC(&format[1], L'%');
             count = 2;
@@ -1275,6 +1283,9 @@ static BOOLEAN PhpGroupGetTotalsText(
 
             rate = PhIoReadDelta.Delta + PhIoWriteDelta.Delta + PhIoOtherDelta.Delta;
             rate = rate * 1000 / PhProcessProviderElapsedMilliseconds;
+
+            if (rate >= 10ULL * 1024 * 1024) // TaskManagerPlus: accent threshold (top heat step for disk)
+                Totals->Level = PH_TOTALS_LEVEL_HIGH;
 
             if (PhMetricUnits)
             {
