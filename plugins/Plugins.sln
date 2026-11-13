@@ -40,6 +40,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ResourceTrends", "ResourceT
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SessionReports", "SessionReports\SessionReports.vcxproj", "{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Profiles", "Profiles\Profiles.vcxproj", "{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -230,6 +232,18 @@ Global
 		{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}.Release|Win32.Build.0 = Release|Win32
 		{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}.Release|x64.ActiveCfg = Release|x64
 		{5C8E2A91-D3B4-4F67-8A19-0E7B6C2D4F58}.Release|x64.Build.0 = Release|x64
+		{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}.Debug|ARM64.Build.0 = Debug|ARM64
+		{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}.Debug|Win32.Build.0 = Debug|Win32
+		{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}.Debug|x64.ActiveCfg = Debug|x64
+		{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}.Debug|x64.Build.0 = Debug|x64
+		{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}.Release|ARM64.ActiveCfg = Release|ARM64
+		{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}.Release|ARM64.Build.0 = Release|ARM64
+		{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}.Release|Win32.ActiveCfg = Release|Win32
+		{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}.Release|Win32.Build.0 = Release|Win32
+		{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}.Release|x64.ActiveCfg = Release|x64
+		{7D4F1B36-8A52-4C9E-B0D7-3E61A8F25C94}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

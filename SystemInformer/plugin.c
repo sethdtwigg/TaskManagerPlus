@@ -87,6 +87,7 @@ static CONST PH_STRINGREF DefaultPluginName[] =
     PH_STRINGREF_INIT(L"ProcessRules.dll"),
     PH_STRINGREF_INIT(L"QuickActions.dll"),
     PH_STRINGREF_INIT(L"ResourceTrends.dll"),
+    PH_STRINGREF_INIT(L"Profiles.dll"),
     PH_STRINGREF_INIT(L"SessionReports.dll"),
     PH_STRINGREF_INIT(L"StartupManager.dll"),
     PH_STRINGREF_INIT(L"ToolStatus.dll"),

@@ -12,6 +12,7 @@
     <ClCompile Include="ruledlg.c"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="rules.c"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="tab.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="intf.c"><Filter>Source Files</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h"><Filter>Header Files</Filter></ClInclude>

@@ -40,6 +40,14 @@ PhIsThemeModeDark(
     );
 
 // begin_phapppub
+// TaskManagerPlus: sets and applies the theme mode like the Options page does (Profiles plugin). Mode is a PH_THEME_MODE.
+PHAPPAPI
+VOID
+NTAPI
+PhApplyThemeModeProfile(
+    _In_ ULONG Mode
+    );
+
 PHAPPAPI
 BOOLEAN
 NTAPI

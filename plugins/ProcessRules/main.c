@@ -3,6 +3,9 @@
  */
 
 #include "processrules.h"
+#include <processrulesintf.h>
+
+extern PROCESS_RULES_INTERFACE TmpInterface; // intf.c
 
 PPH_PLUGIN PluginInstance = NULL;
 
@@ -172,6 +175,7 @@ LOGICAL DllMain(
         info->Author = L"TaskManagerPlus";
         info->Description = L"Per-program rules: set priority, affinity (including P/E-core presets), efficiency mode, block or run a command when a program starts, and watchdogs that act when CPU, memory, I/O, handle or thread usage stays above a threshold.";
         info->HasOptions = TRUE;
+        info->Interface = &TmpInterface; // TaskManagerPlus: rule states for Profiles and the Efficiency advisor
 
         PhRegisterCallback(
             PhGetPluginCallback(PluginInstance, PluginCallbackLoad),

@@ -96,6 +96,7 @@ EXPORTS
     PhGetPerTcpConnectionEStats
     PhGetProcessBasicInformation
     PhGetProcessIsSuspended
+    PhApplyThemeModeProfile ; TaskManagerPlus: Profiles plugin
     PhGetProcessKnownType
     PhGetProcessKnownTypeEx
     PhGetProcessPriorityClassString

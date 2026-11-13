@@ -21,6 +21,7 @@ set(SOURCES
     "ruledlg.c"
     "rules.c"
     "tab.c"
+    "intf.c"
 )
 source_group("Source Files" FILES ${SOURCES})
 

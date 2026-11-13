@@ -94,6 +94,7 @@
     <ClCompile Include="ruledlg.c" />
     <ClCompile Include="rules.c" />
     <ClCompile Include="tab.c" />
+    <ClCompile Include="intf.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />

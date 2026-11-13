@@ -868,6 +868,21 @@ static VOID PhpApplyThemeModeSetting(
     }
 }
 
+// TaskManagerPlus: the Profiles plugin switches the theme the same way the Options page does.
+VOID NTAPI PhApplyThemeModeProfile(
+    _In_ ULONG Mode
+    )
+{
+    PhSetIntegerSetting(SETTING_THEME_MODE, Mode);
+    PhUpdateCachedSettings();
+
+    if (PhEnableThemeSupport)
+    {
+        PhApplyThemeModeWithColors(Mode, PhMainWndHandle);
+        PhMwpInitializeMainMenu(PhMainWndHandle);
+    }
+}
+
 static VOID PhpOptionsSetImageList(
     _In_ HWND WindowHandle,
     _In_ BOOLEAN Treeview
