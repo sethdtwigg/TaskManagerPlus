@@ -172,6 +172,325 @@ VOID PhOfferCalmLook(
     }
 }
 
+// ---- TaskManagerPlus: Readable look preset (R8) ----------------------------------------------------------------
+// Sets the readability settings of docs/readability-plan.md section 8. The values in force before are kept in
+// ReadableLookPrevious ("heat;totals;flat;friendly;units;airy;groupByApp;groupProcesses;displayStyle;sortApplied;sort;toolbar")
+// so "Undo readable" can put them back. Nothing is changed without a yes; a saved sort is only replaced when the
+// user agrees to it.
+
+#define PH_READABLE_FIELDS 11
+
+static BOOLEAN PhpReadableUserHasSort(
+    VOID
+    )
+{
+    PPH_STRING sort = PhGetStringSetting(SETTING_PROCESS_TREE_LIST_SORT);
+    BOOLEAN hasSort = FALSE;
+    PH_STRINGREF column;
+    PH_STRINGREF order;
+    ULONG64 columnId = 0;
+    ULONG64 orderId = 0;
+
+    if (PhSplitStringRefAtChar(&sort->sr, L',', &column, &order) &&
+        PhStringToInteger64(&column, 10, &columnId) && PhStringToInteger64(&order, 10, &orderId))
+    {
+        // no sort = "x,0"; the CPU descending sort the preset would set is not a user choice either
+        hasSort = orderId != 0 && !(columnId == PHPRTLC_CPU && orderId == DescendingSortOrder);
+    }
+
+    PhDereferenceObject(sort);
+    return hasSort;
+}
+
+// Adds the three labelled buttons (stable ids 8, 9, 10) to a saved toolbar layout that lacks them.
+static VOID PhpReadableAddToolbarButtons(
+    VOID
+    )
+{
+    PPH_STRING config = PhGetStringSetting(L"ToolStatus.ToolbarButtonConfig");
+    PH_STRINGREF remaining = config->sr;
+    PH_STRINGREF part;
+    ULONG64 count;
+
+    // Empty = the built-in default layout, which already has them. Format: "count|id|id|...".
+    if (config->Length && PhSplitStringRefAtChar(&remaining, L'|', &part, &remaining) && PhStringToInteger64(&part, 10, &count))
+    {
+        BOOLEAN present[3] = { FALSE, FALSE, FALSE };
+        PH_STRINGREF ids = remaining;
+        ULONG missing = 0;
+
+        while (ids.Length)
+        {
+            ULONG64 id;
+
+            PhSplitStringRefAtChar(&ids, L'|', &part, &ids);
+
+            if (PhStringToInteger64(&part, 10, &id) && id >= 8 && id <= 10)
+                present[id - 8] = TRUE;
+        }
+
+        for (ULONG i = 0; i < 3; i++)
+            missing += !present[i];
+
+        if (missing && count < 64)
+        {
+            PH_STRING_BUILDER sb;
+            PPH_STRING result;
+
+            PhInitializeStringBuilder(&sb, 100);
+            PhAppendFormatStringBuilder(&sb, L"%u", (ULONG)count + missing);
+
+            if (remaining.Length)
+            {
+                PhAppendCharStringBuilder(&sb, L'|');
+                PhAppendStringBuilder(&sb, &remaining);
+            }
+
+            for (ULONG i = 0; i < 3; i++)
+            {
+                if (!present[i])
+                    PhAppendFormatStringBuilder(&sb, L"|%u", 8 + i);
+            }
+
+            result = PhFinalStringBuilderString(&sb);
+            PhSetStringSetting2(L"ToolStatus.ToolbarButtonConfig", &result->sr);
+            PhDereferenceObject(result);
+        }
+    }
+
+    PhDereferenceObject(config);
+}
+
+static VOID PhpReadableSetSortLive(
+    _In_ PPH_STRINGREF Sort
+    )
+{
+    PH_STRINGREF column;
+    PH_STRINGREF order;
+    ULONG64 columnId;
+    ULONG64 orderId;
+
+    if (PhMwpProcessTreeNewHandle && PhSplitStringRefAtChar(Sort, L',', &column, &order) &&
+        PhStringToInteger64(&column, 10, &columnId) && PhStringToInteger64(&order, 10, &orderId))
+    {
+        TreeNew_SetSort(PhMwpProcessTreeNewHandle, (ULONG)columnId, (PH_SORT_ORDER)orderId);
+    }
+}
+
+/**
+ * Applies the Readable look, or puts back what was in force before it.
+ *
+ * \param Readable TRUE to apply, FALSE to restore the previous look.
+ * \param ApplySort TRUE to also sort by CPU, busiest first (Readable only; a saved sort is kept otherwise).
+ */
+VOID PhApplyReadableLook(
+    _In_ BOOLEAN Readable,
+    _In_ BOOLEAN ApplySort
+    )
+{
+    PPH_STRING previous = PhGetStringSetting(SETTING_READABLE_LOOK_PREVIOUS);
+
+    if (Readable)
+    {
+        if (!previous->Length) // keep the very first snapshot when the preset is applied twice
+        {
+            PPH_STRING sort = PhGetStringSetting(SETTING_PROCESS_TREE_LIST_SORT);
+            PPH_STRING toolbar = PhGetStringSetting(L"ToolStatus.ToolbarButtonConfig");
+            PPH_STRING snapshot = PhFormatString(
+                L"%u;%u;%u;%u;%u;%u;%u;%u;%u;%u;%s;%s",
+                PhGetIntegerSetting(SETTING_HEAT_STYLE) & 0xff,
+                PhGetIntegerSetting(SETTING_HEADER_TOTALS) & 1,
+                PhGetIntegerSetting(SETTING_FLAT_LIST) & 3,
+                PhGetIntegerSetting(SETTING_FRIENDLY_NAMES) & 1,
+                PhGetIntegerSetting(SETTING_METRIC_UNITS) & 1,
+                PhGetIntegerSetting(SETTING_AIRY_LOOK) & 1,
+                PhGetIntegerSetting(SETTING_GROUP_BY_APP) & 1,
+                PhGetIntegerSetting(SETTING_GROUP_PROCESSES) & 1,
+                PhGetIntegerSetting(L"ToolStatus.ToolbarDisplayStyle") & 3,
+                ApplySort ? 1 : 0,
+                PhGetString(sort),
+                PhGetString(toolbar)
+                );
+
+            PhSetStringSetting2(SETTING_READABLE_LOOK_PREVIOUS, &snapshot->sr);
+            PhDereferenceObject(snapshot);
+            PhDereferenceObject(toolbar);
+            PhDereferenceObject(sort);
+        }
+
+        PhSetIntegerSetting(SETTING_HEAT_STYLE, 2);
+        PhSetIntegerSetting(SETTING_HEADER_TOTALS, 1);
+        PhSetIntegerSetting(SETTING_FLAT_LIST, 1);
+        PhSetIntegerSetting(SETTING_FRIENDLY_NAMES, 1);
+        PhSetIntegerSetting(SETTING_METRIC_UNITS, 1);
+        PhSetIntegerSetting(SETTING_AIRY_LOOK, 1);
+        PhSetIntegerSetting(SETTING_GROUP_BY_APP, 1);
+        PhSetIntegerSetting(SETTING_GROUP_PROCESSES, 1);
+        PhSetIntegerSetting(L"ToolStatus.ToolbarDisplayStyle", 1);
+        PhpReadableAddToolbarButtons();
+
+        if (ApplySort)
+        {
+            static CONST PH_STRINGREF cpuDescending = PH_STRINGREF_INIT(L"2,2"); // PHPRTLC_CPU, DescendingSortOrder
+
+            PhSetStringSetting(SETTING_PROCESS_TREE_LIST_SORT, L"2,2");
+            PhpReadableSetSortLive((PPH_STRINGREF)&cpuDescending);
+        }
+    }
+    else
+    {
+        // The legacy values when there is no snapshot (e.g. the preset came from a fresh install).
+        ULONG values[9] = { 1, 0, 0, 0, 0, 0, 0, 1, 1 };
+        BOOLEAN sortApplied = FALSE;
+        PPH_STRING sort = NULL;
+        PPH_STRING toolbar = NULL;
+
+        if (previous->Length)
+        {
+            PH_STRINGREF remaining = previous->sr;
+
+            for (ULONG i = 0; i < PH_READABLE_FIELDS - 1; i++)
+            {
+                PH_STRINGREF part;
+                ULONG64 value;
+
+                PhSplitStringRefAtChar(&remaining, L';', &part, &remaining);
+
+                if (PhStringToInteger64(&part, 10, &value))
+                {
+                    if (i < 9)
+                        values[i] = (ULONG)value;
+                    else
+                        sortApplied = !!value;
+                }
+            }
+
+            {
+                PH_STRINGREF sortPart;
+
+                PhSplitStringRefAtChar(&remaining, L';', &sortPart, &remaining);
+                sort = PhCreateString2(&sortPart);
+                toolbar = PhCreateString2(&remaining);
+            }
+        }
+
+        PhSetIntegerSetting(SETTING_HEAT_STYLE, values[0]);
+        PhSetIntegerSetting(SETTING_HEADER_TOTALS, values[1]);
+        PhSetIntegerSetting(SETTING_FLAT_LIST, values[2]);
+        PhSetIntegerSetting(SETTING_FRIENDLY_NAMES, values[3]);
+        PhSetIntegerSetting(SETTING_METRIC_UNITS, values[4]);
+        PhSetIntegerSetting(SETTING_AIRY_LOOK, values[5]);
+        PhSetIntegerSetting(SETTING_GROUP_BY_APP, values[6]);
+        PhSetIntegerSetting(SETTING_GROUP_PROCESSES, values[7]);
+        PhSetIntegerSetting(L"ToolStatus.ToolbarDisplayStyle", values[8]);
+
+        if (toolbar)
+            PhSetStringSetting2(L"ToolStatus.ToolbarButtonConfig", &toolbar->sr);
+
+        if (sortApplied && sort && sort->Length)
+        {
+            PhSetStringSetting2(SETTING_PROCESS_TREE_LIST_SORT, &sort->sr);
+            PhpReadableSetSortLive(&sort->sr);
+        }
+
+        PhSetStringSetting(SETTING_READABLE_LOOK_PREVIOUS, L"");
+
+        if (sort)
+            PhDereferenceObject(sort);
+        if (toolbar)
+            PhDereferenceObject(toolbar);
+    }
+
+    PhDereferenceObject(previous);
+    PhUpdateCachedSettings();
+    PhReloadLookSettings();
+}
+
+// Asks about the sort when the user has one, then applies the Readable look.
+static VOID PhpReadableApplyInteractive(
+    _In_opt_ HWND ParentWindowHandle
+    )
+{
+    BOOLEAN applySort = TRUE;
+
+    if (PhpReadableUserHasSort())
+    {
+        applySort = PhShowMessage2(
+            ParentWindowHandle,
+            TD_YES_BUTTON | TD_NO_BUTTON,
+            TD_INFORMATION_ICON,
+            L"Also sort by CPU?",
+            L"The readable look lists the busiest processes first (CPU, highest first). You have chosen a different sort "
+            L"for the process list. Choose No to keep your sort."
+            ) == IDYES;
+    }
+
+    PhApplyReadableLook(TRUE, applySort);
+}
+
+VOID PhApplyReadableLookInteractive(
+    _In_opt_ HWND ParentWindowHandle,
+    _In_ BOOLEAN Readable
+    )
+{
+    if (PhShowMessage2(
+        ParentWindowHandle,
+        TD_YES_BUTTON | TD_NO_BUTTON,
+        TD_INFORMATION_ICON,
+        Readable ? L"Apply the readable look?" : L"Undo the readable look?",
+        Readable ?
+        L"Colour bands, header totals, friendly names, MB / MB/s / Mbps units, apps grouped with a process count and "
+        L"labelled toolbar buttons turn on. Your other settings are kept. Undo it in Options > General (Undo readable). "
+        L"The toolbar, row height and font apply after a restart." :
+        L"The settings the readable look changed go back to what they were before. The toolbar, row height and font "
+        L"apply after a restart."
+        ) != IDYES)
+    {
+        return;
+    }
+
+    if (Readable)
+        PhpReadableApplyInteractive(ParentWindowHandle);
+    else
+        PhApplyReadableLook(FALSE, FALSE);
+}
+
+/**
+ * One-time "Switch to the readable look?" prompt for installs that already have a settings file. Fresh installs
+ * already have the readable defaults and are not asked. Nothing changes without a yes.
+ */
+VOID PhOfferReadableLook(
+    VOID
+    )
+{
+    if (PhGetIntegerSetting(SETTING_READABLE_LOOK_OFFERED))
+        return;
+
+    PhSetIntegerSetting(SETTING_READABLE_LOOK_OFFERED, TRUE);
+
+    if (!PhSettingsLoadedFromFile)
+        return;
+
+    if (PhGetIntegerSetting(SETTING_HEAT_STYLE) == 2 && PhGetIntegerSetting(SETTING_HEADER_TOTALS) &&
+        PhGetIntegerSetting(SETTING_GROUP_BY_APP) == 1 && PhGetIntegerSetting(SETTING_FRIENDLY_NAMES) &&
+        PhGetIntegerSetting(SETTING_METRIC_UNITS) && PhGetIntegerSetting(SETTING_AIRY_LOOK))
+        return; // already readable
+
+    if (PhShowMessage2(
+        PhMainWndHandle,
+        TD_YES_BUTTON | TD_NO_BUTTON,
+        TD_INFORMATION_ICON,
+        L"Switch to the readable look?",
+        L"The readable look shows each metric column as a colour band, live totals in the column headers, friendly "
+        L"names, MB / MB/s / Mbps units, taller rows, apps grouped with a process count, and labelled toolbar "
+        L"buttons. Your other settings are kept and you can go back in Options > General (Undo readable). "
+        L"The toolbar, row height and font apply after a restart."
+        ) == IDYES)
+    {
+        PhpReadableApplyInteractive(PhMainWndHandle);
+    }
+}
+
 INT_PTR CALLBACK PhpOptionsHighlightingDlgProc(
     _In_ HWND hwndDlg,
     _In_ UINT uMsg,
@@ -2910,6 +3229,10 @@ INT_PTR CALLBACK PhpOptionsGeneralDlgProc(
                         PhApplyLookPreset(calm);
                     }
                 }
+                break;
+            case IDC_APPLYREADABLELOOK: // TaskManagerPlus
+            case IDC_RESTORELOOK:
+                PhApplyReadableLookInteractive(hwndDlg, GET_WM_COMMAND_ID(wParam, lParam) == IDC_APPLYREADABLELOOK);
                 break;
             case IDC_SAMPLECOUNTAUTOMATIC:
                 {

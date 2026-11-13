@@ -6650,6 +6650,39 @@ VOID PhToggleProcessHeatMap(
         InvalidateRect(ProcessTreeListHandle, NULL, FALSE);
 }
 
+// TaskManagerPlus: re-reads the look settings after a preset changed them and applies them live (the toolbar,
+// row height and font need a restart).
+VOID PhReloadLookSettings(
+    VOID
+    )
+{
+    BOOLEAN byApp = PhGetIntegerSetting(SETTING_GROUP_BY_APP) == 1;
+    BOOLEAN sections = !!PhGetIntegerSetting(SETTING_GROUP_PROCESSES);
+
+    PhHeatStyle = PhGetIntegerSetting(SETTING_HEAT_STYLE);
+    PhFriendlyNames = !!PhGetIntegerSetting(SETTING_FRIENDLY_NAMES);
+    PhMetricUnits = !!PhGetIntegerSetting(SETTING_METRIC_UNITS);
+    PhProcessFlatListMode = PhGetIntegerSetting(SETTING_FLAT_LIST) & 3;
+
+    if (!ProcessTreeListHandle)
+        return;
+
+    TreeNew_SetHeaderTotals(ProcessTreeListHandle, !!PhGetIntegerSetting(SETTING_HEADER_TOTALS));
+
+    if (PhProcessFlatListMode == 1 && ProcessTreeListSortOrder == NoSortOrder)
+        TreeNew_SetSort(ProcessTreeListHandle, PHPRTLC_CPU, DescendingSortOrder); // a flat list needs a sort
+
+    if (PhGroupByApp() != byApp)
+        PhGroupSetByApp(byApp, ProcessNodeList);
+
+    if (PhGroupEnabled() != sections)
+        PhGroupSetEnabled(sections, ProcessNodeList);
+
+    PhInvalidateAllProcessNodes();
+    TreeNew_NodesStructured(ProcessTreeListHandle);
+    InvalidateRect(ProcessTreeListHandle, NULL, FALSE);
+}
+
 // TaskManagerPlus: View > Group by app.
 VOID PhToggleProcessGroupByApp(
     VOID

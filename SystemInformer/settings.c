@@ -172,6 +172,8 @@ VOID PhAddDefaultSettings(
     PhpAddStringSetting(SETTING_MAIN_WINDOW_HIDDEN_TABS, L""); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_SHOW_TOTALS_ROW, L"1"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_HEADER_TOTALS, L"ff"); // TaskManagerPlus: resolved after the settings file is read (fresh 1, existing 0)
+    PhpAddIntegerSetting(SETTING_READABLE_LOOK_OFFERED, L"0"); // TaskManagerPlus
+    PhpAddStringSetting(SETTING_READABLE_LOOK_PREVIOUS, L""); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_GROUP_BY_APP, L"ff"); // TaskManagerPlus: resolved after the settings file is read (fresh 1, existing 0)
     PhpAddStringSetting(SETTING_GROUP_APPS_EXPANDED, L""); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_FLAT_LIST, L"ff"); // TaskManagerPlus: resolved after the settings file is read (fresh 1, existing 0)

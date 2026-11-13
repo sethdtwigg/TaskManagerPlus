@@ -946,6 +946,8 @@
 #define IDC_APPLYDENSELOOK              1575 // TaskManagerPlus
 #define IDC_HIGHLIGHTMINIMAL            1576 // TaskManagerPlus
 #define IDC_HIGHLIGHTCLASSIC            1577 // TaskManagerPlus
+#define IDC_APPLYREADABLELOOK           1579 // TaskManagerPlus
+#define IDC_RESTORELOOK                 1580 // TaskManagerPlus
 #define IDC_HEATSTYLE                   1578 // TaskManagerPlus
 #define ID_VIEW_DETACHEDGRAPH_FIRST     10364 // TaskManagerPlus: + mini meter index (6 consecutive ids)
 #define ID_VIEW_DETACHEDGRAPH_LAST      10369 // TaskManagerPlus
@@ -1058,7 +1060,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        299
 #define _APS_NEXT_COMMAND_VALUE         10355
-#define _APS_NEXT_CONTROL_VALUE         1579
+#define _APS_NEXT_CONTROL_VALUE         1581
 #define _APS_NEXT_SYMED_VALUE           170
 #endif
 #endif

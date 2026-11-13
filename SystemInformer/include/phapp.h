@@ -882,6 +882,21 @@ VOID PhResolveLookDefaults(
     VOID
     );
 
+// TaskManagerPlus: Readable look preset (R8). Apply sets the readability settings and keeps a snapshot; restore puts it back.
+VOID PhApplyReadableLook(
+    _In_ BOOLEAN Readable,
+    _In_ BOOLEAN ApplySort
+    );
+
+VOID PhApplyReadableLookInteractive(
+    _In_opt_ HWND ParentWindowHandle,
+    _In_ BOOLEAN Readable
+    );
+
+VOID PhOfferReadableLook(
+    VOID
+    );
+
 VOID PhOfferCalmLook(
     VOID
     );

@@ -491,6 +491,10 @@ VOID PhToggleProcessHeatMap(
     VOID
     );
 
+VOID PhReloadLookSettings(
+    VOID
+    );
+
 VOID PhToggleProcessGroupByApp(
     VOID
     );

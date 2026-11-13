@@ -367,6 +367,8 @@ EXT ULONG PhCsProcessMonitorCacheLimit;
 #define SETTING_MAIN_WINDOW_HIDDEN_TABS                             L"MainWindowHiddenTabs" // TaskManagerPlus: comma list of tab names kept under More
 #define SETTING_SHOW_TOTALS_ROW                                     L"ShowTotalsRow" // TaskManagerPlus
 #define SETTING_HEADER_TOTALS                                       L"HeaderTotals" // TaskManagerPlus: two-line column headers with live totals (0xff = unresolved, see PhResolveLookDefaults)
+#define SETTING_READABLE_LOOK_OFFERED                               L"ReadableLookOffered" // TaskManagerPlus: the one-time readable look prompt was shown
+#define SETTING_READABLE_LOOK_PREVIOUS                              L"ReadableLookPrevious" // TaskManagerPlus: settings in force before the readable look (for Undo)
 #define SETTING_GROUP_BY_APP                                        L"GroupByApp" // TaskManagerPlus: app rows inside the Apps / Background / Windows sections (0xff = unresolved, see PhResolveLookDefaults)
 #define SETTING_GROUP_APPS_EXPANDED                                 L"GroupAppsExpanded" // TaskManagerPlus: hex key hashes of expanded app rows
 #define SETTING_FLAT_LIST                                           L"FlatList" // TaskManagerPlus: 0 legacy, 1 flat when sorted, 2 tree when sorted (0xff = unresolved)
