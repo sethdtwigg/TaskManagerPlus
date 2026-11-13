@@ -579,7 +579,8 @@ typedef struct _PH_TREENEW_GET_CELL_PARTS
 #define TNM_SETTOTALSROW (WM_USER + 59)
 #define TNM_SETCELLHEAT (WM_USER + 60) // TaskManagerPlus
 #define TNM_SETHEADERTOTALS (WM_USER + 61) // TaskManagerPlus: two-line column headers (live total over the name); replaces the totals row
-#define TNM_LAST (WM_USER + 61)
+#define TNM_ENSUREHEADERTOTALSWIDTHS (WM_USER + 62) // TaskManagerPlus: raise visible columns narrower than their typical header total; returns the number changed
+#define TNM_LAST (WM_USER + 62)
 
 typedef struct _PH_TREENEW_SELECTED_NODES
 {
@@ -770,6 +771,9 @@ EXTERN_C LRESULT PhTnSendMessage(
 #define TreeNew_SetHeaderTotals(hWnd, Enable) \
     PhTnSendMessage((hWnd), TNM_SETHEADERTOTALS, (WPARAM)(Enable), 0)
 
+#define TreeNew_EnsureHeaderTotalsWidths(hWnd) \
+    ((ULONG)PhTnSendMessage((hWnd), TNM_ENSUREHEADERTOTALSWIDTHS, 0, 0))
+
 #define TreeNew_SetCellHeat(hWnd, Enable) \
     PhTnSendMessage((hWnd), TNM_SETCELLHEAT, (WPARAM)(Enable), 0)
 
@@ -943,6 +947,9 @@ EXTERN_C LRESULT PhTnSendMessage(
 
 #define TreeNew_SetHeaderTotals(hWnd, Enable) \
     SendMessage((hWnd), TNM_SETHEADERTOTALS, (WPARAM)(Enable), 0)
+
+#define TreeNew_EnsureHeaderTotalsWidths(hWnd) \
+    ((ULONG)SendMessage((hWnd), TNM_ENSUREHEADERTOTALSWIDTHS, 0, 0))
 
 #define TreeNew_SetCellHeat(hWnd, Enable) \
     SendMessage((hWnd), TNM_SETCELLHEAT, (WPARAM)(Enable), 0)

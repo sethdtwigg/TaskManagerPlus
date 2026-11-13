@@ -2752,6 +2752,74 @@ LRESULT PhTnpOnUserMessage(
             }
         }
         return TRUE;
+    case TNM_ENSUREHEADERTOTALSWIDTHS: // TaskManagerPlus
+        {
+            ULONG i;
+            ULONG changed = 0;
+
+            if (!Context->HeaderTotalsEnabled)
+                return 0;
+
+            PhpTnpEnsureHeaderTotals(Context);
+
+            if (Context->HeaderTotalsFontHandle)
+            {
+                HDC hdc = GetDC(Context->Handle);
+
+                if (hdc)
+                {
+                    HFONT oldFont = SelectFont(hdc, Context->HeaderTotalsFontHandle);
+
+                    for (i = 0; i < Context->AllocatedColumns; i++)
+                    {
+                        PPH_TREENEW_COLUMN column = Context->Columns[i];
+                        PH_TREENEW_GET_TOTALS_TEXT totals;
+                        SIZE size;
+                        LONG needed;
+                        BOOLEAN rate;
+
+                        if (!column || !column->Visible || column->Fixed)
+                            continue;
+
+                        memset(&totals, 0, sizeof(totals));
+                        totals.ColumnId = column->Id;
+
+                        if (!Context->Callback(Context->Handle, TreeNewGetTotalsText, &totals, NULL, Context->CallbackContext) ||
+                            totals.Text.Length == 0)
+                            continue;
+
+                        // Same sample the header paint uses to pick the large or the list font: the widest
+                        // typical rate ("88.8 MB/s"), or "100%" for a percentage.
+                        rate = totals.Text.Buffer[totals.Text.Length / sizeof(WCHAR) - 1] == L's';
+
+                        if (!(rate ? GetTextExtentPoint32(hdc, L"88.8 MB/s", 9, &size) : GetTextExtentPoint32(hdc, L"100%", 4, &size)))
+                            continue;
+
+                        needed = size.cx + 2 * Context->HeaderTextPadding;
+
+                        if (column->Width < needed) // never narrows, never overrides a wider width
+                        {
+                            column->Width = needed;
+                            PhTnpChangeColumnHeader(Context, TN_COLUMN_WIDTH, column);
+                            changed++;
+                        }
+                    }
+
+                    SelectFont(hdc, oldFont);
+                    ReleaseDC(Context->Handle, hdc);
+                }
+            }
+
+            if (changed)
+            {
+                PhTnpUpdateColumnMaps(Context);
+                PhTnpLayout(Context);
+                InvalidateRect(Context->HeaderHandle, NULL, FALSE);
+                PhpTnpInvalidateContent(Context);
+            }
+
+            return changed;
+        }
     case TNM_SETCELLHEAT: // TaskManagerPlus
         {
             BOOLEAN enable = !!WParam;

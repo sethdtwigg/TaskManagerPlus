@@ -763,6 +763,38 @@ VOID PhUpdateProcessNode(
     TreeNew_InvalidateNode(ProcessTreeListHandle, &ProcessNode->Node);
 }
 
+// TaskManagerPlus: minimum widths of the metric columns while the header totals are on. A saved column set can hold
+// narrow columns from before the look existed: the core columns get the airy default width as a floor, then every
+// visible column is widened to fit its typical header total ("88.8 MB/s" in the large header font, "100%" for a
+// percentage). Only ever widens, so a column the user made wider is left alone.
+static VOID PhpEnsureMetricColumnWidths(
+    VOID
+    )
+{
+    static const struct { ULONG Id; LONG Width; } floors[] =
+    {
+        { PHPRTLC_CPU, 72 },
+        { PHPRTLC_PRIVATEBYTES, 104 },
+        { PHPRTLC_IOTOTALRATE, 112 }
+    };
+    ULONG dpi = PhGetWindowDpi(ProcessTreeListHandle);
+    ULONG i;
+
+    for (i = 0; i < RTL_NUMBER_OF(floors); i++)
+    {
+        PH_TREENEW_COLUMN column;
+        LONG minimum = PhScaleToDisplay(floors[i].Width, dpi);
+
+        if (TreeNew_GetColumn(ProcessTreeListHandle, floors[i].Id, &column) && column.Visible && column.Width < minimum)
+        {
+            column.Width = minimum;
+            TreeNew_SetColumn(ProcessTreeListHandle, TN_COLUMN_WIDTH, &column);
+        }
+    }
+
+    TreeNew_EnsureHeaderTotalsWidths(ProcessTreeListHandle);
+}
+
 VOID PhTickProcessNodes(
     VOID
     )
@@ -782,6 +814,13 @@ VOID PhTickProcessNodes(
     // TaskManagerPlus: the live totals in the two-line headers change with every refresh.
     if (PhGetIntegerSetting(SETTING_HEADER_TOTALS))
     {
+        // Once per install, on the first refresh (the totals exist by then): minimum width for the metric columns.
+        if (PhProcessProviderElapsedMilliseconds && !PhGetIntegerSetting(SETTING_HEADER_TOTALS_WIDTHS_CHECKED)) // the Disk total exists only after the second sample
+        {
+            PhSetIntegerSetting(SETTING_HEADER_TOTALS_WIDTHS_CHECKED, TRUE);
+            PhpEnsureMetricColumnWidths();
+        }
+
         InvalidateRect(TreeNew_GetFixedHeader(ProcessTreeListHandle), NULL, FALSE);
         InvalidateRect(TreeNew_GetHeader(ProcessTreeListHandle), NULL, FALSE);
     }
@@ -6607,7 +6646,12 @@ VOID PhToggleProcessHeaderTotals(
     PhSetIntegerSetting(SETTING_HEADER_TOTALS, enabled);
 
     if (ProcessTreeListHandle)
+    {
         TreeNew_SetHeaderTotals(ProcessTreeListHandle, enabled);
+
+        if (enabled)
+            PhpEnsureMetricColumnWidths(); // TaskManagerPlus
+    }
 }
 
 // TaskManagerPlus: View > Totals row.
@@ -6668,6 +6712,11 @@ VOID PhReloadLookSettings(
         return;
 
     TreeNew_SetHeaderTotals(ProcessTreeListHandle, !!PhGetIntegerSetting(SETTING_HEADER_TOTALS));
+
+    // TaskManagerPlus: an existing install can have narrow metric columns saved; give them room for the header totals
+    // now that the user has asked for the look (never narrows, never touches a wider column).
+    if (PhGetIntegerSetting(SETTING_HEADER_TOTALS))
+        PhpEnsureMetricColumnWidths();
 
     if (PhProcessFlatListMode == 1 && ProcessTreeListSortOrder == NoSortOrder)
         TreeNew_SetSort(ProcessTreeListHandle, PHPRTLC_CPU, DescendingSortOrder); // a flat list needs a sort
