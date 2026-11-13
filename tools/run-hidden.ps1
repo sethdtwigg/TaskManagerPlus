@@ -229,7 +229,7 @@ try {
     if ($Commands.Count) { Start-Sleep -Seconds $Wait2 }
 
     Save-Window $main (Join-Path $runDir "$Name.png")
-    if ($CaptureDialog) { $dlg = Get-Dialog; if ($dlg) { Save-Window $dlg (Join-Path $runDir "$Name-dialog.png") } else { "no dialog to capture" } }
+    if ($CaptureDialog) { Start-Sleep -Seconds 8; $dlg = Get-Dialog; if ($dlg) { Save-Window $dlg (Join-Path $runDir "$Name-dialog.png") } else { "no dialog to capture" } }
 
     if ($ExitCmd) {
         [void][H]::PostMessage($main, 0x111, [IntPtr]10001, [IntPtr]::Zero)   # ID_HACKER_EXIT
