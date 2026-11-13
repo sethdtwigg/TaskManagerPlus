@@ -1,0 +1,26 @@
+#include "resource.h"
+#include "winres.h"
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+IDD_OPTIONS DIALOGEX 0, 0, 270, 168
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU
+CAPTION "Resource Trends"
+FONT 9, "Segoe UI", 400, 0, 0x1
+BEGIN
+    LTEXT           "Sample interval (seconds):",-1,5,7,150,8
+    EDITTEXT        IDC_SAMPLE_SECONDS,175,5,60,13,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Keep samples for (hours):",-1,5,24,150,8
+    EDITTEXT        IDC_RETENTION_HOURS,175,22,60,13,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Largest trend file (MB):",-1,5,41,150,8
+    EDITTEXT        IDC_MAX_FILE_MB,175,39,60,13,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Save trends to disk",IDC_PERSIST,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,58,200,10
+    CONTROL         "Detect steady memory growth (leak detector)",IDC_LEAK_ENABLED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,76,250,10
+    LTEXT           "Look at the last (minutes):",-1,15,92,140,8
+    EDITTEXT        IDC_LEAK_WINDOW,175,90,60,13,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Flag when private bytes grow by (MB):",-1,15,109,155,8
+    EDITTEXT        IDC_LEAK_GROWTH,175,107,60,13,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "... and by at least (percent):",-1,15,126,140,8
+    EDITTEXT        IDC_LEAK_PERCENT,175,124,60,13,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Show a notification (tray) when a process is flagged",IDC_LEAK_NOTIFY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,143,250,10
+END
