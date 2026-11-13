@@ -29,6 +29,8 @@ param(
     [int]$OptionsClick = 0,            # open Options and click the button with this control id
     [string[]]$Dialogs2 = @(),         # answers for prompts raised by that click
     [switch]$CaptureDialog,            # also capture the first dialog (e.g. About: -Commands 10106) to <Name>-dialog.png
+    [string[]]$Steps = @(),          # scripted UI steps run after -Commands, see the Steps section below
+    [string]$StepClass = "TaskManagerPlusQuickActionsPalette", # window class used by the type, key and shot steps
     [switch]$ExitCmd,                  # end with File > Exit so the app saves its settings, then wait
     [int]$Width = 1000, [int]$Height = 1150,
     [switch]$Cleanup
@@ -76,6 +78,7 @@ public static class H {
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll")] public static extern IntPtr GetDlgItem(IntPtr h, int id);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern uint RegisterWindowMessageW(string s);
   [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
   [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr h, int x, int y, int w, int ht, bool r);
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
@@ -124,6 +127,7 @@ New-Item -ItemType Directory -Force -Path $runDir | Out-Null
 
 if ($Dialogs.Count -eq 1) { $Dialogs = $Dialogs[0] -split "," }
 if ($Dialogs2.Count -eq 1) { $Dialogs2 = $Dialogs2[0] -split "," }
+if ($Steps.Count -eq 1) { $Steps = $Steps[0] -split ";" }   # a -File invocation delivers one string
 
 $deskName = "tmplus-" + [guid]::NewGuid().ToString("N").Substring(0, 8)
 $desk = [IntPtr]::Zero; $job = [IntPtr]::Zero; $pi = New-Object H+PROCESS_INFORMATION
@@ -142,6 +146,12 @@ function Get-DeskWindows {
     return $list
 }
 function Get-Main { (Get-DeskWindows | Where-Object { $_.Title -like "*TaskManagerPlus*" -and $_.Class -notlike "#32770" } | Select-Object -First 1).H }
+function Find-ChildByClass($parent, $class) {
+    $script:fc = [IntPtr]::Zero; $script:fcn = $class
+    $cb = [H+EnumProc]{ param($c, $m) $t = New-Object System.Text.StringBuilder 256; [void][H]::GetClassName($c, $t, 256); if ($t.ToString() -eq $script:fcn -and $script:fc -eq [IntPtr]::Zero) { $script:fc = $c }; return $true }
+    [void][H]::EnumChildWindows($parent, $cb, [IntPtr]::Zero)
+    return $script:fc
+}
 function Get-Dialog { (Get-DeskWindows | Where-Object { $_.Class -eq "#32770" } | Select-Object -First 1).H }
 function Save-Window($h, $path) {
     $r = New-Object H+RECT; [void][H]::GetWindowRect($h, [ref]$r)
@@ -227,6 +237,46 @@ try {
 
     foreach ($c in $Commands) { [void][H]::PostMessage($main, 0x111, [IntPtr]$c, [IntPtr]::Zero); Start-Sleep -Milliseconds 700 }
     if ($Commands.Count) { Start-Sleep -Seconds $Wait2 }
+
+    # Scripted UI steps (-Steps), each "op" or "op:arg". Everything is posted to windows on the hidden desktop.
+    #   wait:<seconds>                 sleep
+    #   msg:<registered message name>  post RegisterWindowMessage(name) to the main window (e.g. the QuickActions open message,
+    #                                  used instead of Ctrl+K because posted key messages do not carry Ctrl state)
+    #   type:<text>                    WM_CHAR for every character to the Edit of the window class given by -StepClass
+    #   key:<vk>                       WM_KEYDOWN/WM_KEYUP (decimal virtual key) to that Edit (13 = Return, 27 = Escape, 40 = Down)
+    #   shot:<name>                    capture the window of class -StepClass (or the main window if it is not open)
+    #   shotmain:<name>                capture the main window
+    #   dialog:yes|no                  answer the first #32770 dialog (yes = Return, no = Escape)
+    foreach ($s in $Steps) {
+        $op, $arg = $s -split ":", 2
+        switch ($op) {
+            "wait" { Start-Sleep -Seconds ([double]$arg) }
+            "msg" { $m = [H]::RegisterWindowMessageW($arg); [void][H]::PostMessage($main, $m, [IntPtr]::Zero, [IntPtr]::Zero); "posted $arg ($m)" }
+            "type" {
+                $w = (Get-DeskWindows | Where-Object { $_.Class -eq $StepClass } | Select-Object -First 1).H
+                if (-not $w) { "step type: no $StepClass window"; break }
+                $e = Find-ChildByClass $w "Edit"
+                foreach ($ch in $arg.ToCharArray()) { [void][H]::PostMessage($e, 0x102, [IntPtr][int]$ch, [IntPtr]::Zero); Start-Sleep -Milliseconds 40 }
+            }
+            "key" {
+                $w = (Get-DeskWindows | Where-Object { $_.Class -eq $StepClass } | Select-Object -First 1).H
+                if (-not $w) { "step key: no $StepClass window"; break }
+                $e = Find-ChildByClass $w "Edit"
+                [void][H]::PostMessage($e, 0x100, [IntPtr][int]$arg, [IntPtr]::Zero); Start-Sleep -Milliseconds 60
+                [void][H]::PostMessage($e, 0x101, [IntPtr][int]$arg, [IntPtr]::Zero)
+            }
+            "shot" {
+                $w = (Get-DeskWindows | Where-Object { $_.Class -eq $StepClass } | Select-Object -First 1).H
+                if (-not $w) { "step shot: no $StepClass window, capturing the main window"; $w = $main }
+                Start-Sleep -Milliseconds 500
+                Save-Window $w (Join-Path $runDir "$arg.png")
+            }
+            "shotmain" { Start-Sleep -Milliseconds 500; Save-Window $main (Join-Path $runDir "$arg.png") }
+            "dialog" { $d = Get-Dialog; if ($d) { [void](Save-Window $d (Join-Path $runDir "step-dialog.png")); Answer $d $arg; "dialog answered $arg" } else { "step dialog: none" } }
+            default { "unknown step $s" }
+        }
+        Start-Sleep -Milliseconds 300
+    }
 
     Save-Window $main (Join-Path $runDir "$Name.png")
     if ($CaptureDialog) { Start-Sleep -Seconds 8; $dlg = Get-Dialog; if ($dlg) { Save-Window $dlg (Join-Path $runDir "$Name-dialog.png") } else { "no dialog to capture" } }
