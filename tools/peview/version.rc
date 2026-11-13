@@ -72,7 +72,7 @@ BEGIN
             VALUE "FileDescription", "Portable Executable Viewer"
             VALUE "FileVersion", PHAPP_VERSION_STRING
             VALUE "InternalName", "Portable Executable Viewer"
-            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc. MIT License. TaskManagerPlus by sethdtwigg; modifications copyright (c) 2026 sethdtwigg."
+            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc. MIT License. TaskManagerPlus by Seth Twigg; modifications copyright (c) 2026 Seth Twigg."
             VALUE "OriginalFilename", "peview.exe"
             VALUE "ProductName", "Portable Executable Viewer"
             VALUE "ProductVersion", PHAPP_VERSION_STRING

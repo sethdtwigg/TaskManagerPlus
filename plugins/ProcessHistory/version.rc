@@ -71,7 +71,7 @@ BEGIN
             VALUE "FileDescription", "ProcessHistory"
             VALUE "FileVersion", PHAPP_VERSION_STRING
             VALUE "InternalName", "ProcessHistory"
-            VALUE "LegalCopyright", "MIT License. TaskManagerPlus by sethdtwigg; modifications copyright (c) 2026 sethdtwigg. Based on System Informer, copyright Winsider Seminars & Solutions, Inc."
+            VALUE "LegalCopyright", "MIT License. TaskManagerPlus by Seth Twigg; modifications copyright (c) 2026 Seth Twigg. Based on System Informer, copyright Winsider Seminars & Solutions, Inc."
             VALUE "OriginalFilename", "ProcessHistory.dll"
             VALUE "ProductName", "ProcessHistory"
             VALUE "ProductVersion", PHAPP_VERSION_STRING

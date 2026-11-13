@@ -7,7 +7,7 @@ connections of any kind, with no update checks, telemetry, online lookups or
 account features. The repository ships a guard script that enforces this
 (see "Offline guarantee").
 
-TaskManagerPlus by sethdtwigg. A fork of System Informer, MIT licensed, copyright Winsider Seminars & Solutions, Inc.; modifications copyright (c) 2026 sethdtwigg. Source: github.com/sethdtwigg/TaskManagerPlus (plain text; the app never contacts it). See "License" below.
+TaskManagerPlus by Seth Twigg. A fork of System Informer, MIT licensed, copyright Winsider Seminars & Solutions, Inc.; modifications copyright (c) 2026 Seth Twigg. Source: github.com/sethdtwigg/TaskManagerPlus (plain text; the app never contacts it). See "License" below.
 
 ## System requirements
 
@@ -87,6 +87,6 @@ self-signed, so Windows SmartScreen may warn on first run.
 
 ## License
 
-MIT. TaskManagerPlus is by sethdtwigg (modifications copyright (c) 2026 sethdtwigg) and is based on
+MIT. TaskManagerPlus is by Seth Twigg (modifications copyright (c) 2026 Seth Twigg) and is based on
 System Informer, copyright Winsider Seminars & Solutions, Inc., and modified. The original notices are in `LICENSE.txt`
 and `COPYRIGHT.txt`; credits are in `NOTICE.txt`.

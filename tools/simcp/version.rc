@@ -69,7 +69,7 @@ BEGIN
             VALUE "FileDescription", "System Informer MCP broker"
             VALUE "FileVersion", PHAPP_VERSION_STRING
             VALUE "InternalName", "simcp"
-            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc. MIT License. TaskManagerPlus by sethdtwigg; modifications copyright (c) 2026 sethdtwigg."
+            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc. MIT License. TaskManagerPlus by Seth Twigg; modifications copyright (c) 2026 Seth Twigg."
             VALUE "OriginalFilename", "simcp.exe"
             VALUE "ProductName", "System Informer"
             VALUE "ProductVersion", PHAPP_VERSION_STRING

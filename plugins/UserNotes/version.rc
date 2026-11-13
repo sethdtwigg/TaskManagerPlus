@@ -71,7 +71,7 @@ BEGIN
             VALUE "FileDescription", "UserNotes"
             VALUE "FileVersion", PHAPP_VERSION_STRING
             VALUE "InternalName", "UserNotes"
-            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc. MIT License. TaskManagerPlus by sethdtwigg; modifications copyright (c) 2026 sethdtwigg."
+            VALUE "LegalCopyright", "Copyright (c) Winsider Seminars & Solutions, Inc. MIT License. TaskManagerPlus by Seth Twigg; modifications copyright (c) 2026 Seth Twigg."
             VALUE "OriginalFilename", "UserNotes.dll"
             VALUE "ProductName", "UserNotes"
             VALUE "ProductVersion", PHAPP_VERSION_STRING

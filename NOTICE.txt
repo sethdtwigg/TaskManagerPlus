@@ -1,6 +1,6 @@
 TaskManagerPlus
 
-TaskManagerPlus is by sethdtwigg. A fork of System Informer, MIT licensed, copyright Winsider Seminars & Solutions, Inc.; modifications copyright (c) 2026 sethdtwigg. It is based on System Informer, which is licensed under the MIT
+TaskManagerPlus is by Seth Twigg. A fork of System Informer, MIT licensed, copyright Winsider Seminars & Solutions, Inc.; modifications copyright (c) 2026 Seth Twigg. It is based on System Informer, which is licensed under the MIT
 License and is copyright Winsider Seminars & Solutions, Inc. and its
 contributors. This version has been modified: the user interface was reworked,
 new plugins (Process Rules, Startup Manager, Process History) were added, and
