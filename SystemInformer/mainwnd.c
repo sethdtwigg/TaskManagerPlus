@@ -6260,6 +6260,45 @@ PVOID PhPluginInvokeWindowCallback(
             return UlongToPtr(WindowsVersion);
         }
         break;
+    case PH_MAINWINDOW_CALLBACK_TYPE_PLUGIN_DATA_FILE: // TaskManagerPlus
+        {
+            PCWSTR name = wparam;
+            PPH_STRING path = NULL;
+
+            if (!name || PhStartupParameters.NoSettings)
+                return NULL; // memory only, no file I/O
+
+            if (PhStartupParameters.SettingsFileName)
+            {
+                // A -settings override: keep plugin data next to that settings file.
+                PPH_STRING fullPath;
+
+                if (NT_SUCCESS(PhGetFullPath(PhGetString(PhStartupParameters.SettingsFileName), &fullPath, NULL)))
+                {
+                    PPH_STRING directory = PhGetBaseDirectory(fullPath);
+
+                    if (directory)
+                    {
+                        path = PhConcatStrings(3, PhGetString(directory), L"\\", name);
+                        PhDereferenceObject(directory);
+                    }
+
+                    PhDereferenceObject(fullPath);
+                }
+
+                return path;
+            }
+
+            // Default: a file beside the executable wins (portable use), otherwise %APPDATA%.
+            path = PhGetApplicationDirectoryFileNameZ(name, FALSE);
+
+            if (path && (PhPortableEnabled || PhDoesFileExistWin32(PhGetString(path))))
+                return path;
+
+            PhClearReference(&path);
+            return PhGetRoamingAppDataDirectoryZ(name, FALSE);
+        }
+        break;
     case PH_MAINWINDOW_CALLBACK_TYPE_PORTABLE:
         {
             return (PVOID)UlongToPtr(PhPortableEnabled);

@@ -16,8 +16,6 @@ static KAFFINITY TmpPCoreMask = 0;
 static KAFFINITY TmpECoreMask = 0;
 static KAFFINITY TmpAllCoreMask = 0;
 
-static CONST PH_STRINGREF TmpRulesFileNameSr = PH_STRINGREF_INIT(TMP_RULES_FILE_NAME);
-static CONST PH_STRINGREF TmpRulesRoamingPathSr = PH_STRINGREF_INIT(TMP_RULES_FILE_NAME);
 
 PTMP_RULE TmpCreateRule(
     VOID
@@ -210,20 +208,9 @@ PPH_STRING TmpGetRulesFileName(
     VOID
     )
 {
-    PPH_STRING fileName;
-
-    if (fileName = PhGetApplicationDirectoryFileName(&TmpRulesFileNameSr, FALSE))
-    {
-        if (PhDoesFileExistWin32(PhGetString(fileName)))
-            return fileName;
-
-        PhDereferenceObject(fileName);
-    }
-
-    if (fileName = PhGetRoamingAppDataDirectory(&TmpRulesRoamingPathSr, FALSE))
-        return fileName;
-
-    return PhGetApplicationDirectoryFileName(&TmpRulesFileNameSr, FALSE);
+    // TaskManagerPlus: the core decides (beside the exe / %APPDATA% / next to a -settings file); NULL with
+    // -nosettings, then the rules stay in memory and nothing is read or written.
+    return SystemInformer_GetPluginDataFileName(TMP_RULES_FILE_NAME);
 }
 
 static VOID TmpAddJsonString(

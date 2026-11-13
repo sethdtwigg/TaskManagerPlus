@@ -79,6 +79,7 @@ typedef enum _PH_MAINWINDOW_CALLBACK_TYPE
     PH_MAINWINDOW_CALLBACK_TYPE_SET_MAIN_SUBCMD,
     PH_MAINWINDOW_CALLBACK_TYPE_SHOW_OPTIONS,
     PH_MAINWINDOW_CALLBACK_TYPE_SHOW_MINIINFO_SECTION,
+    PH_MAINWINDOW_CALLBACK_TYPE_PLUGIN_DATA_FILE, // TaskManagerPlus: Parameter1 = file name, returns a PPH_STRING path or NULL (keep the data in memory)
     PH_MAINWINDOW_CALLBACK_TYPE_MAXIMUM
 } PH_MAINWINDOW_CALLBACK_TYPE;
 
@@ -156,6 +157,10 @@ PhPluginInvokeWindowCallback(
     ((HWND)PhPluginInvokeWindowCallback(PH_MAINWINDOW_CALLBACK_TYPE_WINDOW_HANDLE, 0, 0))
 #define SystemInformer_GetWindowsVersion() \
     (PtrToUlong(PhPluginInvokeWindowCallback(PH_MAINWINDOW_CALLBACK_TYPE_VERSION, 0, 0)))
+// TaskManagerPlus: path for a plugin's data file, or NULL when there must be no file (-nosettings). With a
+// -settings override the file sits next to that settings file. The caller dereferences the string.
+#define SystemInformer_GetPluginDataFileName(Name) \
+    ((PPH_STRING)PhPluginInvokeWindowCallback(PH_MAINWINDOW_CALLBACK_TYPE_PLUGIN_DATA_FILE, (PVOID)(Name), 0))
 #define SystemInformer_IsPortableMode() \
     ((BOOLEAN)PtrToUlong(PhPluginInvokeWindowCallback(PH_MAINWINDOW_CALLBACK_TYPE_PORTABLE, 0, 0)))
 #define SystemInformer_GetTabIndex(Value) \

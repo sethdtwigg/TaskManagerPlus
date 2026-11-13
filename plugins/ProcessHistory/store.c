@@ -618,10 +618,7 @@ VOID HistStoreLoad(
 
     HistPersistEnabled = !!PhGetIntegerSetting(SETTING_NAME_PERSIST_TO_DISK);
 
-    if (SystemInformer_IsPortableMode())
-        HistFileName = PhGetApplicationDirectoryFileNameZ(HIST_FILE_NAME, FALSE);
-    else
-        HistFileName = PhGetRoamingAppDataDirectoryZ(HIST_FILE_NAME, FALSE);
+    HistFileName = SystemInformer_GetPluginDataFileName(HIST_FILE_NAME); // TaskManagerPlus: NULL with -nosettings (memory only)
 
     if (!HistFileName)
     {
