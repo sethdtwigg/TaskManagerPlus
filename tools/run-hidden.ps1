@@ -46,6 +46,10 @@ Add-Type @"
 using System; using System.Runtime.InteropServices; using System.Text;
 public static class H {
   public delegate bool EnumProc(IntPtr h, IntPtr l);
+  [DllImport("user32.dll")] public static extern uint GetDpiForWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int w, int ht, uint f);
+  [DllImport("user32.dll")] public static extern uint GetDpiForSystem();
+  [DllImport("user32.dll")] public static extern int GetWindowLong(IntPtr h, int i);
   public delegate bool EnumDeskProc(IntPtr h, IntPtr l);
   [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
   public struct STARTUPINFO { public int cb; public string lpReserved; public string lpDesktop; public string lpTitle;
@@ -156,6 +160,10 @@ function Get-Dialog { (Get-DeskWindows | Where-Object { $_.Class -eq "#32770" } 
 function Save-Window($h, $path) {
     $r = New-Object H+RECT; [void][H]::GetWindowRect($h, [ref]$r)
     $w = $r.R - $r.L; $ht = $r.B - $r.T
+    if ($w -gt 3000) {   # intermittent: a window (Options) is given a ~26000 px minimum width on this multi-monitor machine; force a sane size without WM_WINDOWPOSCHANGING
+        [void][H]::SetWindowPos($h, [IntPtr]::Zero, $r.L, $r.T, 820, [Math]::Min($ht, 600), 0x414); Start-Sleep -Milliseconds 700
+        [void][H]::GetWindowRect($h, [ref]$r); $w = $r.R - $r.L; $ht = $r.B - $r.T
+    }
     $bmp = New-Object System.Drawing.Bitmap $w, $ht
     $g = [System.Drawing.Graphics]::FromImage($bmp); $dc = $g.GetHdc()
     [void][H]::PrintWindow($h, $dc, 2); $g.ReleaseHdc($dc); $g.Dispose()
@@ -212,8 +220,12 @@ try {
 
     $main = Get-Main
     if (-not $main) { throw "no main window on the hidden desktop" }
-    [void][H]::MoveWindow($main, 20, 20, $Width, $Height, $true)
+    $r0 = New-Object H+RECT; [void][H]::GetWindowRect($main, [ref]$r0)
+    # SWP_NOSENDCHANGING (0x400): with MoveWindow the window grew to 26688 px wide on a 3-monitor setup (a size constraint applied during WM_WINDOWPOSCHANGING); this keeps the requested size.
+    [void][H]::SetWindowPos($main, [IntPtr]::Zero, 20, 20, $Width, $Height, 0x414)
     Start-Sleep -Milliseconds 800
+    $r1 = New-Object H+RECT; [void][H]::GetWindowRect($main, [ref]$r1)
+    "main window rect before move $($r0.L),$($r0.T),$($r0.R),$($r0.B) after $($r1.L),$($r1.T),$($r1.R),$($r1.B)"
 
     if ($OptionsClick -gt 0) {
         [void][H]::PostMessage($main, 0x111, [IntPtr]10083, [IntPtr]::Zero)   # ID_HACKER_OPTIONS
