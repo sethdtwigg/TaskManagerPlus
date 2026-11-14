@@ -149,6 +149,7 @@ set(SOURCES
     "ntobjprp.c"
     "options.c"
     "tmrepair.c"
+    "themejson.c"
     "pagfiles.c"
     "plugin.c"
     "plugman.c"

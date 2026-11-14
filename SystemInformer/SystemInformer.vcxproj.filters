@@ -120,6 +120,9 @@
     <ClCompile Include="ntobjprp.c">
       <Filter>System Informer</Filter>
     </ClCompile>
+    <ClCompile Include="themejson.c">
+      <Filter>System Informer</Filter>
+    </ClCompile>
     <ClCompile Include="tmrepair.c">
       <Filter>System Informer</Filter>
     </ClCompile>

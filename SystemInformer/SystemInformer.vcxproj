@@ -267,6 +267,7 @@
         <ClCompile Include="logwnd.c" />
         <ClCompile Include="main.c" />
         <ClCompile Include="tmrepair.c" />
+        <ClCompile Include="themejson.c" />
         <ClCompile Include="mainwnd.c" />
         <ClCompile Include="mdump.c" />
         <ClCompile Include="memcfg.c" />

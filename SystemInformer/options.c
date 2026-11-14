@@ -12,6 +12,7 @@
 
 #include <phapp.h>
 #include "tmrepair.h" // TaskManagerPlus
+#include "themejson.h" // TaskManagerPlus
 
 #include <commdlg.h>
 #include <colmgr.h>
@@ -882,6 +883,199 @@ VOID NTAPI PhApplyThemeModeProfile(
         PhApplyThemeModeWithColors(Mode, PhMainWndHandle);
         PhMwpInitializeMainMenu(PhMainWndHandle);
     }
+}
+
+// TaskManagerPlus: theme JSON export / import (Options > General). Parsing and validation are in themejson.c (unit tested).
+
+static ULONG PhpColorRefToRgb(
+    _In_ COLORREF Color
+    )
+{
+    return ((ULONG)GetRValue(Color) << 16) | ((ULONG)GetGValue(Color) << 8) | (ULONG)GetBValue(Color);
+}
+
+static COLORREF PhpRgbToColorRef(
+    _In_ ULONG Rgb
+    )
+{
+    return RGB((Rgb >> 16) & 0xFF, (Rgb >> 8) & 0xFF, Rgb & 0xFF);
+}
+
+static PPH_STRING PhpThemeFileFromTestHook(
+    _In_ PCWSTR VariableName
+    )
+{
+    WCHAR value[MAX_PATH];
+
+    // Test hook for the hidden-desktop run: a file name from the environment replaces the file dialog.
+    if (GetEnvironmentVariableW(VariableName, value, RTL_NUMBER_OF(value)) && value[0])
+        return PhCreateString(value);
+
+    return NULL;
+}
+
+static VOID PhpExportThemeFile(
+    _In_ HWND ParentWindowHandle
+    )
+{
+    static CONST PH_FILETYPE_FILTER filters[] = { { L"Theme file (*.json)", L"*.json" } };
+    PPH_STRING fileName;
+    PVOID fileDialog = NULL;
+    CONST PH_WINDOW_THEME_PALETTE *palette;
+    THJ_THEME theme;
+    char text[1024];
+    size_t length;
+    NTSTATUS status;
+    HANDLE fileHandle;
+
+    if (!PhGetIntegerSetting(SETTING_ENABLE_THEME_SUPPORT) || !PhEnableThemeSupport)
+    {
+        PhShowInformation2(ParentWindowHandle, L"Export theme", L"%s", L"Turn on theme support (Options > Themes) first; there is no palette to export without it.");
+        return;
+    }
+
+    palette = PhGetWindowThemePalette();
+    memset(&theme, 0, sizeof(theme));
+    theme.Rgb[ThjForeground] = PhpColorRefToRgb(palette->ForegroundColor);
+    theme.Rgb[ThjBackground] = PhpColorRefToRgb(palette->BackgroundColor);
+    theme.Rgb[ThjBackground2] = PhpColorRefToRgb(palette->Background2Color);
+    theme.Rgb[ThjHighlight] = PhpColorRefToRgb(palette->HighlightColor);
+    theme.Rgb[ThjHighlight2] = PhpColorRefToRgb(palette->Highlight2Color);
+    theme.Rgb[ThjText] = PhpColorRefToRgb(palette->TextColor);
+    strcpy_s(theme.Name, sizeof(theme.Name), "Exported theme");
+    length = ThjWrite(&theme, text, sizeof(text));
+
+    if (!length)
+        return;
+
+    if (!(fileName = PhpThemeFileFromTestHook(L"TMPLUS_TEST_THEME_EXPORT")))
+    {
+        fileDialog = PhCreateSaveFileDialog();
+        PhSetFileDialogFilter(fileDialog, (PPH_FILETYPE_FILTER)filters, RTL_NUMBER_OF(filters));
+        PhSetFileDialogFileName(fileDialog, L"taskmanagerplus-theme.json");
+
+        if (!PhShowFileDialog(ParentWindowHandle, fileDialog))
+        {
+            PhFreeFileDialog(fileDialog);
+            return;
+        }
+
+        fileName = PhGetFileDialogFileName(fileDialog);
+    }
+
+    status = PhCreateFileWin32(&fileHandle, fileName->Buffer, FILE_GENERIC_WRITE, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ, FILE_OVERWRITE_IF, FILE_SYNCHRONOUS_IO_NONALERT | FILE_NON_DIRECTORY_FILE);
+
+    if (NT_SUCCESS(status))
+    {
+        status = PhWriteFile(fileHandle, text, (ULONG)length, NULL, NULL);
+        NtClose(fileHandle);
+    }
+
+    if (!NT_SUCCESS(status))
+        PhShowStatus(ParentWindowHandle, L"Unable to save the theme file", status, 0);
+    else
+        PhShowInformation2(ParentWindowHandle, L"Export theme", L"Saved the current palette to:\n%s", fileName->Buffer);
+
+    PhDereferenceObject(fileName);
+
+    if (fileDialog)
+        PhFreeFileDialog(fileDialog);
+}
+
+static VOID PhpImportThemeFile(
+    _In_ HWND ParentWindowHandle
+    )
+{
+    static CONST PH_FILETYPE_FILTER filters[] = { { L"Theme file (*.json)", L"*.json" }, { L"All files (*.*)", L"*.*" } };
+    PPH_STRING fileName;
+    PVOID fileDialog = NULL;
+    HANDLE fileHandle;
+    LARGE_INTEGER size;
+    PVOID buffer = NULL;
+    ULONG read = 0;
+    THJ_THEME theme;
+    THJ_STATUS result;
+    NTSTATUS status;
+
+    if (!(fileName = PhpThemeFileFromTestHook(L"TMPLUS_TEST_THEME_IMPORT")))
+    {
+        fileDialog = PhCreateOpenFileDialog();
+        PhSetFileDialogFilter(fileDialog, (PPH_FILETYPE_FILTER)filters, RTL_NUMBER_OF(filters));
+
+        if (!PhShowFileDialog(ParentWindowHandle, fileDialog))
+        {
+            PhFreeFileDialog(fileDialog);
+            return;
+        }
+
+        fileName = PhGetFileDialogFileName(fileDialog);
+    }
+
+    status = PhCreateFileWin32(&fileHandle, fileName->Buffer, FILE_GENERIC_READ, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_OPEN, FILE_SYNCHRONOUS_IO_NONALERT | FILE_NON_DIRECTORY_FILE);
+
+    if (NT_SUCCESS(status))
+    {
+        status = PhGetFileSize(fileHandle, &size);
+
+        if (NT_SUCCESS(status))
+        {
+            if (size.QuadPart > THJ_MAX_BYTES || size.QuadPart < 0)
+            {
+                result = ThjErrTooLarge;
+            }
+            else if (size.QuadPart == 0)
+            {
+                result = ThjErrSyntax; // an empty file; nothing to read
+            }
+            else
+            {
+                buffer = PhAllocate((SIZE_T)size.QuadPart + 1);
+                status = PhReadFile(fileHandle, buffer, (ULONG)size.QuadPart, NULL, &read);
+                result = NT_SUCCESS(status) ? ThjParse(buffer, read, &theme) : ThjErrSyntax;
+            }
+        }
+
+        NtClose(fileHandle);
+    }
+
+    if (!NT_SUCCESS(status))
+    {
+        PhShowStatus(ParentWindowHandle, L"Unable to read the theme file", status, 0);
+    }
+    else if (result != ThjOk)
+    {
+        PhShowError2(ParentWindowHandle, L"This theme file was not applied.", L"%s\n\nNothing was changed.", ThjStatusText(result));
+    }
+    else if (PhShowMessage2(
+        ParentWindowHandle,
+        TD_YES_BUTTON | TD_NO_BUTTON,
+        TD_INFORMATION_ICON,
+        L"Apply this theme?",
+        L"\"%S\" replaces the Custom theme colors and switches the theme mode to Custom.",
+        theme.Name[0] ? theme.Name : "Unnamed theme"
+        ) == IDYES)
+    {
+        PhSetIntegerSetting(SETTING_THEME_WINDOW_FOREGROUND_COLOR, PhpRgbToColorRef(theme.Rgb[ThjForeground]));
+        PhSetIntegerSetting(SETTING_THEME_WINDOW_BACKGROUND_COLOR, PhpRgbToColorRef(theme.Rgb[ThjBackground]));
+        PhSetIntegerSetting(SETTING_THEME_WINDOW_BACKGROUND2_COLOR, PhpRgbToColorRef(theme.Rgb[ThjBackground2]));
+        PhSetIntegerSetting(SETTING_THEME_WINDOW_HIGHLIGHT_COLOR, PhpRgbToColorRef(theme.Rgb[ThjHighlight]));
+        PhSetIntegerSetting(SETTING_THEME_WINDOW_HIGHLIGHT2_COLOR, PhpRgbToColorRef(theme.Rgb[ThjHighlight2]));
+        PhSetIntegerSetting(SETTING_THEME_WINDOW_TEXT_COLOR, PhpRgbToColorRef(theme.Rgb[ThjText]));
+        PhSetIntegerSetting(SETTING_ENABLE_THEME_SUPPORT, TRUE);
+        PhApplyThemeModeProfile(PhThemeModeCustom);
+        PhReloadThemesSection();
+
+        if (!PhEnableThemeSupport)
+            PhShowOptionsRestartRequired(ParentWindowHandle);
+    }
+
+    if (buffer)
+        PhFree(buffer);
+
+    PhDereferenceObject(fileName);
+
+    if (fileDialog)
+        PhFreeFileDialog(fileDialog);
 }
 
 static VOID PhpOptionsSetImageList(
@@ -3341,6 +3535,12 @@ INT_PTR CALLBACK PhpOptionsGeneralDlgProc(
                 }
                 break;
             case IDC_APPLYREADABLELOOK: // TaskManagerPlus
+            case IDC_EXPORTTHEME: // TaskManagerPlus
+                PhpExportThemeFile(hwndDlg);
+                break;
+            case IDC_IMPORTTHEME:
+                PhpImportThemeFile(hwndDlg);
+                break;
             case IDC_RESTORELOOK:
                 PhApplyReadableLookInteractive(hwndDlg, GET_WM_COMMAND_ID(wParam, lParam) == IDC_APPLYREADABLELOOK);
                 break;
