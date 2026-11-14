@@ -20,12 +20,10 @@ static BOOLEAN NTAPI MessageLoopFilter(
     _In_ PVOID Context
     )
 {
-    if (Message->message == WM_KEYDOWN && Message->wParam == 'K')
+    // The shortcut is configurable (Options > Shortcuts, default Ctrl+K); Alt combinations arrive as WM_SYSKEYDOWN.
+    if ((Message->message == WM_KEYDOWN || Message->message == WM_SYSKEYDOWN) && PhShortcutMatches("quickactions", (ULONG)Message->wParam))
     {
         BOOLEAN ours;
-
-        if (GetKeyState(VK_CONTROL) >= 0 || GetKeyState(VK_SHIFT) < 0 || GetKeyState(VK_MENU) < 0)
-            return FALSE;
 
         ours = QaIsPaletteWindow(GetAncestor(Message->hwnd, GA_ROOT));
 

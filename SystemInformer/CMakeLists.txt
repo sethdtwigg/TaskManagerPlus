@@ -149,6 +149,8 @@ set(SOURCES
     "ntobjprp.c"
     "options.c"
     "tmrepair.c"
+    "shortcuts.c"
+    "shortcutcore.c"
     "themejson.c"
     "pagfiles.c"
     "plugin.c"

@@ -902,6 +902,21 @@ VOID PhOfferCalmLook(
     VOID
     );
 
+VOID PhShortcutsInitialize(
+    VOID
+    );
+
+HACCEL PhShortcutsGetAcceleratorTable(
+    VOID
+    );
+
+INT_PTR CALLBACK PhOptionsShortcutsDlgProc(
+    _In_ HWND hwndDlg,
+    _In_ UINT uMsg,
+    _In_ WPARAM wParam,
+    _In_ LPARAM lParam
+    );
+
 ULONG PhRunTaskManagerRepairHelper(
     _In_ PCWSTR StalePath
     );

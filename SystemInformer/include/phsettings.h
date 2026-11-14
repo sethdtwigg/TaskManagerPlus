@@ -380,6 +380,7 @@ EXT ULONG PhCsProcessMonitorCacheLimit;
 #define SETTING_SEARCH_OPTIONS_MENU                                 L"SearchOptionsMenu" // TaskManagerPlus: 1 = Case/Regex/Fuzzy behind a funnel menu
 #define SETTING_HIGHLIGHT_MODE                                      L"HighlightMode" // TaskManagerPlus: 0 custom, 1 minimal, 2 classic
 #define SETTING_CALM_LOOK_OFFERED                                   L"CalmLookOffered" // TaskManagerPlus: the one-time calm look prompt was answered
+#define SETTING_SHORTCUTS                                           L"Shortcuts" // TaskManagerPlus: customized keyboard shortcuts, "id=Ctrl+K;..." (shortcutcore.h)
 #define SETTING_TASKMGR_REPAIR_NEVER                                L"TaskmgrRepairNever" // TaskManagerPlus: the user chose "Don't ask again" for the stale Task Manager replacement prompt
 #define SETTING_DETACHED_GRAPHS                                     L"DetachedGraphs" // TaskManagerPlus
 #define SETTING_HIDE_MICROSOFT_PROCESSES                            L"HideMicrosoftProcesses"

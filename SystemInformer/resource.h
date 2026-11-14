@@ -950,6 +950,14 @@
 #define IDC_RESTORELOOK                 1580 // TaskManagerPlus
 #define IDC_EXPORTTHEME                 1581 // TaskManagerPlus
 #define IDC_IMPORTTHEME                 1582 // TaskManagerPlus
+#define IDD_OPTSHORTCUTS                299 // TaskManagerPlus
+#define IDC_SHORTCUTLIST                1583 // TaskManagerPlus
+#define IDC_SHORTCUTEDIT                1584 // TaskManagerPlus
+#define IDC_SHORTCUTSET                 1585 // TaskManagerPlus
+#define IDC_SHORTCUTCLEAR               1586 // TaskManagerPlus
+#define IDC_SHORTCUTRESET               1587 // TaskManagerPlus
+#define IDC_SHORTCUTRESETALL            1588 // TaskManagerPlus
+#define IDC_SHORTCUTSTATUS              1589 // TaskManagerPlus
 #define IDC_HEATSTYLE                   1578 // TaskManagerPlus
 #define ID_VIEW_DETACHEDGRAPH_FIRST     10364 // TaskManagerPlus: + mini meter index (6 consecutive ids)
 #define ID_VIEW_DETACHEDGRAPH_LAST      10369 // TaskManagerPlus
@@ -1060,9 +1068,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        299
+#define _APS_NEXT_RESOURCE_VALUE        300
 #define _APS_NEXT_COMMAND_VALUE         10355
-#define _APS_NEXT_CONTROL_VALUE         1583
+#define _APS_NEXT_CONTROL_VALUE         1590
 #define _APS_NEXT_SYMED_VALUE           170
 #endif
 #endif

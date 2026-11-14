@@ -622,6 +622,12 @@ VOID PhShowOptionsDialog(
     _In_opt_ PCWSTR SectionName
     )
 {
+    static WCHAR testSectionName[64];
+
+    // Test hook: the hidden-desktop run picks the Options page from the environment.
+    if (!SectionName && GetEnvironmentVariableW(L"TMPLUS_TEST_OPTIONS_SECTION", testSectionName, RTL_NUMBER_OF(testSectionName)) && testSectionName[0])
+        SectionName = testSectionName;
+
     if (PhStartupParameters.ShowOptions)
     {
         PhpSetDefaultTaskManager(ParentWindowHandle);
@@ -670,7 +676,7 @@ static ULONG PhpOptionsGetSectionGroup(
     _In_ PCWSTR Name
     )
 {
-    static CONST PCWSTR application[] = { L"General", L"Advanced", L"Themes", L"Highlighting", L"Tray Icon", L"Graphs", L"Plugins" };
+    static CONST PCWSTR application[] = { L"General", L"Advanced", L"Themes", L"Shortcuts", L"Highlighting", L"Tray Icon", L"Graphs", L"Plugins" };
     SIZE_T length = wcslen(Name);
 
     for (ULONG i = 0; i < RTL_NUMBER_OF(application); i++)
@@ -1510,6 +1516,7 @@ INT_PTR CALLBACK PhOptionsDialogProc(
                 section = PhOptionsCreateSection(L"General", PhInstanceHandle, MAKEINTRESOURCE(IDD_OPTGENERAL), PhpOptionsGeneralDlgProc, NULL);
                 PhOptionsCreateSectionAdvanced(L"Advanced", PhInstanceHandle, MAKEINTRESOURCE(IDD_OPTADVANCED), PhpOptionsAdvancedDlgProc, NULL);
                 PhOptionsCreateSection(L"Themes", PhInstanceHandle, MAKEINTRESOURCE(IDD_OPTTHEMES), PhpOptionsThemesDlgProc, NULL); // TaskManagerPlus: the Themes page was never registered
+                PhOptionsCreateSection(L"Shortcuts", PhInstanceHandle, MAKEINTRESOURCE(IDD_OPTSHORTCUTS), PhOptionsShortcutsDlgProc, NULL); // TaskManagerPlus
                 PhOptionsCreateSection(L"Highlighting", PhInstanceHandle, MAKEINTRESOURCE(IDD_OPTHIGHLIGHTING), PhpOptionsHighlightingDlgProc, NULL);
                 PhOptionsCreateSection(L"Tray Icon", PhInstanceHandle, MAKEINTRESOURCE(IDD_OPTTRAYICON), PhpOptionsTrayIconDlgProc, NULL);
                 PhOptionsCreateSection(L"Graphs", PhInstanceHandle, MAKEINTRESOURCE(IDD_OPTGRAPHS), PhpOptionsGraphsDlgProc, NULL);
@@ -3534,13 +3541,13 @@ INT_PTR CALLBACK PhpOptionsGeneralDlgProc(
                     }
                 }
                 break;
-            case IDC_APPLYREADABLELOOK: // TaskManagerPlus
             case IDC_EXPORTTHEME: // TaskManagerPlus
                 PhpExportThemeFile(hwndDlg);
                 break;
             case IDC_IMPORTTHEME:
                 PhpImportThemeFile(hwndDlg);
                 break;
+            case IDC_APPLYREADABLELOOK: // TaskManagerPlus
             case IDC_RESTORELOOK:
                 PhApplyReadableLookInteractive(hwndDlg, GET_WM_COMMAND_ID(wParam, lParam) == IDC_APPLYREADABLELOOK);
                 break;

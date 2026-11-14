@@ -23,6 +23,7 @@ $suites = [ordered]@{
     "test-advisor" = @("EfficiencyAdvisor\advisor.c")
     "test-sharecode" = @("ProcessRules\sharecode.c")
     "test-themejson" = @("..\SystemInformer\themejson.c")
+    "test-shortcuts" = @("..\SystemInformer\shortcutcore.c")
     "test-cliparse" = @("SessionReports\cliparse.c")
     "test-tmrepair" = @("..\SystemInformer\tmrepair.c")
 }

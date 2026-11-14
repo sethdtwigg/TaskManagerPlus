@@ -123,6 +123,12 @@
     <ClCompile Include="themejson.c">
       <Filter>System Informer</Filter>
     </ClCompile>
+    <ClCompile Include="shortcuts.c">
+      <Filter>System Informer</Filter>
+    </ClCompile>
+    <ClCompile Include="shortcutcore.c">
+      <Filter>System Informer</Filter>
+    </ClCompile>
     <ClCompile Include="tmrepair.c">
       <Filter>System Informer</Filter>
     </ClCompile>

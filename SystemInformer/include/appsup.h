@@ -48,6 +48,16 @@ PhApplyThemeModeProfile(
     _In_ ULONG Mode
     );
 
+// TaskManagerPlus: TRUE when the shortcut with this id (for example "quickactions") is bound to VirtualKey and exactly the
+// modifiers currently held down. Used by the QuickActions Ctrl+K hook. Unknown ids never match.
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhShortcutMatches(
+    _In_ PCSTR Id,
+    _In_ ULONG VirtualKey
+    );
+
 PHAPPAPI
 BOOLEAN
 NTAPI

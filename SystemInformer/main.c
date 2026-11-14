@@ -233,9 +233,8 @@ LONG PhMainMessageLoop(
 {
     BOOL result;
     MSG message;
-    HACCEL acceleratorTable;
 
-    acceleratorTable = LoadAccelerators(NtCurrentImageBase(), MAKEINTRESOURCE(IDR_MAINWND_ACCEL));
+    PhShortcutsInitialize(); // TaskManagerPlus: the accelerator table follows Options > Shortcuts
 
     while (result = GetMessage(&message, NULL, 0, 0))
     {
@@ -266,7 +265,7 @@ LONG PhMainMessageLoop(
                 IsChild(PhMainWndHandle, message.hwnd)
                 )
             {
-                if (TranslateAccelerator(PhMainWndHandle, acceleratorTable, &message))
+                if (TranslateAccelerator(PhMainWndHandle, PhShortcutsGetAcceleratorTable(), &message))
                     processed = TRUE;
             }
 

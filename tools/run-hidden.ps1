@@ -86,6 +86,8 @@ public static class H {
   [DllImport("user32.dll")] public static extern IntPtr GetDlgItem(IntPtr h, int id);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern uint RegisterWindowMessageW(string s);
   [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr SendMessageW(IntPtr h, uint m, IntPtr w, string l);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr SendMessageW(IntPtr h, uint m, IntPtr w, StringBuilder l);
   [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr h, int x, int y, int w, int ht, bool r);
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
   [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr dc, uint f);
@@ -168,6 +170,7 @@ function Save-Window($h, $path) {
         [void][H]::SetWindowPos($h, [IntPtr]::Zero, $r.L, $r.T, 820, [Math]::Min($ht, 600), 0x414); Start-Sleep -Milliseconds 700
         [void][H]::GetWindowRect($h, [ref]$r); $w = $r.R - $r.L; $ht = $r.B - $r.T
     }
+    if ($w -le 0 -or $ht -le 0) { "skipped $path (window is $w x $ht)"; return }   # intermittent zero-size dialog during its creation
     $bmp = New-Object System.Drawing.Bitmap $w, $ht
     $g = [System.Drawing.Graphics]::FromImage($bmp); $dc = $g.GetHdc()
     [void][H]::PrintWindow($h, $dc, 2); $g.ReleaseHdc($dc); $g.Dispose()
@@ -273,6 +276,12 @@ try {
     #   cmdshot:<id>,<name>            post WM_COMMAND(id), wait, capture the main window as <name>.png
     #   dialogcmd:<id>                 post WM_COMMAND(id) to the first #32770 dialog (TaskDialog custom button ids, e.g. 7 = IDNO)
     #   dialogkeys:<vk>,<vk>,...       WM_KEYDOWN/UP (decimal virtual keys, 9 = Tab, 13 = Return) to the first #32770 dialog, to move to and press a TaskDialog button
+    #   post:<msg>,<wParam>,<lParam>   PostMessage of a numeric message (decimal) to the main window (e.g. 32894 = WM_APP+126, the tray icon callback)
+    #   settext:<id>,<text>            WM_SETTEXT on the control with that id (first window or child that has it, e.g. on an Options page)
+    #   click:<id>                     BM_CLICK on that control
+    #   gettext:<id>                   prints "text <id>: <control text>"
+    #   menukey:<vk>                   WM_KEYDOWN/UP to the first popup menu window (class #32768), e.g. 40 Down, 39 Right, 27 Esc
+    #   shotall:<prefix>               capture every visible window of class -StepClass as <prefix>-<n>.png (popup menu and its submenu)
     #   dialog:yes|no                  answer the first #32770 dialog (yes = Return, no = Escape)
     foreach ($s in $Steps) {
         $op, $arg = $s -split ":", 2
@@ -302,6 +311,12 @@ try {
             "cmdshot" { $ci, $cn = $arg -split ",", 2; [void][H]::PostMessage($main, 0x111, [IntPtr][int]$ci, [IntPtr]::Zero); Start-Sleep -Milliseconds 1500; Save-Window $main (Join-Path $runDir "$cn.png") }
             "shotmain" { Start-Sleep -Milliseconds 500; Save-Window $main (Join-Path $runDir "$arg.png") }
             "dialog" { $d = Get-Dialog; if ($d) { [void](Save-Window $d (Join-Path $runDir "step-dialog.png")); Answer $d $arg; "dialog answered $arg" } else { "step dialog: none" } }
+            "post" { $pm, $pw, $pl = $arg -split ",", 3; [void][H]::PostMessage($main, [uint32]$pm, [IntPtr][int64]$pw, [IntPtr][int64]$pl); "posted message $pm" }
+            "settext" { $ci, $ct = $arg -split ",", 2; $bp = Find-ButtonParent ([int]$ci); if ($bp -and $bp -ne [IntPtr]::Zero) { $c = [H]::GetDlgItem($bp, [int]$ci); [void][H]::SendMessageW($c, 0xC, [IntPtr]::Zero, $ct); "set text of $ci" } else { "step settext: control $ci not found" } }
+            "click" { $bp = Find-ButtonParent ([int]$arg); if ($bp -and $bp -ne [IntPtr]::Zero) { [void][H]::PostMessage([H]::GetDlgItem($bp, [int]$arg), 0xF5, [IntPtr]::Zero, [IntPtr]::Zero); "clicked $arg"; Start-Sleep -Milliseconds 500 } else { "step click: control $arg not found" } }
+            "gettext" { $bp = Find-ButtonParent ([int]$arg); if ($bp -and $bp -ne [IntPtr]::Zero) { $sb = New-Object System.Text.StringBuilder 512; [void][H]::SendMessageW([H]::GetDlgItem($bp, [int]$arg), 0xD, [IntPtr]512, $sb); "text ${arg}: $($sb.ToString())" } else { "step gettext: control $arg not found" } }
+            "menukey" { $m = (Get-DeskWindows | Where-Object { $_.Class -eq "#32768" } | Select-Object -First 1).H; if ($m) { [void][H]::PostMessage($m, 0x100, [IntPtr][int]$arg, [IntPtr]::Zero); Start-Sleep -Milliseconds 80; [void][H]::PostMessage($m, 0x101, [IntPtr][int]$arg, [IntPtr]::Zero); Start-Sleep -Milliseconds 400; "menu key $arg" } else { "step menukey: no menu" } }
+            "shotall" { $n = 0; foreach ($w in (Get-DeskWindows | Where-Object { $_.Class -eq $StepClass })) { Save-Window $w.H (Join-Path $runDir "$arg-$n.png"); $n++ }; if (-not $n) { "step shotall: no $StepClass window" } }
             "dialogcmd" { $d = Get-Dialog; if ($d) { [void](Save-Window $d (Join-Path $runDir "step-dialog.png")); [void][H]::PostMessage($d, 0x111, [IntPtr][int]$arg, [IntPtr]::Zero); "dialog command $arg" } else { "step dialogcmd: none" } }
             "dialogkeys" { $d = Get-Dialog; if ($d) { foreach ($vk in ($arg -split ",")) { [void][H]::PostMessage($d, 0x100, [IntPtr][int]$vk, [IntPtr]::Zero); Start-Sleep -Milliseconds 80; [void][H]::PostMessage($d, 0x101, [IntPtr][int]$vk, [IntPtr]::Zero); Start-Sleep -Milliseconds 300 }; "dialog keys $arg" } else { "step dialogkeys: none" } }
             default { "unknown step $s" }
