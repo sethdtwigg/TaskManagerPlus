@@ -139,37 +139,32 @@ VOID PhSearchControlInitializeColors(
     _In_ PPH_SEARCHCONTROL_CONTEXT Context
     )
 {
-    static const COLORREF WindowBorderInnerThemeColor = RGB(60, 60, 60);
     static const COLORREF WindowBorderInnerClassicColor = RGB(60, 60, 60);
-    static const COLORREF ButtonPushedThemeColor = RGB(99, 99, 99);
     static const COLORREF ButtonPushedClassicColor = RGB(153, 209, 255);
-    static const COLORREF ButtonHotActiveThemeColor = RGB(54, 54, 54);
     static const COLORREF ButtonHotActiveClassicColor = RGB(133, 199, 255);
-    static const COLORREF ButtonHotThemeColor = RGB(78, 78, 78);
     static const COLORREF ButtonHotClassicColor = RGB(205, 232, 255);
     static const COLORREF ButtonErrorThemeColor = RGB(100, 28, 30);
     static const COLORREF ButtonErrorClassicColor = RGB(255, 155, 155);
-    static const COLORREF ButtonActiveThemeColor = RGB(44, 44, 44);
     static const COLORREF ButtonActiveClassicColor = RGB(123, 189, 255);
     static const COLORREF FrameHotClassicColor = RGB(43, 43, 43);
-    static const COLORREF CueBannerTextThemeColor = RGB(170, 170, 170);
 
     Context->DcBrush = PhGetStockBrush(DC_BRUSH);
     Context->WindowBrush = GetSysColorBrush(COLOR_WINDOW);
 
     Context->WindowBorderOuterColor = PhThemeWindowBackground2Color;
-    Context->WindowBorderInnerColor = PhSearchControlSelectColor(WindowBorderInnerThemeColor, WindowBorderInnerClassicColor);
+    // TaskManagerPlus: themed colours come from the palette (they were fixed dark greys, unreadable on the Light theme)
+    Context->WindowBorderInnerColor = PhSearchControlSelectColor(PhThemeWindowBorderColor, WindowBorderInnerClassicColor);
     Context->WindowBackgroundColor = PhSearchControlSelectColor(PhThemeWindowBackgroundColor, GetSysColor(COLOR_WINDOW));
     Context->FrameDefaultColor = PhSearchControlSelectColor(PhThemeWindowWindowFrameColor, GetSysColor(COLOR_WINDOWFRAME));
-    Context->ButtonPushedColor = PhSearchControlSelectColor(ButtonPushedThemeColor, ButtonPushedClassicColor);
-    Context->ButtonHotActiveColor = PhSearchControlSelectColor(ButtonHotActiveThemeColor, ButtonHotActiveClassicColor);
-    Context->ButtonHotColor = PhSearchControlSelectColor(ButtonHotThemeColor, ButtonHotClassicColor);
+    Context->ButtonPushedColor = PhSearchControlSelectColor(PhThemeWindowHighlight2Color, ButtonPushedClassicColor);
+    Context->ButtonHotActiveColor = PhSearchControlSelectColor(PhThemeWindowHighlightColor, ButtonHotActiveClassicColor);
+    Context->ButtonHotColor = PhSearchControlSelectColor(PhThemeWindowBackground2Color, ButtonHotClassicColor);
     Context->ButtonErrorColor = PhSearchControlSelectColor(ButtonErrorThemeColor, ButtonErrorClassicColor);
-    Context->ButtonActiveColor = PhSearchControlSelectColor(ButtonActiveThemeColor, ButtonActiveClassicColor);
-    Context->ButtonDefaultColor = PhSearchControlSelectColor(WindowBorderInnerThemeColor, GetSysColor(COLOR_WINDOW));
+    Context->ButtonActiveColor = PhSearchControlSelectColor(PhThemeWindowBackground2Color, ButtonActiveClassicColor);
+    Context->ButtonDefaultColor = PhSearchControlSelectColor(PhThemeWindowEditColor, GetSysColor(COLOR_WINDOW));
     Context->FrameHotColor = PhSearchControlSelectColor(PhThemeWindowHighlight2Color, FrameHotClassicColor);
-    Context->CueBannerTextColor = PhSearchControlSelectColor(CueBannerTextThemeColor, GetSysColor(COLOR_GRAYTEXT));
-    Context->CueBannerBackgroundColor = PhSearchControlSelectColor(WindowBorderInnerThemeColor, GetSysColor(COLOR_WINDOW));
+    Context->CueBannerTextColor = PhSearchControlSelectColor(PhThemeWindowDisabledTextColor, GetSysColor(COLOR_GRAYTEXT));
+    Context->CueBannerBackgroundColor = PhSearchControlSelectColor(PhThemeWindowEditColor, GetSysColor(COLOR_WINDOW));
 }
 
 /**
@@ -576,7 +571,7 @@ VOID PhSearchControlPaintButton(
 
     if (PhSearchControlCollapsed && Button == &Context->FuzzyButton) // TaskManagerPlus: funnel glyph
     {
-        COLORREF ink = PhEnableThemeSupport ? RGB(222, 222, 222) : GetSysColor(COLOR_BTNTEXT);
+        COLORREF ink = PhEnableThemeSupport ? PhThemeWindowTextColor : GetSysColor(COLOR_BTNTEXT);
         LONG unit = max(1, PhScaleToDisplay(1, Context->WindowDpi));
         LONG cx = buttonRect.left + (buttonRect.right - buttonRect.left) / 2;
         LONG cy = buttonRect.top + (buttonRect.bottom - buttonRect.top) / 2;
@@ -610,7 +605,7 @@ VOID PhSearchControlPaintButton(
         if (Button == &Context->FuzzyButton)
         {
             HFONT oldFont;
-            COLORREF textColor = PhEnableThemeSupport ? RGB(222, 222, 222) : GetSysColor(COLOR_BTNTEXT);
+            COLORREF textColor = PhEnableThemeSupport ? PhThemeWindowTextColor : GetSysColor(COLOR_BTNTEXT);
 
             oldFont = SelectFont(Hdc, Context->WindowFont);
             SetBkMode(Hdc, TRANSPARENT);
