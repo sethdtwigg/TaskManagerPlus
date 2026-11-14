@@ -161,6 +161,7 @@ static VOID NTAPI LoadCallback(
     )
 {
     ExportMessage = RegisterWindowMessage(EXPORT_MESSAGE_NAME);
+    SrCliInitialize(); // TaskManagerPlus: --report kind path
     FilterEntry = PhRegisterMessageLoopFilter(MessageLoopFilter, NULL);
 }
 

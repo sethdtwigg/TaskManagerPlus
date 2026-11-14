@@ -70,6 +70,8 @@
     <ClCompile Include="collect.c" />
     <ClCompile Include="export.c" />
     <ClCompile Include="reportfmt.c" />
+    <ClCompile Include="cli.c" />
+    <ClCompile Include="cliparse.c" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="sessionreports.h" />
   </ItemGroup>

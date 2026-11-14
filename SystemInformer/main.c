@@ -36,11 +36,8 @@
 #include <trace.h>
 
 BOOLEAN PhPluginsEnabled = FALSE;
-// TaskManagerPlus: -repair-taskmgr "<stale path>" (elevated helper) and --report <kind> <path> (SessionReports plugin does the work).
+// TaskManagerPlus: -repair-taskmgr "<stale path>" (elevated helper); --report <kind> <path> sets ReportMode and the SessionReports plugin does the work.
 static PPH_STRING PhpRepairTaskMgrPath = NULL;
-static BOOLEAN PhpReportMode = FALSE;
-static BOOLEAN PhpReportKindSeen = FALSE;
-static BOOLEAN PhpReportPathSeen = FALSE;
 BOOLEAN PhPortableEnabled = FALSE;
 PPH_STRING PhSettingsFileName = NULL;
 BOOLEAN PhSettingsLoadedFromFile = FALSE; // TaskManagerPlus
@@ -1960,9 +1957,8 @@ BOOLEAN NTAPI PhpCommandLineOptionCallback(
             PhSwapReference(&PhpRepairTaskMgrPath, Value);
             break;
         case PH_ARG_REPORT:
-            PhpReportMode = TRUE;
-            PhpReportKindSeen = TRUE;
-            PhStartupParameters.ShowHidden = TRUE;
+            // Headless-ish: no tray icon, no visible window, never forwards to a running instance, no prompts.
+            PhStartupParameters.ReportMode = TRUE;
             PhStartupParameters.NewInstance = TRUE;
             PhStartupParameters.Silent = TRUE;
             break;
@@ -2003,9 +1999,6 @@ BOOLEAN NTAPI PhpCommandLineOptionCallback(
     else
     {
         PPH_STRING upperValue = NULL;
-
-        if (PhpReportMode && PhpReportKindSeen && !PhpReportPathSeen)
-            PhpReportPathSeen = TRUE; // the report file name; the plugin re-reads the command line
 
         if (Value)
             upperValue = PhUpperString(Value);
@@ -2064,8 +2057,8 @@ VOID PhpProcessStartupParameters(
         { PH_ARG_KPHSTARTUPMAX, L"kx", NoArgumentType },
         { PH_ARG_CHANNEL, L"channel", MandatoryArgumentType },
         { PH_ARG_REPAIRTASKMGR, L"repair-taskmgr", MandatoryArgumentType }, // TaskManagerPlus
-        { PH_ARG_REPORT, L"report", MandatoryArgumentType },
-        { PH_ARG_REPORT, L"-report", MandatoryArgumentType },
+        { PH_ARG_REPORT, L"report", OptionalArgumentType },
+        { PH_ARG_REPORT, L"-report", OptionalArgumentType },
     };
     PH_STRINGREF commandLine;
 

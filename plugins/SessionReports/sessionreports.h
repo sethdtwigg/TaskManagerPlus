@@ -68,6 +68,13 @@ VOID SrFreeTable(
     _In_ PPH_LIST Cells
     );
 
+// cli.c
+
+/** Headless `--report <kind> <path>`: does nothing unless that is on the command line (see cli.c). */
+VOID SrCliInitialize(
+    VOID
+    );
+
 // export.c
 
 NTSTATUS SrWriteReport(

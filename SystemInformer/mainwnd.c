@@ -143,6 +143,9 @@ BOOLEAN PhMainWndInitialization(
 
     PhMwpShowWindow(PhMainWndHandle, SW_SHOWDEFAULT);
 
+    if (PhStartupParameters.ReportMode)
+        return TRUE; // TaskManagerPlus: --report shows no first-run prompts
+
     PhOfferCalmLook(); // TaskManagerPlus: one-time "Switch to the calm look?" for installs that predate the calm defaults
     PhOfferReadableLook(); // TaskManagerPlus: one-time "Switch to the readable look?" for existing settings files
     PhOfferRepairDefaultTaskManager(); // TaskManagerPlus: offer to fix a Task Manager replacement that points at a moved/deleted copy
@@ -445,6 +448,8 @@ VOID PhMwpShowWindow(
 {
     if ((PhStartupParameters.ShowHidden || PhGetIntegerSetting(SETTING_START_HIDDEN)) && PhNfIconsEnabled())
         ShowCommand = SW_HIDE;
+    if (PhStartupParameters.ReportMode)
+        ShowCommand = SW_HIDE; // TaskManagerPlus: --report runs without a window
     if (PhStartupParameters.ShowVisible)
         ShowCommand = SW_SHOW;
 
@@ -768,7 +773,8 @@ NTSTATUS PhMwpLoadStage1Worker(
         PhBoostProvider(&PhMwpServiceProviderRegistration, NULL);
     }
 
-    PhNfLoadStage2();
+    if (!PhStartupParameters.ReportMode) // TaskManagerPlus: --report creates no tray icons
+        PhNfLoadStage2();
 
     if (PhGetIntegerSetting(SETTING_ENABLE_LAST_PROCESS_SHUTDOWN))
     {

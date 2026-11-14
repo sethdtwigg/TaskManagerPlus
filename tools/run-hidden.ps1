@@ -97,6 +97,7 @@ public static class H {
   [DllImport("kernel32.dll")] public static extern bool SetInformationJobObject(IntPtr job, int cls, ref JOBOBJECT_EXTENDED_LIMIT_INFORMATION info, int len);
   [DllImport("kernel32.dll")] public static extern bool AssignProcessToJobObject(IntPtr job, IntPtr proc);
   [DllImport("kernel32.dll")] public static extern bool TerminateProcess(IntPtr p, uint code);
+  [DllImport("kernel32.dll")] public static extern bool GetExitCodeProcess(IntPtr p, out uint code);
 }
 "@
 
@@ -212,7 +213,7 @@ try {
 
     if ($NoMain) {
         $done = $proc.WaitForExit($Wait * 1000)
-        if ($done) { "exited=True exitcode=$($proc.ExitCode)" } else { "exited=False" }
+        if ($done) { $ec = [uint32]0; [void][H]::GetExitCodeProcess($pi.hProcess, [ref]$ec); "exited=True exitcode=$ec" } else { "exited=False" }
         "run folder: $runDir"
         return
     }

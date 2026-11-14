@@ -18,6 +18,8 @@ set(SOURCES
     "main.c"
     "collect.c"
     "export.c"
+    "cli.c"
+    "cliparse.c"
     "reportfmt.c"
 )
 source_group("Source Files" FILES ${SOURCES})
