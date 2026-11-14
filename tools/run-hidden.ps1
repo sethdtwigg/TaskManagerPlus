@@ -31,6 +31,8 @@ param(
     [switch]$CaptureDialog,            # also capture the first dialog (e.g. About: -Commands 10106) to <Name>-dialog.png
     [string[]]$Steps = @(),          # scripted UI steps run after -Commands, see the Steps section below
     [string]$StepClass = "TaskManagerPlusQuickActionsPalette", # window class used by the type, key and shot steps
+    [string]$ExtraArgs = "",           # extra command line appended after -nosettings / -settings (e.g. --report processes D:/p.csv)
+    [switch]$NoMain,                   # no main window expected (headless --report): wait up to -Wait seconds for the process to exit and print its exit code
     [switch]$ExitCmd,                  # end with File > Exit so the app saves its settings, then wait
     [int]$Width = 1000, [int]$Height = 1150,
     [switch]$Cleanup
@@ -120,6 +122,7 @@ if ($Settings -ne "") {
     if (-not (Test-Path -LiteralPath $Settings)) { throw "scratch settings file does not exist: $Settings" }
     $appArgs = "-settings `"$Settings`""
 } else { $appArgs = "-nosettings" }
+if ($ExtraArgs -ne "") { $appArgs += " $ExtraArgs" }
 
 $exe = Join-Path $PSScriptRoot "..\bin\Release64\SystemInformer.exe"
 $exe = (Resolve-Path $exe).Path
@@ -207,6 +210,13 @@ try {
     [void][H]::ResumeThread($pi.hThread)
     "started pid $($pi.dwProcessId) on desktop $deskName"
 
+    if ($NoMain) {
+        $done = $proc.WaitForExit($Wait * 1000)
+        if ($done) { "exited=True exitcode=$($proc.ExitCode)" } else { "exited=False" }
+        "run folder: $runDir"
+        return
+    }
+
     Start-Sleep -Seconds $Wait
 
     $i = 0
@@ -260,6 +270,8 @@ try {
     #   shotmain:<name>                capture the main window
     #   cmd:<id>                       post WM_COMMAND(id) to the main window (e.g. 10223 = next tab), then wait
     #   cmdshot:<id>,<name>            post WM_COMMAND(id), wait, capture the main window as <name>.png
+    #   dialogcmd:<id>                 post WM_COMMAND(id) to the first #32770 dialog (TaskDialog custom button ids, e.g. 7 = IDNO)
+    #   dialogkeys:<vk>,<vk>,...       WM_KEYDOWN/UP (decimal virtual keys, 9 = Tab, 13 = Return) to the first #32770 dialog, to move to and press a TaskDialog button
     #   dialog:yes|no                  answer the first #32770 dialog (yes = Return, no = Escape)
     foreach ($s in $Steps) {
         $op, $arg = $s -split ":", 2
@@ -289,6 +301,8 @@ try {
             "cmdshot" { $ci, $cn = $arg -split ",", 2; [void][H]::PostMessage($main, 0x111, [IntPtr][int]$ci, [IntPtr]::Zero); Start-Sleep -Milliseconds 1500; Save-Window $main (Join-Path $runDir "$cn.png") }
             "shotmain" { Start-Sleep -Milliseconds 500; Save-Window $main (Join-Path $runDir "$arg.png") }
             "dialog" { $d = Get-Dialog; if ($d) { [void](Save-Window $d (Join-Path $runDir "step-dialog.png")); Answer $d $arg; "dialog answered $arg" } else { "step dialog: none" } }
+            "dialogcmd" { $d = Get-Dialog; if ($d) { [void](Save-Window $d (Join-Path $runDir "step-dialog.png")); [void][H]::PostMessage($d, 0x111, [IntPtr][int]$arg, [IntPtr]::Zero); "dialog command $arg" } else { "step dialogcmd: none" } }
+            "dialogkeys" { $d = Get-Dialog; if ($d) { foreach ($vk in ($arg -split ",")) { [void][H]::PostMessage($d, 0x100, [IntPtr][int]$vk, [IntPtr]::Zero); Start-Sleep -Milliseconds 80; [void][H]::PostMessage($d, 0x101, [IntPtr][int]$vk, [IntPtr]::Zero); Start-Sleep -Milliseconds 300 }; "dialog keys $arg" } else { "step dialogkeys: none" } }
             default { "unknown step $s" }
         }
         Start-Sleep -Milliseconds 300

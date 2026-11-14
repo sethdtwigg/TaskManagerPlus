@@ -36,6 +36,11 @@
 #include <trace.h>
 
 BOOLEAN PhPluginsEnabled = FALSE;
+// TaskManagerPlus: -repair-taskmgr "<stale path>" (elevated helper) and --report <kind> <path> (SessionReports plugin does the work).
+static PPH_STRING PhpRepairTaskMgrPath = NULL;
+static BOOLEAN PhpReportMode = FALSE;
+static BOOLEAN PhpReportKindSeen = FALSE;
+static BOOLEAN PhpReportPathSeen = FALSE;
 BOOLEAN PhPortableEnabled = FALSE;
 PPH_STRING PhSettingsFileName = NULL;
 BOOLEAN PhSettingsLoadedFromFile = FALSE; // TaskManagerPlus
@@ -78,6 +83,11 @@ INT WINAPI wWinMain(
         return 1;
 
     PhpProcessStartupParameters();
+
+    // TaskManagerPlus: elevated helper for the Task Manager replacement repair prompt. No UI, no settings, no window.
+    if (PhpRepairTaskMgrPath)
+        PhExitApplication(PhRunTaskManagerRepairHelper(PhpRepairTaskMgrPath->Buffer));
+
     PhpEnablePrivileges();
 
     if (PhStartupParameters.RunAsServiceMode)
@@ -1805,6 +1815,8 @@ typedef enum _PH_COMMAND_ARG
     PH_ARG_SELECTPID,
     PH_ARG_PRIORITY,
     PH_ARG_PLUGIN,
+    PH_ARG_REPAIRTASKMGR, // TaskManagerPlus
+    PH_ARG_REPORT, // TaskManagerPlus
     PH_ARG_SELECTTAB,
     PH_ARG_SYSINFO,
     PH_ARG_KPHSTARTUPHIGH,
@@ -1944,6 +1956,16 @@ BOOLEAN NTAPI PhpCommandLineOptionCallback(
                     PhStartupParameters.PriorityClass = PROCESS_PRIORITY_CLASS_IDLE;
             }
             break;
+        case PH_ARG_REPAIRTASKMGR:
+            PhSwapReference(&PhpRepairTaskMgrPath, Value);
+            break;
+        case PH_ARG_REPORT:
+            PhpReportMode = TRUE;
+            PhpReportKindSeen = TRUE;
+            PhStartupParameters.ShowHidden = TRUE;
+            PhStartupParameters.NewInstance = TRUE;
+            PhStartupParameters.Silent = TRUE;
+            break;
         case PH_ARG_PLUGIN:
             {
                 if (!PhStartupParameters.PluginParameters)
@@ -1981,6 +2003,9 @@ BOOLEAN NTAPI PhpCommandLineOptionCallback(
     else
     {
         PPH_STRING upperValue = NULL;
+
+        if (PhpReportMode && PhpReportKindSeen && !PhpReportPathSeen)
+            PhpReportPathSeen = TRUE; // the report file name; the plugin re-reads the command line
 
         if (Value)
             upperValue = PhUpperString(Value);
@@ -2038,6 +2063,9 @@ VOID PhpProcessStartupParameters(
         { PH_ARG_KPHSTARTUPHIGH, L"kh", NoArgumentType },
         { PH_ARG_KPHSTARTUPMAX, L"kx", NoArgumentType },
         { PH_ARG_CHANNEL, L"channel", MandatoryArgumentType },
+        { PH_ARG_REPAIRTASKMGR, L"repair-taskmgr", MandatoryArgumentType }, // TaskManagerPlus
+        { PH_ARG_REPORT, L"report", MandatoryArgumentType },
+        { PH_ARG_REPORT, L"-report", MandatoryArgumentType },
     };
     PH_STRINGREF commandLine;
 
@@ -2072,6 +2100,8 @@ VOID PhpProcessStartupParameters(
             L"-settings filename\n"
             L"-sysinfo [section-name]\n"
             L"-channel [channel-name]\n"
+            L"-repair-taskmgr stale-path (elevated helper)\n"
+            L"--report processes|startup|services|trends file.csv|json|html\n"
             L"-v"
             );
 

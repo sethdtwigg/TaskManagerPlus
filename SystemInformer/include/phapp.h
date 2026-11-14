@@ -901,6 +901,10 @@ VOID PhOfferCalmLook(
     VOID
     );
 
+ULONG PhRunTaskManagerRepairHelper(
+    _In_ PCWSTR StalePath
+    );
+
 VOID PhOfferRepairDefaultTaskManager(
     VOID
     );

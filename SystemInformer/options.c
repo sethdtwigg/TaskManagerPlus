@@ -11,6 +11,7 @@
  */
 
 #include <phapp.h>
+#include "tmrepair.h" // TaskManagerPlus
 
 #include <commdlg.h>
 #include <colmgr.h>
@@ -2045,156 +2046,248 @@ BOOLEAN PhpIsDefaultTaskManager(
     return alreadyReplaced;
 }
 
+// TaskManagerPlus: Task Manager replacement path repair. Decision logic is in tmrepair.c (unit tested); this is the glue.
+
+static INT PhpTmrFileExists(
+    _In_ PCWSTR Path,
+    _In_opt_ PVOID Context
+    )
+{
+    return PhDoesFileExistWin32((PWSTR)Path);
+}
+
+/** Reads the current IFEO Debugger value (a referenced string) or NULL. */
+static PPH_STRING PhpQueryTaskMgrDebugger(
+    VOID
+    )
+{
+    HANDLE keyHandle;
+    PPH_STRING debugger;
+
+    if (!NT_SUCCESS(PhOpenKey(&keyHandle, KEY_READ, PH_KEY_LOCAL_MACHINE, &TaskMgrImageOptionsKeyName, 0)))
+        return NULL;
+
+    debugger = PhQueryRegistryStringZ(keyHandle, L"Debugger");
+    NtClose(keyHandle);
+    return debugger;
+}
+
 /**
- * TaskManagerPlus: the Task Manager replacement stores an absolute path. If this program was the default but was
- * moved or deleted (portable folder), Ctrl+Shift+Esc would fail. When the stored path names a TaskManagerPlus exe
- * (same file name as this one) that no longer exists, offer to repoint it here or restore the stock Task Manager.
- * Declining is remembered per stale path so the prompt is not repeated.
+ * Elevated helper (SystemInformer.exe -repair-taskmgr "<stale path>"). Re-reads the value and runs the same decision,
+ * so it only ever rewrites a dangling TaskManagerPlus path that equals the one it was asked about; it never touches
+ * another program's debugger. Returns 0 on success, 1 when there was nothing to do or the value changed, otherwise a
+ * non-zero NTSTATUS-derived code.
+ */
+ULONG PhRunTaskManagerRepairHelper(
+    _In_ PCWSTR StalePath
+    )
+{
+    static CONST PH_STRINGREF valueName = PH_STRINGREF_INIT(L"Debugger");
+    PPH_STRING debugger;
+    PPH_STRING fileName;
+    wchar_t stale[1024];
+    HANDLE writeHandle;
+    NTSTATUS status;
+    ULONG result;
+
+    if (!(debugger = PhpQueryTaskMgrDebugger()))
+        return 1;
+    if (!(fileName = PhGetApplicationFileNameWin32()))
+    {
+        PhDereferenceObject(debugger);
+        return 1;
+    }
+
+    if (TmrDecide(debugger->Buffer, fileName->Buffer, FALSE, PhpTmrFileExists, NULL, stale, RTL_NUMBER_OF(stale)) != TmrOffer ||
+        !TmrPathsEqual(stale, StalePath))
+    {
+        PhDereferenceObject(fileName);
+        PhDereferenceObject(debugger);
+        return 1;
+    }
+
+    status = PhOpenKey(&writeHandle, KEY_READ | KEY_WRITE, PH_KEY_LOCAL_MACHINE, &TaskMgrImageOptionsKeyName, 0);
+
+    if (NT_SUCCESS(status))
+    {
+        PPH_STRING quoted = PhFormatString(L"\"%s\"", fileName->Buffer);
+
+        status = PhSetValueKey(writeHandle, &valueName, REG_SZ, quoted->Buffer, (ULONG)quoted->Length + sizeof(UNICODE_NULL));
+        PhDereferenceObject(quoted);
+        NtClose(writeHandle);
+    }
+
+    result = NT_SUCCESS(status) ? 0 : ((ULONG)status | 0x10);
+    PhDereferenceObject(fileName);
+    PhDereferenceObject(debugger);
+    return result;
+}
+
+static BOOLEAN PhpRepairTaskManagerElevated(
+    _In_ PPH_STRING StalePath
+    )
+{
+    NTSTATUS status;
+    HANDLE processHandle = NULL;
+    PPH_STRING fileName;
+    PPH_STRING parameters;
+    BOOLEAN success = FALSE;
+
+    if (!(fileName = PhGetApplicationFileNameWin32()))
+        return FALSE;
+
+    if (PhGetOwnTokenAttributes().Elevated)
+    {
+        success = PhRunTaskManagerRepairHelper(StalePath->Buffer) == 0;
+        PhDereferenceObject(fileName);
+        return success;
+    }
+
+    // Not elevated: run ourselves as administrator through the shell (UAC prompt), never silently.
+    parameters = PhFormatString(L"-repair-taskmgr \"%s\"", StalePath->Buffer);
+    status = PhShellExecuteEx(
+        PhMainWndHandle,
+        fileName->Buffer,
+        parameters->Buffer,
+        NULL,
+        SW_HIDE,
+        PH_SHELL_EXECUTE_ADMIN,
+        0,
+        &processHandle
+        );
+    PhDereferenceObject(parameters);
+    PhDereferenceObject(fileName);
+
+    if (NT_SUCCESS(status) && processHandle)
+    {
+        LARGE_INTEGER timeout;
+        PROCESS_BASIC_INFORMATION basicInfo;
+
+        timeout.QuadPart = -30 * PH_TIMEOUT_SEC;
+
+        if (NtWaitForSingleObject(processHandle, FALSE, &timeout) == STATUS_WAIT_0 &&
+            NT_SUCCESS(PhGetProcessBasicInformation(processHandle, &basicInfo)))
+        {
+            success = basicInfo.ExitStatus == 0;
+        }
+
+        NtClose(processHandle);
+    }
+
+    return success;
+}
+
+/**
+ * The Task Manager replacement stores an absolute path. If this program was the default but was moved or deleted
+ * (portable folder), Ctrl+Shift+Esc would fail. When the stored path names a TaskManagerPlus exe that no longer
+ * exists, offer to repoint it at this copy (administrator rights needed: the UAC prompt appears only after Repair).
+ * Another program's debugger, or a path that still works, is never touched. "Not now" asks again next start,
+ * "Don't ask again" is remembered (cleared by Options > Make default / Restore default).
  */
 VOID PhOfferRepairDefaultTaskManager(
     VOID
     )
 {
-    static CONST PH_STRINGREF valueName = PH_STRINGREF_INIT(L"Debugger");
-    HANDLE keyHandle;
     PPH_STRING debugger;
     PPH_STRING fileName;
     PPH_STRING stalePath;
-    PPH_STRING ownName;
-    PPH_STRING storedName;
-    PPH_STRING declined;
-    BOOLEAN skip;
+    wchar_t stale[1024];
     INT result = IDCANCEL;
 
-    if (!NT_SUCCESS(PhOpenKey(&keyHandle, KEY_READ, PH_KEY_LOCAL_MACHINE, &TaskMgrImageOptionsKeyName, 0)))
-        return;
-
-    debugger = PhQueryRegistryStringZ(keyHandle, L"Debugger");
-    NtClose(keyHandle);
-
-    if (PhIsNullOrEmptyString(debugger))
     {
-        PhClearReference(&debugger);
+        // Test hook: the hidden-desktop test supplies the Debugger value instead of reading the machine's registry.
+        WCHAR testValue[1024];
+
+        if (GetEnvironmentVariableW(L"TMPLUS_TEST_TASKMGR_DEBUGGER", testValue, RTL_NUMBER_OF(testValue)) &&
+            testValue[0])
+            debugger = PhCreateString(testValue);
+        else
+            debugger = PhpQueryTaskMgrDebugger();
+    }
+
+    if (!debugger)
+        return;
+    if (!(fileName = PhGetApplicationFileNameWin32()))
+    {
+        PhDereferenceObject(debugger);
         return;
     }
 
-    // Strip the quotes the Make default button writes.
-    if (debugger->Length >= 2 * sizeof(WCHAR) &&
-        debugger->Buffer[0] == L'"' &&
-        debugger->Buffer[debugger->Length / sizeof(WCHAR) - 1] == L'"')
+    if (TmrDecide(
+        debugger->Buffer,
+        fileName->Buffer,
+        !!PhGetIntegerSetting(SETTING_TASKMGR_REPAIR_NEVER),
+        PhpTmrFileExists,
+        NULL,
+        stale,
+        RTL_NUMBER_OF(stale)
+        ) != TmrOffer)
     {
-        stalePath = PhSubstring(debugger, 1, debugger->Length / sizeof(WCHAR) - 2);
-    }
-    else
-    {
-        stalePath = PhReferenceObject(debugger);
+        PhDereferenceObject(fileName);
+        PhDereferenceObject(debugger);
+        return;
     }
 
     PhDereferenceObject(debugger);
-
-    if (!(fileName = PhGetApplicationFileNameWin32()))
-    {
-        PhDereferenceObject(stalePath);
-        return;
-    }
-
-    ownName = PhGetBaseName(fileName);
-    storedName = PhGetBaseName(stalePath);
-    declined = PhGetStringSetting(SETTING_TASKMGR_REPAIR_DECLINED);
-
-    skip = PhEqualString(stalePath, fileName, TRUE) ||        // already correct
-        !PhEqualString(ownName, storedName, TRUE) ||          // someone else's debugger: not ours to touch
-        PhDoesFileExistWin32(PhGetString(stalePath)) ||       // another working copy: leave it alone
-        PhEqualString(declined, stalePath, TRUE);             // the user already said not now for this path
-
-    PhDereferenceObject(declined);
-    PhDereferenceObject(storedName);
-    PhDereferenceObject(ownName);
-
-    if (skip)
-    {
-        PhDereferenceObject(fileName);
-        PhDereferenceObject(stalePath);
-        return;
-    }
+    stalePath = PhCreateString(stale);
 
     {
         PPH_STRING message = PH_AUTO(PhFormatString(
+            L"The Task Manager replacement points at a missing file.\r\n\r\n"
             L"TaskManagerPlus is set as the Windows Task Manager, but the saved location no longer exists:\r\n\r\n%s\r\n\r\n"
-            L"Ctrl+Shift+Esc will not open anything until this is fixed.\r\n\r\n"
-            L"This copy: %s",
+            L"Ctrl+Shift+Esc will not open anything until this is fixed. Repair points it at this copy:\r\n\r\n%s\r\n\r\n"
+            L"Windows will ask for administrator permission.",
             PhGetString(stalePath),
             PhGetString(fileName)
             ));
         TASKDIALOGCONFIG config = { sizeof(config) };
         TASKDIALOG_BUTTON buttons[] =
         {
-            { IDYES, L"Use this copy" },
-            { IDNO, L"Restore default" },
+            { IDYES, L"Repair" },
             { IDCANCEL, L"Not now" },
+            { IDNO, L"Don't ask again" },
         };
 
         config.hwndParent = PhMainWndHandle;
         config.dwFlags = TDF_ALLOW_DIALOG_CANCELLATION | TDF_POSITION_RELATIVE_TO_WINDOW;
         config.pszMainIcon = TD_WARNING_ICON;
         config.pszWindowTitle = L"TaskManagerPlus";
-        config.pszMainInstruction = L"The Task Manager replacement points at a missing file";
         config.pszContent = message->Buffer;
         config.pButtons = buttons;
         config.cButtons = RTL_NUMBER_OF(buttons);
         config.nDefaultButton = IDYES;
 
-        if (FAILED(TaskDialogIndirect(&config, &result, NULL, NULL)))
-            result = IDCANCEL;
+        {
+            // Test hook: answer without the dialog. Only "notnow" and "never" exist; a test can never trigger Repair (UAC).
+            WCHAR testAnswer[16];
+
+            if (GetEnvironmentVariableW(L"TMPLUS_TEST_TASKMGR_ANSWER", testAnswer, RTL_NUMBER_OF(testAnswer)) &&
+                (!_wcsicmp(testAnswer, L"never") || !_wcsicmp(testAnswer, L"notnow")))
+                result = !_wcsicmp(testAnswer, L"never") ? IDNO : IDCANCEL;
+            else if (FAILED(TaskDialogIndirect(&config, &result, NULL, NULL)))
+                result = IDCANCEL;
+        }
     }
 
-    if (result == IDYES || result == IDNO)
+    if (result == IDYES)
     {
-        HANDLE writeHandle;
-        NTSTATUS status;
-
-        status = PhOpenKey(&writeHandle, KEY_READ | KEY_WRITE, PH_KEY_LOCAL_MACHINE, &TaskMgrImageOptionsKeyName, 0);
-
-        if (NT_SUCCESS(status))
+        if (!PhpRepairTaskManagerElevated(stalePath))
         {
-            if (result == IDNO)
-            {
-                status = PhDeleteValueKey(writeHandle, &valueName);
-            }
-            else
-            {
-                PPH_STRING quoted = PH_AUTO(PhFormatString(L"\"%s\"", PhGetString(fileName)));
-
-                status = PhSetValueKey(
-                    writeHandle,
-                    &valueName,
-                    REG_SZ,
-                    quoted->Buffer,
-                    (ULONG)quoted->Length + sizeof(UNICODE_NULL)
-                    );
-            }
-
-            NtClose(writeHandle);
-        }
-
-        if (!NT_SUCCESS(status))
-        {
-            PhShowStatus(
+            PhShowError2(
                 PhMainWndHandle,
-                L"Unable to update the Task Manager replacement. Run TaskManagerPlus as administrator and use Options > Advanced",
-                status,
-                0
+                L"The Task Manager replacement was not repaired.",
+                L"%s",
+                L"Administrator permission was declined or the value changed. You can try again from Options > Advanced > Make default."
                 );
-            PhSetStringSetting2(SETTING_TASKMGR_REPAIR_DECLINED, &stalePath->sr);
         }
     }
-    else
+    else if (result == IDNO)
     {
-        PhSetStringSetting2(SETTING_TASKMGR_REPAIR_DECLINED, &stalePath->sr);
+        PhSetIntegerSetting(SETTING_TASKMGR_REPAIR_NEVER, 1);
     }
 
-    PhDereferenceObject(fileName);
     PhDereferenceObject(stalePath);
+    PhDereferenceObject(fileName);
 }
 
 VOID PhpSetDefaultTaskManager(
@@ -2228,6 +2321,8 @@ VOID PhpSetDefaultTaskManager(
     {
         NTSTATUS status;
         HANDLE taskmgrKeyHandle;
+
+        PhSetIntegerSetting(SETTING_TASKMGR_REPAIR_NEVER, 0); // TaskManagerPlus: an explicit choice here re-enables the repair prompt
 
         status = PhCreateKey(
             &taskmgrKeyHandle,

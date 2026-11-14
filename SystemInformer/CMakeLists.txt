@@ -148,6 +148,7 @@ set(SOURCES
     "notiftoast.cpp"
     "ntobjprp.c"
     "options.c"
+    "tmrepair.c"
     "pagfiles.c"
     "plugin.c"
     "plugman.c"

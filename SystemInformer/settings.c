@@ -168,7 +168,7 @@ VOID PhAddDefaultSettings(
     PhpAddIntegerSetting(SETTING_HIGHLIGHT_MODE, L"1"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_SEARCH_OPTIONS_MENU, L"1"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_CALM_LOOK_OFFERED, L"0"); // TaskManagerPlus
-    PhpAddStringSetting(SETTING_TASKMGR_REPAIR_DECLINED, L""); // TaskManagerPlus
+    PhpAddIntegerSetting(SETTING_TASKMGR_REPAIR_NEVER, L"0"); // TaskManagerPlus
     PhpAddStringSetting(SETTING_MAIN_WINDOW_HIDDEN_TABS, L""); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_SHOW_TOTALS_ROW, L"1"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_HEADER_TOTALS, L"ff"); // TaskManagerPlus: resolved after the settings file is read (fresh 1, existing 0)

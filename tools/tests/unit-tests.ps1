@@ -22,6 +22,7 @@ $suites = [ordered]@{
     "test-profiles" = @("Profiles\profilecore.c")
     "test-advisor" = @("EfficiencyAdvisor\advisor.c")
     "test-sharecode" = @("ProcessRules\sharecode.c")
+    "test-tmrepair" = @("..\SystemInformer\tmrepair.c")
 }
 
 $failed = 0
