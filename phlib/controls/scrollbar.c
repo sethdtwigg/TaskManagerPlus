@@ -68,6 +68,14 @@
 #define PH_SCROLLNEW_WIN11_THUMB_HOT_DARK       RGB(150, 150, 150)
 #define PH_SCROLLNEW_WIN11_THUMB_PRESS_DARK     RGB(180, 180, 180)
 
+// TaskManagerPlus: dark scrollbar colours only for a dark palette (theme support on with the Light palette gave black scrollbars)
+static BOOLEAN PhScrollNewUseDarkColors(
+    VOID
+    )
+{
+    return PhEnableThemeSupport && PhGetColorBrightness(PhThemeWindowBackgroundColor) < 128;
+}
+
 static VOID PhpScrollNewOnPaint(
     _In_ HWND WindowHandle,
     _In_ PPH_SCROLLNEW_STATE Context
@@ -146,7 +154,7 @@ static HTHEME PhpScrollNewOpenThemeData(
     if (Context->Theme == PhScrollNewThemeWin7)
         return PhOpenThemeData(WindowHandle, VSCLASS_SCROLLBAR, 0);
 
-    if (PhEnableThemeSupport)
+    if (PhScrollNewUseDarkColors())
     {
         PhAllowDarkModeForWindow(WindowHandle, TRUE);
         return PhOpenThemeData(WindowHandle, PH_SCROLLNEW_DARK_CLASSNAME, 0);
@@ -1110,13 +1118,13 @@ VOID PhScrollNewDraw(
         Context->Theme == PhScrollNewThemeWin11Overlay)
     {
         HBRUSH brush = PhGetStockBrush(DC_BRUSH);
-        COLORREF track = PhEnableThemeSupport ? PH_SCROLLNEW_WIN11_TRACK_DARK : PH_SCROLLNEW_WIN11_TRACK_LIGHT;
-        COLORREF thumb = PhEnableThemeSupport ? PH_SCROLLNEW_WIN11_THUMB_DARK : PH_SCROLLNEW_WIN11_THUMB_LIGHT;
+        COLORREF track = PhScrollNewUseDarkColors() ? PH_SCROLLNEW_WIN11_TRACK_DARK : PH_SCROLLNEW_WIN11_TRACK_LIGHT;
+        COLORREF thumb = PhScrollNewUseDarkColors() ? PH_SCROLLNEW_WIN11_THUMB_DARK : PH_SCROLLNEW_WIN11_THUMB_LIGHT;
 
         if (Context->PressedPart == PhScrollNewPartThumb)
-            thumb = PhEnableThemeSupport ? PH_SCROLLNEW_WIN11_THUMB_PRESS_DARK : PH_SCROLLNEW_WIN11_THUMB_PRESS_LIGHT;
+            thumb = PhScrollNewUseDarkColors() ? PH_SCROLLNEW_WIN11_THUMB_PRESS_DARK : PH_SCROLLNEW_WIN11_THUMB_PRESS_LIGHT;
         else if (Context->HotPart == PhScrollNewPartThumb)
-            thumb = PhEnableThemeSupport ? PH_SCROLLNEW_WIN11_THUMB_HOT_DARK : PH_SCROLLNEW_WIN11_THUMB_HOT_LIGHT;
+            thumb = PhScrollNewUseDarkColors() ? PH_SCROLLNEW_WIN11_THUMB_HOT_DARK : PH_SCROLLNEW_WIN11_THUMB_HOT_LIGHT;
 
         SetDCBrushColor(hdc, track);
         FillRect(hdc, &Context->Rect, brush);
@@ -1245,14 +1253,14 @@ VOID PhScrollNewDraw(
         BOOLEAN upPress = (Context->PressedPart == PhScrollNewPartUpButton);
         BOOLEAN dnHot   = (Context->HotPart    == PhScrollNewPartDownButton);
         BOOLEAN dnPress = (Context->PressedPart == PhScrollNewPartDownButton);
-        COLORREF trackColor = PhEnableThemeSupport ? PH_SCROLLNEW_DARK_COLOR_TRACK : PH_SCROLLNEW_COLOR_TRACK;
-        COLORREF arrowButtonHotColor = PhEnableThemeSupport ? PH_SCROLLNEW_DARK_COLOR_ARROW_BTN_HOT : PH_SCROLLNEW_COLOR_ARROW_BTN_HOT;
-        COLORREF arrowButtonPressColor = PhEnableThemeSupport ? PH_SCROLLNEW_DARK_COLOR_ARROW_BTN_PRESS : PH_SCROLLNEW_COLOR_ARROW_BTN_PRESS;
-        COLORREF arrowNormalColor = PhEnableThemeSupport ? PH_SCROLLNEW_DARK_COLOR_ARROW_NORMAL : PH_SCROLLNEW_COLOR_ARROW_NORMAL;
-        COLORREF arrowHotColor = PhEnableThemeSupport ? PH_SCROLLNEW_DARK_COLOR_ARROW_HOT : PH_SCROLLNEW_COLOR_ARROW_HOT;
-        COLORREF thumbNormalColor = PhEnableThemeSupport ? PH_SCROLLNEW_DARK_COLOR_THUMB_NORMAL : PH_SCROLLNEW_COLOR_THUMB_NORMAL;
-        COLORREF thumbHotColor = PhEnableThemeSupport ? PH_SCROLLNEW_DARK_COLOR_THUMB_HOT : PH_SCROLLNEW_COLOR_THUMB_HOT;
-        COLORREF thumbPressedColor = PhEnableThemeSupport ? PH_SCROLLNEW_DARK_COLOR_THUMB_PRESSED : PH_SCROLLNEW_COLOR_THUMB_PRESSED;
+        COLORREF trackColor = PhScrollNewUseDarkColors() ? PH_SCROLLNEW_DARK_COLOR_TRACK : PH_SCROLLNEW_COLOR_TRACK;
+        COLORREF arrowButtonHotColor = PhScrollNewUseDarkColors() ? PH_SCROLLNEW_DARK_COLOR_ARROW_BTN_HOT : PH_SCROLLNEW_COLOR_ARROW_BTN_HOT;
+        COLORREF arrowButtonPressColor = PhScrollNewUseDarkColors() ? PH_SCROLLNEW_DARK_COLOR_ARROW_BTN_PRESS : PH_SCROLLNEW_COLOR_ARROW_BTN_PRESS;
+        COLORREF arrowNormalColor = PhScrollNewUseDarkColors() ? PH_SCROLLNEW_DARK_COLOR_ARROW_NORMAL : PH_SCROLLNEW_COLOR_ARROW_NORMAL;
+        COLORREF arrowHotColor = PhScrollNewUseDarkColors() ? PH_SCROLLNEW_DARK_COLOR_ARROW_HOT : PH_SCROLLNEW_COLOR_ARROW_HOT;
+        COLORREF thumbNormalColor = PhScrollNewUseDarkColors() ? PH_SCROLLNEW_DARK_COLOR_THUMB_NORMAL : PH_SCROLLNEW_COLOR_THUMB_NORMAL;
+        COLORREF thumbHotColor = PhScrollNewUseDarkColors() ? PH_SCROLLNEW_DARK_COLOR_THUMB_HOT : PH_SCROLLNEW_COLOR_THUMB_HOT;
+        COLORREF thumbPressedColor = PhScrollNewUseDarkColors() ? PH_SCROLLNEW_DARK_COLOR_THUMB_PRESSED : PH_SCROLLNEW_COLOR_THUMB_PRESSED;
 
         // Track background
         SetDCBrushColor(hdc, trackColor);
