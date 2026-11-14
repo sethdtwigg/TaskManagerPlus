@@ -22,6 +22,7 @@
     <Project Path="ProcessHistory/ProcessHistory.vcxproj" Id="fca4a226-6589-48c2-96f8-605dc2fc58fe" />
     <Project Path="NetworkLookup/NetworkLookup.vcxproj" Id="3b7e0d52-91c4-4e6a-a1f3-5d2c8e4b7a10" />
     <Project Path="QuickActions/QuickActions.vcxproj" Id="6a1d3c84-2b7f-4e95-9c10-7e4a5b3d8f21" />
+    <Project Path="TrayTop/TrayTop.vcxproj" Id="b3c5e7a1-4d2f-4a68-8e19-5f7a2c9d6b04" />
     <Project Path="ResourceTrends/ResourceTrends.vcxproj" Id="9e2b5f17-4c3a-48d6-b1a8-2f6d0c7e3a95" />
     <Project Path="SessionReports/SessionReports.vcxproj" Id="5c8e2a91-d3b4-4f67-8a19-0e7b6c2d4f58" />
     <Project Path="Profiles/Profiles.vcxproj" Id="7d4f1b36-8a52-4c9e-b0d7-3e61a8f25c94" />

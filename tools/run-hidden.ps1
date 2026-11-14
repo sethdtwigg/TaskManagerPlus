@@ -276,6 +276,8 @@ try {
     #   cmdshot:<id>,<name>            post WM_COMMAND(id), wait, capture the main window as <name>.png
     #   dialogcmd:<id>                 post WM_COMMAND(id) to the first #32770 dialog (TaskDialog custom button ids, e.g. 7 = IDNO)
     #   dialogkeys:<vk>,<vk>,...       WM_KEYDOWN/UP (decimal virtual keys, 9 = Tab, 13 = Return) to the first #32770 dialog, to move to and press a TaskDialog button
+    #   closedialog                    WM_CLOSE to the first #32770 dialog (closing Options makes its pages save their settings)
+    #   windows                        list the visible windows on the hidden desktop (class and title), to find a class for -StepClass
     #   post:<msg>,<wParam>,<lParam>   PostMessage of a numeric message (decimal) to the main window (e.g. 32894 = WM_APP+126, the tray icon callback)
     #   settext:<id>,<text>            WM_SETTEXT on the control with that id (first window or child that has it, e.g. on an Options page)
     #   click:<id>                     BM_CLICK on that control
@@ -311,11 +313,13 @@ try {
             "cmdshot" { $ci, $cn = $arg -split ",", 2; [void][H]::PostMessage($main, 0x111, [IntPtr][int]$ci, [IntPtr]::Zero); Start-Sleep -Milliseconds 1500; Save-Window $main (Join-Path $runDir "$cn.png") }
             "shotmain" { Start-Sleep -Milliseconds 500; Save-Window $main (Join-Path $runDir "$arg.png") }
             "dialog" { $d = Get-Dialog; if ($d) { [void](Save-Window $d (Join-Path $runDir "step-dialog.png")); Answer $d $arg; "dialog answered $arg" } else { "step dialog: none" } }
+            "closedialog" { $d = Get-Dialog; if ($d) { [void][H]::PostMessage($d, 0x10, [IntPtr]::Zero, [IntPtr]::Zero); Start-Sleep -Milliseconds 800; "dialog closed" } else { "step closedialog: none" } }
+            "windows" { Get-DeskWindows | ForEach-Object { "window: class=$($_.Class) title=$($_.Title)" } }
             "post" { $pm, $pw, $pl = $arg -split ",", 3; [void][H]::PostMessage($main, [uint32]$pm, [IntPtr][int64]$pw, [IntPtr][int64]$pl); "posted message $pm" }
             "settext" { $ci, $ct = $arg -split ",", 2; $bp = Find-ButtonParent ([int]$ci); if ($bp -and $bp -ne [IntPtr]::Zero) { $c = [H]::GetDlgItem($bp, [int]$ci); [void][H]::SendMessageW($c, 0xC, [IntPtr]::Zero, $ct); "set text of $ci" } else { "step settext: control $ci not found" } }
             "click" { $bp = Find-ButtonParent ([int]$arg); if ($bp -and $bp -ne [IntPtr]::Zero) { [void][H]::PostMessage([H]::GetDlgItem($bp, [int]$arg), 0xF5, [IntPtr]::Zero, [IntPtr]::Zero); "clicked $arg"; Start-Sleep -Milliseconds 500 } else { "step click: control $arg not found" } }
             "gettext" { $bp = Find-ButtonParent ([int]$arg); if ($bp -and $bp -ne [IntPtr]::Zero) { $sb = New-Object System.Text.StringBuilder 512; [void][H]::SendMessageW([H]::GetDlgItem($bp, [int]$arg), 0xD, [IntPtr]512, $sb); "text ${arg}: $($sb.ToString())" } else { "step gettext: control $arg not found" } }
-            "menukey" { $m = (Get-DeskWindows | Where-Object { $_.Class -eq "#32768" } | Select-Object -First 1).H; if ($m) { [void][H]::PostMessage($m, 0x100, [IntPtr][int]$arg, [IntPtr]::Zero); Start-Sleep -Milliseconds 80; [void][H]::PostMessage($m, 0x101, [IntPtr][int]$arg, [IntPtr]::Zero); Start-Sleep -Milliseconds 400; "menu key $arg" } else { "step menukey: no menu" } }
+            "menukey" { $m = (Get-DeskWindows | Where-Object { $_.Class -eq "#32768" -or $_.Class -eq "PhEMenuDX" } | Select-Object -First 1).H; if ($m) { [void][H]::PostMessage($m, 0x100, [IntPtr][int]$arg, [IntPtr]::Zero); Start-Sleep -Milliseconds 80; [void][H]::PostMessage($m, 0x101, [IntPtr][int]$arg, [IntPtr]::Zero); Start-Sleep -Milliseconds 400; "menu key $arg" } else { "step menukey: no menu" } }
             "shotall" { $n = 0; foreach ($w in (Get-DeskWindows | Where-Object { $_.Class -eq $StepClass })) { Save-Window $w.H (Join-Path $runDir "$arg-$n.png"); $n++ }; if (-not $n) { "step shotall: no $StepClass window" } }
             "dialogcmd" { $d = Get-Dialog; if ($d) { [void](Save-Window $d (Join-Path $runDir "step-dialog.png")); [void][H]::PostMessage($d, 0x111, [IntPtr][int]$arg, [IntPtr]::Zero); "dialog command $arg" } else { "step dialogcmd: none" } }
             "dialogkeys" { $d = Get-Dialog; if ($d) { foreach ($vk in ($arg -split ",")) { [void][H]::PostMessage($d, 0x100, [IntPtr][int]$vk, [IntPtr]::Zero); Start-Sleep -Milliseconds 80; [void][H]::PostMessage($d, 0x101, [IntPtr][int]$vk, [IntPtr]::Zero); Start-Sleep -Milliseconds 300 }; "dialog keys $arg" } else { "step dialogkeys: none" } }

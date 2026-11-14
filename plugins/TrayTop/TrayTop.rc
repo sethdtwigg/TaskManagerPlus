@@ -1,0 +1,17 @@
+#include "resource.h"
+#include "winres.h"
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+IDD_OPTIONS DIALOGEX 0, 0, 260, 90
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Tray top processes"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "Show the busiest processes in the tray icon's right-click menu",IDC_TT_ENABLED,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,8,246,10
+    LTEXT           "Processes per list (1 to 15):",IDC_STATIC,7,28,90,8
+    EDITTEXT        IDC_TT_COUNT,101,26,36,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "",IDC_TT_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,137,26,10,12
+    LTEXT           "The menu lists the top processes by CPU and by memory. Each one has End task, Efficiency mode and Open file location.",IDC_STATIC,7,48,246,24
+END
