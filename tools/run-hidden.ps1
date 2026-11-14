@@ -246,6 +246,8 @@ try {
     #   key:<vk>                       WM_KEYDOWN/WM_KEYUP (decimal virtual key) to that Edit (13 = Return, 27 = Escape, 40 = Down)
     #   shot:<name>                    capture the window of class -StepClass (or the main window if it is not open)
     #   shotmain:<name>                capture the main window
+    #   cmd:<id>                       post WM_COMMAND(id) to the main window (e.g. 10223 = next tab), then wait
+    #   cmdshot:<id>,<name>            post WM_COMMAND(id), wait, capture the main window as <name>.png
     #   dialog:yes|no                  answer the first #32770 dialog (yes = Return, no = Escape)
     foreach ($s in $Steps) {
         $op, $arg = $s -split ":", 2
@@ -271,6 +273,8 @@ try {
                 Start-Sleep -Milliseconds 500
                 Save-Window $w (Join-Path $runDir "$arg.png")
             }
+            "cmd" { [void][H]::PostMessage($main, 0x111, [IntPtr][int]$arg, [IntPtr]::Zero); Start-Sleep -Milliseconds 900 }
+            "cmdshot" { $ci, $cn = $arg -split ",", 2; [void][H]::PostMessage($main, 0x111, [IntPtr][int]$ci, [IntPtr]::Zero); Start-Sleep -Milliseconds 1500; Save-Window $main (Join-Path $runDir "$cn.png") }
             "shotmain" { Start-Sleep -Milliseconds 500; Save-Window $main (Join-Path $runDir "$arg.png") }
             "dialog" { $d = Get-Dialog; if ($d) { [void](Save-Window $d (Join-Path $runDir "step-dialog.png")); Answer $d $arg; "dialog answered $arg" } else { "step dialog: none" } }
             default { "unknown step $s" }
