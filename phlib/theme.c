@@ -391,7 +391,7 @@ static CONST PH_WINDOW_THEME_PALETTE PhpWindowThemeLightPalette =
     RGB(204, 226, 246), // HighlightColor
     RGB(150, 196, 236), // Highlight2Color
     RGB(24, 29, 36), // TextColor
-    RGB(118, 128, 140), // DisabledTextColor
+    RGB(100, 110, 122), // DisabledTextColor (5:1 on white, was 3.9:1)
     RGB(206, 213, 222), // BorderColor
     RGB(184, 212, 240), // PressedColor
     RGB(255, 255, 255), // EditColor
@@ -407,7 +407,7 @@ static CONST PH_WINDOW_THEME_PALETTE PhpWindowThemeLightPalette =
     RGB(150, 196, 236), // EditHotBorderColor
     RGB(206, 213, 222), // EditNormalBorderColor
     RGB(255, 255, 255), // MenuSelectedTextColor
-    RGB(118, 128, 140)  // MenuDisabledTextColor
+    RGB(100, 110, 122)  // MenuDisabledTextColor
 };
 
 // TaskManagerPlus: dark palette, cool charcoal surfaces with a blue accent (RGB 0,95,184 light / 58,150,221 dark).
@@ -829,6 +829,15 @@ BOOLEAN PhSetWindowThemePalette(
     PhpApplyWindowThemePalette(selectedPalette);
     PhpWindowThemePaletteApplied = TRUE;
 
+    // TaskManagerPlus: keep the uxtheme app mode in step with the palette on live theme switches
+    if (SetPreferredAppMode_I)
+    {
+        SetPreferredAppMode_I(PhEnableThemeSupport && PhGetColorBrightness(selectedPalette->BackgroundColor) < 128 ? PreferredAppModeDarkAlways : PreferredAppModeDisabled);
+
+        if (FlushMenuThemes_I)
+            FlushMenuThemes_I();
+    }
+
     return TRUE;
 }
 
@@ -1195,7 +1204,8 @@ static VOID PhpInitializeWindowTheme(
 
                 if (SetPreferredAppMode_I)
                 {
-                    SetPreferredAppMode_I(PreferredAppModeDarkAlways);
+                    // TaskManagerPlus: dark app mode only for a dark palette, otherwise menus and scrollbars stay dark on a light window
+                    SetPreferredAppMode_I(PhGetColorBrightness(PhpWindowThemeCurrentPalette.BackgroundColor) < 128 ? PreferredAppModeDarkAlways : PreferredAppModeDisabled);
                 }
 
                 if (FlushMenuThemes_I)

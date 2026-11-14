@@ -1820,7 +1820,8 @@ HRESULT WINAPI PhDrawThemeBackgroundExHook(
         if (PhGetThemeClass(hTheme, className, RTL_NUMBER_OF(className)) &&
             PhEqualStringZ(className, VSCLASS_BUTTON, TRUE))
         {
-            HTHEME darkButtonTheme = PhOpenThemeData(NULL, L"DarkMode_Explorer::Button", 0);
+            // TaskManagerPlus: the dark check box art only on a dark palette (a light palette got black unchecked boxes)
+            HTHEME darkButtonTheme = PhGetColorBrightness(PhThemeWindowBackgroundColor) < 128 ? PhOpenThemeData(NULL, L"DarkMode_Explorer::Button", 0) : NULL;
             HRESULT retVal = DefaultDrawThemeBackgroundEx(darkButtonTheme ? darkButtonTheme : hTheme, hdc, iPartId, iStateId, pRect, pOptions);
             if (darkButtonTheme)
                 PhCloseThemeData(darkButtonTheme);

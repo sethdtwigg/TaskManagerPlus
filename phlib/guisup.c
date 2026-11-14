@@ -793,6 +793,14 @@ VOID PhSetControlTheme(
 {
     if (SetWindowTheme_I)
     {
+        // TaskManagerPlus: call sites ask for the DarkMode_ visual styles unconditionally; with a light palette that gives
+        // dark scrollbars, buttons and headers on a light window, so map them to the light style of the same name.
+        if (Theme && PhEnableThemeSupport && PhGetColorBrightness(PhThemeWindowBackgroundColor) >= 128 &&
+            _wcsnicmp(Theme, L"DarkMode_", 9) == 0)
+        {
+            Theme += 9;
+        }
+
         SetWindowTheme_I(Handle, Theme, NULL);
     }
 }
