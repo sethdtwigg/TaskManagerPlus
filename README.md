@@ -62,22 +62,50 @@ Informer. To keep everything next to the executable (portable mode), create
 ## Building
 
 Requires Visual Studio 2026 (Desktop development with C++, plus the MSVC
-x64/x86 Spectre-mitigated libraries), the .NET 10 SDK and Git. From a
-PowerShell prompt in the repository root:
+x64/x86 Spectre-mitigated libraries), the .NET 10 SDK, `nuget.exe` on PATH and
+Git.
+
+**The build is offline and needs a local NuGet feed that is not in this
+repository.** `nuget.config` clears every remote source and points at
+`..\offline-packages`, a folder of 28 `.nupkg` files (about 860 MB: the Windows
+SDK/WDK for C++, the CustomBuildTool dependencies and the .NET runtime /
+NativeAOT packs) next to the repository folder, so the layout is
+`<parent>\offline-packages` and `<parent>\systeminformer`. The packages are
+Microsoft-licensed and are not redistributed here. Create the feed once:
+
+* on a machine that already built (or restored online), run
+  `dotnet restore tools\CustomBuildTool\CustomBuildTool.csproj`, then
+  `powershell -File tools\make-offline-packages.ps1`, and copy the resulting
+  `offline-packages` folder next to this repository, or
+* on a machine that never built, restore online once: temporarily add
+  nuget.org as a package source in `nuget.config`, run the three commands
+  below including `build_init` (it fetches every package, including the
+  x86 NativeAOT pack that a plain restore skips), then run
+  `make-offline-packages.ps1` and revert `nuget.config`.
+
+Then, from a PowerShell prompt in the repository root:
 
 ```
-cmd /c build\build_init.cmd INIT
+dotnet restore tools\CustomBuildTool\CustomBuildTool.csproj
+nuget restore packages.config -ConfigFile nuget.config -PackagesDirectory packages
+cmd /c build\build_init.cmd INIT > build_init.log 2>&1
 $msb = "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\amd64\MSBuild.exe"
 & $msb SystemInformer.sln -p:Configuration=Release -p:Platform=x64 -m -t:Build -nologo -v:m
 & $msb plugins\Plugins.sln -p:Configuration=Release -p:Platform=x64 -m -nologo -v:m
 ```
 
-Do not use `build\build_release.cmd`: its `/graph` build crashes MSBuild on
-current Visual Studio. Output is `bin\Release64\SystemInformer.exe` and
-`bin\Release64\plugins\*.dll`. If `build_init` fails with "PrivateSdkAssemblies
-ItemGroup is required", run
+(Use the `Professional` or `Enterprise` folder instead of `Community` if that
+is what you installed.) `build_init` takes about a minute; redirect its output
+to a file as shown, because once in a pipe it appeared to hang. Do not use
+`build\build_release.cmd`: its `/graph` build crashes MSBuild on current Visual
+Studio. Output is `bin\Release64\SystemInformer.exe` and
+`bin\Release64\plugins\*.dll`. If `build_init` fails with
+"PrivateSdkAssemblies ItemGroup is required", run
 `dotnet restore tools\CustomBuildTool\CustomBuildTool.csproj -r win-x64 -p:Platform=x64 -p:PublishAot=true`
-first.
+first. If you see `'vswhere.exe' is not recognized`, add
+`C:\Program Files (x86)\Microsoft Visual Studio\Installer` to PATH and make
+sure the environment variable `NoDefaultCurrentDirectoryInExePath` is not set.
+Verify with `powershell -File tools\check-offline.ps1 -Binaries`.
 
 ## Distribution
 

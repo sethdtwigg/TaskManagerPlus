@@ -49,6 +49,16 @@ foreach ($e in $entries) {
     Add-Package $id $ver (Join-Path $global "$id\$ver\$id.$ver.nupkg")
 }
 
+# 3. build_init restores CustomBuildTool for win-x86 / win-x64 / win-arm64 with PublishAot, which the default restore above does not list:
+#    copy the NativeAOT runtime packs that the global folder has for those RIDs (a plain restore needs network once to get them).
+foreach ($rid in 'win-x86', 'win-x64', 'win-arm64') {
+    $id = "microsoft.netcore.app.runtime.nativeaot.$rid"
+    $dir = Join-Path $global $id
+    if (Test-Path $dir) {
+        Get-ChildItem $dir -Directory | ForEach-Object { Add-Package $id $_.Name (Join-Path $_.FullName "$id.$($_.Name).nupkg") }
+    } else { $missing += "$id (only needed to build for $rid; ignore for x64/x86)" }
+}
+
 $size = (Get-ChildItem $Feed -Filter *.nupkg | Measure-Object Length -Sum).Sum / 1MB
 "Feed: $Feed  ($((Get-ChildItem $Feed -Filter *.nupkg).Count) packages, $([math]::Round($size)) MB, $copied copied now)"
 if ($missing) { "MISSING from the local caches (restore them online once): " + ($missing -join ', ') }
