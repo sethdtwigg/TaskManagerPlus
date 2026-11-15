@@ -56,6 +56,7 @@ $Allow = @(
     @{ Path = '^plugins/ExtendedTools/Efi/'; Line = 'opensource\.org'; Why = 'licence header text' },
     @{ Path = '^(LICENSE|COPYRIGHT)\.txt$'; Line = '.'; Why = 'licence text' },
     @{ Path = '^README\.md$'; Line = 'LICENSE\.txt'; Why = 'local link' },
+    @{ Path = '^\.github/workflows/ci\.yml$'; Line = 'api\.nuget\.org/v3/index\.json'; Why = 'CI-only: the runner restores build packages from nuget.org into a throwaway workspace copy of nuget.config; the shipped app and the repo nuget.config stay offline' },
     @{ Path = '^README\.md$'; Line = 'github\.com/sethdtwigg/TaskManagerPlus'; Why = 'this project''s own repository name as plain text, never fetched' }
 )
 
