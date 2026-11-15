@@ -163,8 +163,6 @@ build-*/
 cmake-build-*/
 **/node_modules/
 
-!tools/CustomSignTool/bin/Release*/CustomSignTool.exe
-!tools/fixlib/bin/Release/fixlib.exe
 
 # TaskManagerPlus: scratch and capture artifacts that must never be committed
 *.etl
