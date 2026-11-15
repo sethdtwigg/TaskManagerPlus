@@ -106,9 +106,6 @@ namespace CustomBuildTool
                     { "-build-devenv", "Builds using devenv configuration." },
                     { "-build-msix", "Builds MSIX store package." },
                     { "-build-zip", "Builds the binary package." },
-                    { "-build-delta", "Creates an MSDelta delta from the latest release setup to the build output setup." },
-                    { "-build-patch", "Creates a PatchAPI patch from the latest release setup to the build output setup." },
-                    { "-rotate-setup", "Rotates setup.zip bytes into setup.rag and generates setuprag.c." },
 
                     { "-check_msvc", "Check required build dependencies are installed." },
                     { "-check-thirdparty", "Checks thirdparty library versions against latest GitHub releases." },
@@ -499,11 +496,6 @@ namespace CustomBuildTool
                 if (!Build.CopyTextFiles(true, flags)) Environment.Exit(1);
                 if (!Build.BuildBinZip(flags)) Environment.Exit(1);
 
-                foreach (var (channel, _) in BuildConfig.Build_Channels)
-                {
-                    if (!Build.BuildSetupExe(channel, flags))
-                        Environment.Exit(1);
-                }
 
                 if (!Build.CopyTextFiles(false, flags)) Environment.Exit(1);
                 if (!Build.BuildPdbZip(false, flags)) Environment.Exit(1);
@@ -636,10 +628,6 @@ namespace CustomBuildTool
                 if (!Build.CopyTextFiles(true, flags)) Environment.Exit(1);
                 if (!Build.BuildBinZip(flags)) Environment.Exit(1);
 
-                foreach (var (channel, _) in BuildConfig.Build_Channels)
-                {
-                    if (!Build.BuildSetupExe(channel, flags)) Environment.Exit(1);
-                }
 
                 if (!Build.CopyTextFiles(false, flags)) Environment.Exit(1);
                 if (!Build.BuildPdbZip(false, flags)) Environment.Exit(1);
@@ -751,10 +739,6 @@ namespace CustomBuildTool
                 if (!Build.CopyTextFiles(true, flags)) Environment.Exit(1);
                 if (!Build.BuildBinZip(flags)) Environment.Exit(1);
 
-                foreach (var (channel, _) in BuildConfig.Build_Channels)
-                {
-                    if (!Build.BuildSetupExe(channel, flags)) Environment.Exit(1);
-                }
 
                 if (!Build.CopyTextFiles(false, flags)) Environment.Exit(1);
                 if (!Build.BuildPdbZip(false, flags)) Environment.Exit(1);
@@ -814,10 +798,6 @@ namespace CustomBuildTool
                 if (!Build.CopyTextFiles(true, flags)) Environment.Exit(1);
                 if (!Build.BuildBinZip(flags)) Environment.Exit(1);
 
-                foreach (var (channel, _) in BuildConfig.Build_Channels)
-                {
-                    if (!Build.BuildSetupExe(channel, flags)) Environment.Exit(1);
-                }
 
                 if (!Build.CopyTextFiles(false, flags)) Environment.Exit(1);
                 Build.ShowBuildStats();
