@@ -39,8 +39,8 @@ bcdedit /set testsigning on
 
 Developers may generate their own key pair for use in their environment.
 
-1. execute `tools\CustomSignTool\bin\Release64\CustomSignTool.exe createkeypair kph.key public.key`
-2. copy `kph.key` into `tools\CustomSignTool\resources`
+1. generate a key pair `kph.key` / `public.key` with your own tooling (TaskManagerPlus removed `tools\CustomSignTool` because the fork ships no driver; this section is kept for reference only)
+2. copy `kph.key` into the folder named by the `BUILD_DRM` environment variable
 3. copy the bytes for `public.key` into the `KphpPublicKeys` array in [verify.c](verify.c)
     - `KphKeyTypeProd` does not require debug and test signing enablement
     - `KphKeyTypeTest` requires debug and test signing enablement
