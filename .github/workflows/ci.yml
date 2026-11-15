@@ -101,4 +101,6 @@ jobs:
 
       - name: Offline guard (binaries)
         shell: pwsh
-        run: ./tools/check-offline.ps1 -Binaries
+        run: |
+          git checkout -- nuget.config   # drop the CI-only source before scanning
+          ./tools/check-offline.ps1 -Binaries
