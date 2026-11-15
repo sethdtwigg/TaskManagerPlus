@@ -8,9 +8,6 @@
 		<DebugType>portable</DebugType>
 		<Deterministic>true</Deterministic>
 		<DisableRuntimeMarshalling>true</DisableRuntimeMarshalling>
-		<DockerDefaultTargetOS>Windows</DockerDefaultTargetOS>
-		<DockerfileContext>.</DockerfileContext>
-		<ContainerDevelopmentMode>Regular</ContainerDevelopmentMode>
 		<CsWin32RunAsBuildTask>true</CsWin32RunAsBuildTask>
 		<CsWin32Targeting>Windows</CsWin32Targeting>
 		<EmbedAllSources>false</EmbedAllSources>
