@@ -165,3 +165,10 @@ cmake-build-*/
 
 !tools/CustomSignTool/bin/Release*/CustomSignTool.exe
 !tools/fixlib/bin/Release/fixlib.exe
+
+# TaskManagerPlus: scratch and capture artifacts that must never be committed
+*.etl
+ed_tmp*.py
+**/tmplus-hidden/
+**/shots/
+/offline-packages/
