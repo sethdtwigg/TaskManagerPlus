@@ -104,7 +104,6 @@ namespace CustomBuildTool
                     { "-build-debug", "Builds the debug configuration." },
                     { "-build-release", "Builds the release configuration." },
                     { "-build-devenv", "Builds using devenv configuration." },
-                    { "-build-msix", "Builds MSIX store package." },
                     { "-build-zip", "Builds the binary package." },
 
                     { "-check_msvc", "Check required build dependencies are installed." },

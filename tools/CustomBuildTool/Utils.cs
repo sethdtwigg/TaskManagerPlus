@@ -852,41 +852,6 @@ namespace CustomBuildTool
         }
 
         /// <summary>
-        /// Retrieves the full path to the MakeAppx.exe tool from the Windows SDK installation.
-        /// </summary>
-        /// <remarks>This method searches for MakeAppx.exe in standard Windows SDK locations. If the tool
-        /// is not installed or cannot be found, the method returns null. Use this method to locate MakeAppx.exe for
-        /// packaging Windows applications.</remarks>
-        /// <returns>The full path to MakeAppx.exe if found; otherwise, null.</returns>
-        public static string GetMakeAppxPath()
-        {
-            string windowsSdkPath = Utils.GetWindowsSdkPath();
-
-            if (string.IsNullOrWhiteSpace(windowsSdkPath))
-                return null;
-
-            string makeAppxPath = Path.Join([windowsSdkPath, "\\x64\\MakeAppx.exe"]);
-
-            if (string.IsNullOrWhiteSpace(makeAppxPath))
-                return null;
-
-            if (!File.Exists(makeAppxPath))
-            {
-                string sdkRootPath = Win32.GetKeyValue(true, "Software\\Microsoft\\Windows Kits\\Installed Roots", "WdkBinRootVersioned", null);
-
-                if (string.IsNullOrWhiteSpace(sdkRootPath))
-                    return null;
-
-                makeAppxPath = Utils.ExpandFullPath(Path.Join([sdkRootPath, "\\x64\\MakeAppx.exe"]));
-
-                if (!File.Exists(makeAppxPath))
-                    return null;
-            }
-
-            return makeAppxPath;
-        }
-
-        /// <summary>
         /// Retrieves the full path to the Message Compiler (mc.exe) tool from the Windows SDK installation.
         /// </summary>
         /// <remarks>mc.exe ships with the Windows SDK (not the WDK), so it can be used to compile message
@@ -1079,29 +1044,6 @@ namespace CustomBuildTool
         private static string QuoteCmdArgument(string Argument)
         {
             return $"\"{Argument}\"";
-        }
-
-        /// <summary>
-        /// Executes an MSIX packaging command using the MakeAppx tool and returns the output as a string.
-        /// </summary>
-        /// <remarks>The returned output is trimmed and consecutive blank lines are reduced to a single
-        /// blank line. This method does not throw exceptions for invalid tool paths; instead, it returns null and
-        /// prints an error message.</remarks>
-        /// <param name="Arguments">The command-line arguments to pass to the MakeAppx tool. Cannot be null or empty.</param>
-        /// <returns>A string containing the output from the MakeAppx tool. Returns null if the tool path is invalid.</returns>
-        public static string ExecuteMsixCommand(IEnumerable<string> Arguments)
-        {
-            string file = GetMakeAppxPath();
-
-            if (string.IsNullOrWhiteSpace(file))
-            {
-                Program.PrintColorMessage("[ExecuteMsixCommand] File is invalid.", ConsoleColor.Red);
-                return null;
-            }
-
-            Win32.CreateProcess(file, Arguments, out var outputString, false);
-
-            return outputString.Replace("\r\n\r\n", "\r\n", StringComparison.OrdinalIgnoreCase).Trim();
         }
 
         //public static string GetSignToolPath()
