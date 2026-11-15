@@ -107,6 +107,15 @@ first. If you see `'vswhere.exe' is not recognized`, add
 sure the environment variable `NoDefaultCurrentDirectoryInExePath` is not set.
 Verify with `powershell -File tools\check-offline.ps1 -Binaries`.
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to `main` and on pull requests (read-only token, no secrets, no deploy):
+the offline guard (`tools\check-offline.ps1`), the pure-C unit tests (`tools\tests\unit-tests.ps1`), and a full x64 Release
+build of `SystemInformer.sln` and `plugins\Plugins.sln` followed by `check-offline.ps1 -Binaries` (about 17 minutes).
+Only the CI runner restores packages from nuget.org, through a throwaway workspace copy of `nuget.config`; the repository's
+`nuget.config` and the shipped app stay offline. The hidden-desktop UI tests (`tools\tests\*-hidden.ps1`) need an interactive
+desktop and are not run in CI.
+
 ## Distribution
 
 Releases are a portable zip: `SystemInformer.exe`, the `plugins` folder and
