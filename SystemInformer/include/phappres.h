@@ -13,12 +13,14 @@
 #ifndef PH_PHAPPRES_H
 #define PH_PHAPPRES_H
 
+// TaskManagerPlus: product version 0.1.0 (file version 0.1.0.0). The upstream
+// build tool overrides these with date-based values; we use fixed ones.
 #ifndef PHAPP_VERSION_MAJOR
 #define PHAPP_VERSION_MAJOR 0
 #endif
 
 #ifndef PHAPP_VERSION_MINOR
-#define PHAPP_VERSION_MINOR 0
+#define PHAPP_VERSION_MINOR 1
 #endif
 
 #ifndef PHAPP_VERSION_BUILD

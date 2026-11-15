@@ -1401,6 +1401,18 @@ PPH_STRING PhGetBuildVersion(
     VOID
     )
 {
+#if (PHAPP_VERSION_REVISION == 0)
+    // TaskManagerPlus: show 0.1.0 rather than 0.1.0.0.
+    PH_FORMAT format[5];
+
+    PhInitFormatU(&format[0], PHAPP_VERSION_MAJOR);
+    PhInitFormatC(&format[1], L'.');
+    PhInitFormatU(&format[2], PHAPP_VERSION_MINOR);
+    PhInitFormatC(&format[3], L'.');
+    PhInitFormatU(&format[4], PHAPP_VERSION_BUILD);
+
+    return PhFormat(format, RTL_NUMBER_OF(format), 0);
+#else
     PH_FORMAT format[7];
 
     PhInitFormatU(&format[0], PHAPP_VERSION_MAJOR);
@@ -1412,6 +1424,7 @@ PPH_STRING PhGetBuildVersion(
     PhInitFormatU(&format[6], PHAPP_VERSION_REVISION);
 
     return PhFormat(format, RTL_NUMBER_OF(format), 0);
+#endif
 }
 
 /**
