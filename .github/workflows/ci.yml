@@ -30,3 +30,75 @@ jobs:
       - name: Pure-C unit tests
         shell: pwsh
         run: ./tools/tests/unit-tests.ps1
+
+  build:
+    name: Build x64 Release
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      # actions/checkout v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      # actions/cache v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            ~/.nuget/packages
+            packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('packages.config', 'tools/CustomBuildTool/CustomBuildTool.csproj', 'Directory.Packages.props') }}
+
+      - name: Toolchain
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
+          "Visual Studio: $vs"
+          & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property catalog_productDisplayVersion
+          dotnet --list-sdks
+          Get-ChildItem "$vs\VC\Tools\MSVC" | Select-Object -ExpandProperty Name
+          "MSBUILD=$vs\MSBuild\Current\Bin\amd64\MSBuild.exe" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+
+      # CI only: the workspace copy of nuget.config gets nuget.org as the source. The repository's
+      # nuget.config (offline, local feed) is not changed and the shipped app is unaffected.
+      - name: CI-only NuGet source (workspace copy)
+        shell: pwsh
+        run: |
+          @'
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+            </packageSources>
+          </configuration>
+          '@ | Set-Content -Encoding utf8 nuget.config
+
+      - name: Restore
+        shell: pwsh
+        run: |
+          dotnet restore tools\CustomBuildTool\CustomBuildTool.csproj
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          nuget restore packages.config -ConfigFile nuget.config -PackagesDirectory packages
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: build_init
+        shell: cmd
+        run: |
+          set PATH=C:\Program Files (x86)\Microsoft Visual Studio\Installer;%PATH%
+          build\build_init.cmd INIT > build_init.log 2>&1
+          set RC=%ERRORLEVEL%
+          type build_init.log
+          exit /b %RC%
+
+      - name: Build SystemInformer.sln and Plugins.sln
+        shell: pwsh
+        run: |
+          & $env:MSBUILD SystemInformer.sln -p:Configuration=Release -p:Platform=x64 -m -t:Build -nologo -v:m
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          & $env:MSBUILD plugins\Plugins.sln -p:Configuration=Release -p:Platform=x64 -m -nologo -v:m
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Offline guard (binaries)
+        shell: pwsh
+        run: ./tools/check-offline.ps1 -Binaries
