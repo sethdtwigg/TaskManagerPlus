@@ -168,6 +168,7 @@ VOID PhAddDefaultSettings(
     PhpAddIntegerSetting(SETTING_HIGHLIGHT_MODE, L"1"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_SEARCH_OPTIONS_MENU, L"1"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_CALM_LOOK_OFFERED, L"0"); // TaskManagerPlus
+    PhpAddIntegerSetting(SETTING_HIDDEN_TABS_MIGRATED, L"0"); // TaskManagerPlus
     PhpAddIntegerSetting(SETTING_TASKMGR_REPAIR_NEVER, L"0"); // TaskManagerPlus
     PhpAddStringSetting(SETTING_SHORTCUTS, L""); // TaskManagerPlus
     PhpAddStringSetting(SETTING_MAIN_WINDOW_HIDDEN_TABS, L""); // TaskManagerPlus

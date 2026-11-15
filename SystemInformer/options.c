@@ -146,6 +146,20 @@ VOID PhOfferCalmLook(
 {
     BOOLEAN dense;
 
+    // TaskManagerPlus: once, an install whose hidden-tab list is exactly the old default (chosen before the Trends and
+    // Advisor tabs existed) gets them under More too. Any other list is the user's own choice and is left alone.
+    if (!PhGetIntegerSetting(SETTING_HIDDEN_TABS_MIGRATED))
+    {
+        PPH_STRING hiddenTabs = PhGetStringSetting(SETTING_MAIN_WINDOW_HIDDEN_TABS);
+
+        PhSetIntegerSetting(SETTING_HIDDEN_TABS_MIGRATED, TRUE);
+
+        if (PhEqualString2(hiddenTabs, PH_MWP_OLD_DEFAULT_HIDDEN_TABS, FALSE))
+            PhMwpSetHiddenTabs(PH_MWP_DEFAULT_HIDDEN_TABS);
+
+        PhDereferenceObject(hiddenTabs);
+    }
+
     if (PhGetIntegerSetting(SETTING_CALM_LOOK_OFFERED))
         return;
 

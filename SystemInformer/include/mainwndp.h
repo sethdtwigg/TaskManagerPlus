@@ -319,7 +319,8 @@ VOID PhMwpRestoreTabLayout(
     );
 
 // TaskManagerPlus: tabs kept under "More"
-#define PH_MWP_DEFAULT_HIDDEN_TABS L"Information,Disk,Firewall,Devices,History,Rules"
+#define PH_MWP_DEFAULT_HIDDEN_TABS L"Information,Disk,Firewall,Devices,History,Rules,Trends,Advisor"
+#define PH_MWP_OLD_DEFAULT_HIDDEN_TABS L"Information,Disk,Firewall,Devices,History,Rules" // before the Phase 7 plugin tabs
 
 VOID PhMwpApplyHiddenTabs(
     VOID
