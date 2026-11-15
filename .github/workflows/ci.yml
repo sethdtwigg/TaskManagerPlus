@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Offline guard and unit tests
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      # actions/checkout v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Offline guard (source)
+        shell: pwsh
+        run: ./tools/check-offline.ps1
+
+      - name: Pure-C unit tests
+        shell: pwsh
+        run: ./tools/tests/unit-tests.ps1
