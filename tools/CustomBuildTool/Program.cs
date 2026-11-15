@@ -491,7 +491,6 @@ namespace CustomBuildTool
                 Build.SetupBuildEnvironment(true);
                 if (!Build.TryNormalizeBuildFlags(ref flags, true)) Environment.Exit(1);
 
-                if (!Build.ResignFiles("bin")) Environment.Exit(1);
                 if (!Build.CopyTextFiles(true, flags)) Environment.Exit(1);
                 if (!Build.BuildBinZip(flags)) Environment.Exit(1);
 
@@ -793,7 +792,6 @@ namespace CustomBuildTool
                 Build.SetupBuildEnvironment(true);
                 if (!Build.TryNormalizeBuildFlags(ref flags, true)) Environment.Exit(1);
 
-                if (!Build.ResignFiles("bin-cmake")) Environment.Exit(1);
                 if (!Build.CopyTextFiles(true, flags)) Environment.Exit(1);
                 if (!Build.BuildBinZip(flags)) Environment.Exit(1);
 

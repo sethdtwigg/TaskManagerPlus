@@ -864,47 +864,6 @@ namespace CustomBuildTool
         }
 
         /// <summary>
-        /// Resigns files in the output directory by deleting old signature files and creating new ones.
-        /// </summary>
-        /// <param name="DirectoryPath">The path to the directory containing files to resign.</param>
-        /// <returns>True if all files are resigned successfully; otherwise, false.</returns>
-        public static bool ResignFiles(string DirectoryPath)
-        {
-            var fileList = new List<string>();
-
-            if (!Directory.Exists(DirectoryPath))
-                return false;
-
-            foreach (string sigFilePath in Directory.EnumerateFiles(DirectoryPath, "*.sig", SearchOption.AllDirectories))
-            {
-                var filePath = Path.ChangeExtension(sigFilePath, ".dll");
-
-                if (File.Exists(filePath))
-                    fileList.Add(filePath);
-
-                filePath = Path.ChangeExtension(sigFilePath, ".exe");
-
-                if (File.Exists(filePath))
-                    fileList.Add(filePath);
-
-                filePath = Path.ChangeExtension(sigFilePath, ".bin");
-
-                if (File.Exists(filePath))
-                    fileList.Add(filePath);
-
-                File.Delete(sigFilePath);
-            }
-
-            foreach (string fileName in fileList)
-            {
-                if (!BuildVerify.CreateSigFile("kph", fileName, BuildCanary))
-                    return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
         /// Builds the SDK by copying headers, libraries, and generating additional files.
         /// </summary>
         /// <param name="Flags">Build flags indicating which configurations to process.</param>
