@@ -5033,7 +5033,13 @@ VOID PhMwpNotifyTabControl(
 {
     if (Header->code == PHTNN_SELCHANGING)
     {
-        OldTabIndex = PhTabNew_GetCurSel(TabControlHandle);
+        LONG currentIndex = PhTabNew_GetCurSel(TabControlHandle);
+
+        // TaskManagerPlus: "More" is a menu, not a page. While it is the selected tab the page that was really showing
+        // stays the "old" one, otherwise choosing an entry (or cancelling) never hides it and it keeps covering the
+        // pages selected afterwards (Processes then shows the Startup list).
+        if (!PhMwpMorePage || currentIndex != PhMwpMorePage->Index)
+            OldTabIndex = currentIndex;
     }
     else if (Header->code == PHTNN_SELCHANGED)
     {
@@ -5103,6 +5109,7 @@ VOID PhMwpSelectionChangedTabControl(
     for (i = 0; i < PageList->Count; i++)
     {
         PPH_MAIN_TAB_PAGE page = PageList->Items[i];
+        BOOLEAN wasSelected = !!page->Selected; // TaskManagerPlus: see the "old" page test below
 
         page->Selected = page->Index == selectedIndex;
 
@@ -5137,7 +5144,7 @@ VOID PhMwpSelectionChangedTabControl(
                     SetFocus(page->WindowHandle);
             }
         }
-        else if (page->Index == OldIndex)
+        else if (page->Index == OldIndex || wasSelected) // TaskManagerPlus: also a page still flagged selected (never leave a stale page showing)
         {
             page->Callback(page, MainTabPageSelected, UlongToPtr(FALSE), NULL);
 

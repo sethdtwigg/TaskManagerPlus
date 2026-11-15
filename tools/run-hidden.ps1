@@ -88,6 +88,11 @@ public static class H {
   [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr SendMessageW(IntPtr h, uint m, IntPtr w, string l);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr SendMessageW(IntPtr h, uint m, IntPtr w, StringBuilder l);
+  [DllImport("user32.dll")] public static extern IntPtr GetParent(IntPtr h);
+  [DllImport("user32.dll")] public static extern IntPtr SendMessageW(IntPtr h, uint m, IntPtr w, IntPtr l);
+  [DllImport("kernel32.dll")] public static extern IntPtr VirtualAllocEx(IntPtr p, IntPtr a, UIntPtr size, uint type, uint prot);
+  [DllImport("kernel32.dll")] public static extern bool VirtualFreeEx(IntPtr p, IntPtr a, UIntPtr size, uint type);
+  [DllImport("kernel32.dll")] public static extern bool ReadProcessMemory(IntPtr p, IntPtr a, byte[] buf, UIntPtr size, out UIntPtr read);
   [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr h, int x, int y, int w, int ht, bool r);
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
   [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr dc, uint f);
@@ -191,6 +196,39 @@ function Find-ButtonParent($id) {
     return $script:bp
 }
 
+# Tab strip helpers for the tab* steps. The tab control (class PhTabNew) is driven with its own messages
+# (WM_USER+0x600+n); the page name is read out of the app's memory (ReadProcessMemory).
+function Get-TabControl { Find-ChildByClass $main "PhTabNew" }
+function Get-TabCount { [int][H]::SendMessageW((Get-TabControl), 0x400 + 0x600 + 4, [IntPtr]::Zero, [IntPtr]::Zero) }
+function Get-TabSel { [int][H]::SendMessageW((Get-TabControl), 0x400 + 0x600 + 6, [IntPtr]::Zero, [IntPtr]::Zero) }
+function Get-TabName([int]$index) {
+    # PHTNM_GETITEMPARAM returns the item's PH_MAIN_TAB_PAGE pointer; Name (a PH_STRINGREF: Length, Buffer) is its first member.
+    $page = [H]::SendMessageW((Get-TabControl), 0x400 + 0x600 + 9, [IntPtr]$index, [IntPtr]::Zero)
+    if ($page -eq [IntPtr]::Zero) { return "" }
+    $raw = New-Object byte[] 16; $got = [UIntPtr]::Zero
+    [void][H]::ReadProcessMemory($pi.hProcess, $page, $raw, [UIntPtr][uint64]16, [ref]$got)
+    $len = [int][BitConverter]::ToInt64($raw, 0); $ptr = [IntPtr][BitConverter]::ToInt64($raw, 8)
+    if ($len -le 0 -or $len -gt 200) { return "" }
+    $sb = New-Object byte[] $len
+    [void][H]::ReadProcessMemory($pi.hProcess, $ptr, $sb, [UIntPtr][uint64]$len, [ref]$got)
+    return [Text.Encoding]::Unicode.GetString($sb)
+}
+function Get-TabNames { $n = Get-TabCount; 0..($n - 1) | ForEach-Object { Get-TabName $_ } }
+# visible direct children of the main window that are big enough to be a page (not rebar, status bar, tab strip)
+function Get-VisiblePages {
+    $script:vp = New-Object System.Collections.ArrayList; $script:vpMain = $main
+    $cb = [H+EnumProc]{ param($c, $m)
+        if ([H]::GetParent($c) -eq $script:vpMain -and [H]::IsWindowVisible($c)) {
+            $cn = New-Object System.Text.StringBuilder 256; [void][H]::GetClassName($c, $cn, 256)
+            $r = New-Object H+RECT; [void][H]::GetWindowRect($c, [ref]$r)
+            if ($cn.ToString() -notin @("PhTabNew", "ReBarWindow32", "msctls_statusbar32") -and ($r.B - $r.T) -gt 150 -and ($r.R - $r.L) -gt 300) { [void]$script:vp.Add("$($c.ToInt64()):$($cn.ToString())") }
+        }
+        return $true }
+    [void][H]::EnumChildWindows($main, $cb, [IntPtr]::Zero)
+    return @($script:vp)
+}
+$script:tabSig = @{}; $script:tabFail = 0
+
 try {
     # GENERIC_ALL desktop access
     $desk = [H]::CreateDesktopW($deskName, [IntPtr]::Zero, [IntPtr]::Zero, 0, 0x10000000, [IntPtr]::Zero)
@@ -285,6 +323,11 @@ try {
     #   menukey:<vk>                   WM_KEYDOWN/UP to the first popup menu window (class #32768), e.g. 40 Down, 39 Right, 27 Esc
     #   shotall:<prefix>               capture every visible window of class -StepClass as <prefix>-<n>.png (popup menu and its submenu)
     #   dialog:yes|no                  answer the first #32770 dialog (yes = Return, no = Escape)
+    #   tabs                           print the strip: "tab strip: 0=Processes 1=..." (tab control driven by its own messages)
+    #   tabgo:<name>                   select that strip tab (as a click does: PHTNM_SETCURSEL), then wait
+    #   tabmore:<name>,<n>             select the More tab, then pick the n-th (1-based) entry of its popup menu with Down x n, Return
+    #   tabcheck:<name>                assert the selected strip tab is <name>, exactly one page window is visible, and it is the
+    #                                  same window every time <name> was checked; prints PASS/FAIL lines (FAIL count in "tabcheck failures: n")
     foreach ($s in $Steps) {
         $op, $arg = $s -split ":", 2
         switch ($op) {
@@ -323,11 +366,42 @@ try {
             "shotall" { $n = 0; foreach ($w in (Get-DeskWindows | Where-Object { $_.Class -eq $StepClass })) { Save-Window $w.H (Join-Path $runDir "$arg-$n.png"); $n++ }; if (-not $n) { "step shotall: no $StepClass window" } }
             "dialogcmd" { $d = Get-Dialog; if ($d) { [void](Save-Window $d (Join-Path $runDir "step-dialog.png")); [void][H]::PostMessage($d, 0x111, [IntPtr][int]$arg, [IntPtr]::Zero); "dialog command $arg" } else { "step dialogcmd: none" } }
             "dialogkeys" { $d = Get-Dialog; if ($d) { foreach ($vk in ($arg -split ",")) { [void][H]::PostMessage($d, 0x100, [IntPtr][int]$vk, [IntPtr]::Zero); Start-Sleep -Milliseconds 80; [void][H]::PostMessage($d, 0x101, [IntPtr][int]$vk, [IntPtr]::Zero); Start-Sleep -Milliseconds 300 }; "dialog keys $arg" } else { "step dialogkeys: none" } }
+            "tabs" { $nn = Get-TabNames; "tab strip: " + (($nn | ForEach-Object -Begin { $k = 0 } -Process { "$k=$_"; $k++ }) -join " ") }
+            "tabgo" {
+                $nn = @(Get-TabNames); $ix = [array]::IndexOf($nn, $arg)
+                if ($ix -lt 0) { "FAIL  tabgo: no strip tab named $arg"; $script:tabFail++; break }
+                [void][H]::PostMessage((Get-TabControl), 0x400 + 0x600 + 5, [IntPtr]$ix, [IntPtr]::Zero); Start-Sleep -Milliseconds 900
+            }
+            "tabmore" {
+                $mn, $pos = $arg -split ",", 2
+                $nn = @(Get-TabNames); $ix = [array]::IndexOf($nn, "More")
+                if ($ix -lt 0) { "FAIL  tabmore: no More tab in the strip"; $script:tabFail++; break }
+                [void][H]::PostMessage((Get-TabControl), 0x400 + 0x600 + 5, [IntPtr]$ix, [IntPtr]::Zero); Start-Sleep -Milliseconds 900
+                for ($d = 0; $d -lt [int]$pos; $d++) {
+                    $m = (Get-DeskWindows | Where-Object { $_.Class -eq "#32768" -or $_.Class -eq "PhEMenuDX" } | Select-Object -First 1).H
+                    if (-not $m) { "FAIL  tabmore: no popup menu for $mn"; $script:tabFail++; break }
+                    [void][H]::PostMessage($m, 0x100, [IntPtr]40, [IntPtr]::Zero); Start-Sleep -Milliseconds 80; [void][H]::PostMessage($m, 0x101, [IntPtr]40, [IntPtr]::Zero); Start-Sleep -Milliseconds 250
+                }
+                $m = (Get-DeskWindows | Where-Object { $_.Class -eq "#32768" -or $_.Class -eq "PhEMenuDX" } | Select-Object -First 1).H
+                if ($m) { [void][H]::PostMessage($m, 0x100, [IntPtr]13, [IntPtr]::Zero); Start-Sleep -Milliseconds 80; [void][H]::PostMessage($m, 0x101, [IntPtr]13, [IntPtr]::Zero) }
+                Start-Sleep -Milliseconds 1000
+            }
+            "tabcheck" {
+                $sel = Get-TabSel; $selName = Get-TabName $sel; $vis = @(Get-VisiblePages)
+                $ok = ($selName -eq $arg) -and ($vis.Count -eq 1)
+                if ($ok) {
+                    if ($script:tabSig.ContainsKey($arg)) { if ($script:tabSig[$arg] -ne $vis[0]) { $ok = $false } }
+                    elseif ($script:tabSig.Values -contains $vis[0]) { $ok = $false }   # a different tab showing another tab's page
+                    else { $script:tabSig[$arg] = $vis[0] }
+                }
+                if ($ok) { "PASS  $arg selected, one page visible ($($vis -join ','))" } else { "FAIL  $arg expected: selected='$selName' visible pages=[$($vis -join ' ')] known=[$(($script:tabSig.GetEnumerator() | ForEach-Object { $_.Key + '=' + $_.Value }) -join ' ')]"; $script:tabFail++ }
+            }
             default { "unknown step $s" }
         }
         Start-Sleep -Milliseconds 300
     }
 
+    if ($Steps | Where-Object { $_ -like "tab*" }) { "tabcheck failures: $($script:tabFail)" }
     Save-Window $main (Join-Path $runDir "$Name.png")
     if ($CaptureDialog) { Start-Sleep -Seconds 8; $dlg = Get-Dialog; if ($dlg) { Save-Window $dlg (Join-Path $runDir "$Name-dialog.png") } else { "no dialog to capture" } }
 
